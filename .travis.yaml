@@ -1,0 +1,42 @@
+---
+
+#
+# use container-based infrastructure
+# @see http://docs.travis-ci.com/user/workers/container-based-infrastructure/
+# @see http://blog.travis-ci.com/2014-12-17-faster-builds-with-container-based-infrastructure/
+#
+sudo: false
+
+#
+# testing multiple subdirectories
+# @see https://lord.io/blog/2014/travis-multiple-subdirs/
+# @see https://www.dominicrodger.com/tox-and-travis.html
+#
+language: python
+env:
+    - SUBDIR=python TOX_ENV=py27
+    #- SUBDIR=python TOX_ENV=py34
+    #- SUBDIR=python TOX_ENV=pypy
+    - SUBDIR=python TOX_ENV=cover
+    - SUBDIR=python TOX_ENV=flake8
+
+install:
+  - make -C $SUBDIR install
+
+script:
+  - make -C $SUBDIR test_ci
+
+after_success:
+  - cd $SUBDIR && coveralls -v
+
+#
+# cache dependencies and directories
+# note this can be used on public repos when using container-based infra
+# @see http://docs.travis-ci.com/user/caching/
+# @see http://stackoverflow.com/questions/22024789/speeding-up-travis-ci-dependencies-installation-for-angularjs-project
+# @see https://github.com/rgalanakis/goless/blob/master/.travis.yml
+#
+cache:
+  directories:
+    - .tox
+    - $HOME/.cache/pip
