@@ -1,24 +1,24 @@
-TChannel.py
-===========
+TChannel
+========
 
 |build-status| |coverage| |docs|
 
-TChannel.py is a Python implementation of `TChannel`_.
+A Python implementation of `TChannel`_.
 
 `Documentation`_ is available on Read the docs.
 
 .. _TChannel: https://github.com/uber/tchannel
 .. _Documentation: http://tchannel.readthedocs.org/en/latest/
 
-.. |build-status| image:: https://travis-ci.org/uber/tchannel.py.svg?branch=master
+.. |build-status| image:: https://travis-ci.org/uber/tchannel-python.svg?branch=master
     :alt: build status
     :scale: 100%
-    :target: https://travis-ci.org/uber/tchannel.py
+    :target: https://travis-ci.org/uber/tchannel-python
 
-.. |coverage| image:: https://coveralls.io/repos/uber/tchannel.py/badge.svg?branch=master
+.. |coverage| image:: https://coveralls.io/repos/uber/tchannel-python/badge.svg?branch=master&service=github
     :alt: coverage
     :scale: 100%
-    :target: https://coveralls.io/r/uber/tchannel.py?branch=master
+    :target: https://coveralls.io/github/uber/tchannel-python?branch=master
 
 .. |docs| image:: https://readthedocs.org/projects/tchannel/badge/?version=latest
     :alt: documentation
