@@ -14,20 +14,20 @@ sudo: false
 #
 language: python
 env:
-    - SUBDIR=python TOX_ENV=py27
-    #- SUBDIR=python TOX_ENV=py34
-    #- SUBDIR=python TOX_ENV=pypy
-    - SUBDIR=python TOX_ENV=cover
-    - SUBDIR=python TOX_ENV=flake8
+    - TOX_ENV=py27
+    #- TOX_ENV=py34
+    #- TOX_ENV=pypy
+    - TOX_ENV=cover
+    - TOX_ENV=flake8
 
 install:
-  - make -C $SUBDIR install
+  - make install
 
 script:
-  - make -C $SUBDIR test_ci
+  - make test_ci
 
 after_success:
-  - cd $SUBDIR && coveralls -v
+  - coveralls -v
 
 #
 # cache dependencies and directories
