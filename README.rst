@@ -8,7 +8,8 @@ A Python implementation of `TChannel`_.
 `Documentation`_ is available on Read the docs.
 
 .. _TChannel: https://github.com/uber/tchannel
-.. _Documentation: http://tchannel.readthedocs.org/en/latest/
+
+.. _Documentation: http://tchannel-python.readthedocs.org/en/latest/
 
 .. |build-status| image:: https://travis-ci.org/uber/tchannel-python.svg?branch=master
     :alt: build status
@@ -23,4 +24,4 @@ A Python implementation of `TChannel`_.
 .. |docs| image:: https://readthedocs.org/projects/tchannel/badge/?version=latest
     :alt: documentation
     :scale: 100%
-    :target: http://tchannel.readthedocs.org/en/latest/
+    :target: http://tchannel-python.readthedocs.org/en/latest/
