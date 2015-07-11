@@ -1,21 +1,37 @@
-.. TChannel documentation master file, created by
-   sphinx-quickstart on Thu Feb 19 12:49:33 2015.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+TChannel
+========
 
-Welcome to TChannel's documentation!
-====================================
 
-Contents:
+|build-status| |coverage| |docs|
+
+
+A Python implementation of `TChannel`_.
+
+
+.. _TChannel: https://github.com/uber/tchannel
+
+.. |build-status| image:: https://travis-ci.org/uber/tchannel-python.svg?branch=master
+    :alt: build status
+    :scale: 100%
+    :target: https://travis-ci.org/uber/tchannel-python
+
+.. |coverage| image:: https://coveralls.io/repos/uber/tchannel-python/badge.svg?branch=master&service=github
+    :alt: coverage
+    :scale: 100%
+    :target: https://coveralls.io/github/uber/tchannel-python?branch=master
+
+.. |docs| image:: https://readthedocs.org/projects/tchannel/badge/?version=latest
+    :alt: documentation
+    :scale: 100%
+    :target: http://tchannel-python.readthedocs.org/en/latest/
+
 
 .. toctree::
    :maxdepth: 2
 
+   guide
    api
 
-
-Additional Notes
-----------------
 
 .. toctree::
    :maxdepth: 2

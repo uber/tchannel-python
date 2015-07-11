@@ -1,8 +1,9 @@
-==============================================
-Creating a Python + Thrift + Hyperbahn Service
-==============================================
+=============================
+Getting Started with TChannel
+=============================
 
-The code matching this guide is `here <./examples/thrift_examples>`_.
+The code matching this guide is
+`here <https://github.com/uber/tchannel-python/tree/master/examples>`_.
 
 
 -------------
