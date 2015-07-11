@@ -20,18 +20,25 @@ Framing
 Exceptions
 ----------
 
-.. automodule:: tchannel.exceptions
+.. automodule:: tchannel.errors
     :members:
 
 Connection
 ----------
 
-.. automodule:: tchannel.connection
+.. automodule:: tchannel.tornado.connection
     :members:
 
 
-Context
+Request
 -------
 
-.. automodule:: tchannel.context
+.. automodule:: tchannel.tornado.request
+    :members:
+
+
+Response
+--------
+
+.. automodule:: tchannel.tornado.response
     :members:
