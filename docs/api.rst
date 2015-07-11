@@ -1,5 +1,5 @@
-TChannel API
-============
+API Documentation
+=================
 
 
 Messages
