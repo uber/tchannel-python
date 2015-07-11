@@ -10,6 +10,8 @@ Changelog
 0.10.1 (2015-07-10)
 -------------------
 
+- Previous release was broken with older versions of pip.
+
 
 0.10.0 (2015-07-10)
 -------------------
