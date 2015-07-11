@@ -241,8 +241,8 @@ provides some additional information about the current request under the
 ``transport.headers``
     Protocol level headers for the request. For more information on transport
     headers check the
-    `Transport Headers <../docs/protocol.md#transport-headers>`_ section of the
-    protocol document.
+    `Transport Headers <https://github.com/uber/tchannel/blob/master/docs/protocol.md#transport-headers>`_
+    section of the protocol document.
 
 ---------
 Hyperbahn
