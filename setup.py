@@ -9,7 +9,7 @@ setup(
     description='Network multiplexing and framing protocol for RPC',
     license='MIT',
     url='https://github.com/uber/tchannel',
-    packages=find_packages(include=['tchannel.*']),
+    packages=find_packages(exclude=['tests.*']),
     install_requires=[
         'contextlib2',
         'crcmod',
