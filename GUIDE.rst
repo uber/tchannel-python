@@ -2,7 +2,7 @@
 Creating a Python + Thrift + Hyperbahn Service
 ==============================================
 
-The code matching this guide is `here <../python/examples/thrift_examples>`_.
+The code matching this guide is `here <./examples/thrift_examples>`_.
 
 
 -------------
