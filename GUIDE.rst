@@ -1,6 +1,6 @@
-=============================
-Getting Started with TChannel
-=============================
+===============
+Getting Started
+===============
 
 The code matching this guide is
 `here <https://github.com/uber/tchannel-python/tree/master/examples>`_.

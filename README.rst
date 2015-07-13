@@ -5,7 +5,7 @@ TChannel
 
 A Python implementation of `TChannel`_.
 
-`Documentation`_ is available on Read the docs.
+`Documentation`_ is available on Read the Docs.
 
 .. _TChannel: https://github.com/uber/tchannel
 
