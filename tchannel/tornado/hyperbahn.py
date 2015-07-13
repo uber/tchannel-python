@@ -29,8 +29,6 @@ import tornado.gen
 import tornado.ioloop
 
 from ..errors import AdvertiseError
-from ..errors import ProtocolError
-from ..errors import TimeoutError
 from .response import StatusCode
 
 DEFAULT_EXPO_BASE = 1.4  # try this first
@@ -68,7 +66,7 @@ def _advertise(tchannel, service):
             headers={'as': 'json'},
             attempt_times=1,
         )
-    except (ProtocolError, TimeoutError) as e:
+    except Exception as e:  # Big scope to keep it alive.
         log.error('Failed to register with Hyperbahn: %s', e)
     else:
         if response.code != StatusCode.ok:
