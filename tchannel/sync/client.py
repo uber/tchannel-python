@@ -133,7 +133,6 @@ class SyncClientOperation(object):
             raise gen.Return(result)
 
         future = self.threadloop.submit(make_request)
-
         return future
 
 

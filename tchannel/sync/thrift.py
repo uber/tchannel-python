@@ -20,8 +20,7 @@
 
 from __future__ import absolute_import
 
-import inspect
-
+from tchannel.thrift.util import get_service_methods
 from tchannel.thrift.client import client_for as async_client_for
 
 
@@ -69,11 +68,7 @@ def client_for(service, service_module, thrift_service_name=None):
     if not thrift_service_name:
         thrift_service_name = service_module.__name__.rsplit('.', 1)[-1]
 
-    method_names = [
-        name for (name, _) in inspect.getmembers(
-            service_module.Iface, predicate=inspect.ismethod
-        )
-    ]
+    method_names = get_service_methods(service_module.Iface)
 
     def init(self, tchannel_sync, hostport=None, trace=False):
         self.async_thrift = self.__async_client_class__(

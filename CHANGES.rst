@@ -4,7 +4,7 @@ Changelog
 0.10.3 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Support PyPy 2.
 
 
 0.10.2 (2015-07-13)

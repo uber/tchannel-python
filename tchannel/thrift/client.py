@@ -29,6 +29,7 @@ from tornado import gen
 from tchannel.tornado.broker import ArgSchemeBroker
 
 from .scheme import ThriftArgScheme
+from .util import get_service_methods
 
 # Generated clients will use this base class.
 _ClientBase = namedtuple('_ClientBase', 'tchannel hostport service trace')
@@ -72,11 +73,7 @@ def client_for(service, service_module, thrift_service_name=None):
     if not thrift_service_name:
         thrift_service_name = service_module.__name__.rsplit('.', 1)[-1]
 
-    method_names = [
-        name for (name, _) in inspect.getmembers(
-            service_module.Iface, predicate=inspect.ismethod
-        )
-    ]
+    method_names = get_service_methods(service_module.Iface)
 
     def new(cls, tchannel, hostport=None, trace=False):
         """
