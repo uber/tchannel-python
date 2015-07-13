@@ -2,7 +2,7 @@ TChannel
 ========
 
 
-|build-status| |coverage| |docs|
+|build-status| |coverage|
 
 
 A Python implementation of `TChannel`_.
@@ -20,20 +20,10 @@ A Python implementation of `TChannel`_.
     :scale: 100%
     :target: https://coveralls.io/github/uber/tchannel-python?branch=master
 
-.. |docs| image:: https://readthedocs.org/projects/tchannel/badge/?version=latest
-    :alt: documentation
-    :scale: 100%
-    :target: http://tchannel-python.readthedocs.org/en/latest/
-
 
 .. toctree::
    :maxdepth: 2
 
    guide
    api
-
-
-.. toctree::
-   :maxdepth: 2
-
    changelog
