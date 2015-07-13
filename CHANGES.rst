@@ -4,7 +4,7 @@ Changelog
 0.10.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Made ``TChannel.advertise`` retry on all exceptions
 
 
 0.10.1 (2015-07-10)
