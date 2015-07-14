@@ -1,7 +1,7 @@
 TChannel
 ========
 
-|build-status| |coverage| |docs|
+|build-status| |coverage| |docs| |pypi| 
 
 A Python implementation of `TChannel`_.
 
@@ -12,16 +12,13 @@ A Python implementation of `TChannel`_.
 .. _Documentation: http://tchannel-python.readthedocs.org/en/latest/
 
 .. |build-status| image:: https://travis-ci.org/uber/tchannel-python.svg?branch=master
-    :alt: build status
-    :scale: 100%
     :target: https://travis-ci.org/uber/tchannel-python
 
 .. |coverage| image:: https://coveralls.io/repos/uber/tchannel-python/badge.svg?branch=master&service=github
-    :alt: coverage
-    :scale: 100%
     :target: https://coveralls.io/github/uber/tchannel-python?branch=master
 
 .. |docs| image:: https://readthedocs.org/projects/tchannel/badge/?version=latest
-    :alt: documentation
-    :scale: 100%
     :target: http://tchannel-python.readthedocs.org/en/latest/
+
+.. |pypi| image:: https://badge.fury.io/py/tchannel.svg
+    :target: http://badge.fury.io/py/tchannel
