@@ -207,7 +207,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   ('index', 'TChannel.tex', u'TChannel Documentation',
-   u'Aiden Scandella', 'manual'),
+   u'Uber Technologies, Inc.', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -237,7 +237,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'tchannel', u'TChannel Documentation',
-     [u'Aiden Scandella'], 1)
+     [u'Uber Technologies, Inc.'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -251,7 +251,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'TChannel', u'TChannel Documentation',
-   u'Aiden Scandella', 'TChannel', 'One line description of project.',
+   u'Uber Technologies, Inc.', 'TChannel', 'Python client for TChannel'
    'Miscellaneous'),
 ]
 
