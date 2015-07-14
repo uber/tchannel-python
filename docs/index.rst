@@ -8,7 +8,7 @@ TChannel for Python
 A Python implementation of `TChannel`_.
 
 
-.. _TChannel: tchannel.readthedocs.org
+.. _TChannel: http://tchannel.readthedocs.org/
 
 .. |build-status| image:: https://travis-ci.org/uber/tchannel-python.svg?branch=master
     :alt: build status
