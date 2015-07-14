@@ -5,12 +5,13 @@ Changelog
 -------------------
 
 - Support PyPy 2.
+- Fix bugs in ``TChannel.advertise``.
 
 
 0.10.2 (2015-07-13)
 -------------------
 
-- Made ``TChannel.advertise`` retry on all exceptions
+- Made ``TChannel.advertise`` retry on all exceptions.
 
 
 0.10.1 (2015-07-10)
