@@ -1,5 +1,5 @@
-TChannel
-========
+TChannel for Python
+===================
 
 
 |build-status| |coverage|

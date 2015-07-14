@@ -1,7 +1,7 @@
-TChannel
-========
+TChannel for Python
+===================
 
-|build-status| |coverage| |docs| |pypi| 
+|build-status| |coverage| |docs| |pypi|
 
 A Python implementation of `TChannel`_.
 
