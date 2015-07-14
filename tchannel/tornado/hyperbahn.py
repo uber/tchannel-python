@@ -84,7 +84,7 @@ def _advertise_with_backoff(tchannel, service, timeout=None):
     start = time.time()
 
     while True:
-        if timeout and time.time() - start > 30000:
+        if timeout and time.time() - start > 30:
             raise AdvertiseError("Failed to register with Hyperbahn.")
 
         response = yield _advertise(tchannel, service)
@@ -130,9 +130,7 @@ def advertise(tchannel, service, routers):
     )
 
     advertise_loop = tornado.ioloop.PeriodicCallback(
-        lambda f: _advertise_with_backoff(
-            tchannel, service, timeout=None
-        ),
+        lambda: _advertise_with_backoff(tchannel, service, timeout=None),
         DEFAULT_DELAY,
     )
     advertise_loop.start()
