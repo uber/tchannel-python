@@ -4,7 +4,7 @@ Changelog
 0.10.4 (unreleased)
 -------------------
 
-- Documentation.
+- Nothing changed yet.
 
 
 0.10.3 (2015-07-13)

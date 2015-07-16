@@ -5,27 +5,16 @@ API Documentation
 TChannel
 --------
 
-.. automodule:: tchannel.tornado.tchannel
+.. autoclass:: tchannel.tornado.TChannel
     :members:
 
-
-Request Dispatch
-----------------
-.. automodule:: tchannel.tornado.dispatch
+.. autoclass:: tchannel.tornado.RequestDispatcher
     :members:
 
-
-Request
--------
-
-.. automodule:: tchannel.tornado.request
+.. autoclass:: tchannel.tornado.Request
     :members:
 
-
-Response
---------
-
-.. automodule:: tchannel.tornado.response
+.. autoclass:: tchannel.tornado.Response
     :members:
 
 
@@ -40,9 +29,6 @@ Thrift
 ------
 
 .. automodule:: tchannel.thrift.client
-    :members:
-
-.. automodule:: tchannel.thrift.server
     :members:
 
 
