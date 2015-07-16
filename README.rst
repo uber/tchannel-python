@@ -17,7 +17,7 @@ A Python implementation of `TChannel`_.
 .. |coverage| image:: https://coveralls.io/repos/uber/tchannel-python/badge.svg?branch=master&service=github
     :target: https://coveralls.io/github/uber/tchannel-python?branch=master
 
-.. |docs| image:: https://readthedocs.org/projects/tchannel/badge/?version=latest
+.. |docs| image:: https://readthedocs.org/projects/tchannel-python/badge/?version=latest
     :target: http://tchannel-python.readthedocs.org/en/latest/
 
 .. |pypi| image:: https://badge.fury.io/py/tchannel.svg
