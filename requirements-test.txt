@@ -6,7 +6,6 @@ pytest-timeout
 pytest-tornado
 
 # Property based tests
-hypothesis==1.7.2
 hypothesis-pytest==0.12.0
 
 # Integration test utilities
