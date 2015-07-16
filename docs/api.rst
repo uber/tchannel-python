@@ -2,18 +2,19 @@ API Documentation
 =================
 
 
-Messages
+TChannel
 --------
 
-.. automodule:: tchannel.messages
+.. autoclass:: tchannel.tornado.TChannel
     :members:
-    :imported-members:
 
+.. autoclass:: tchannel.tornado.RequestDispatcher
+    :members:
 
-Framing
--------
+.. autoclass:: tchannel.tornado.Request
+    :members:
 
-.. automodule:: tchannel.frame
+.. autoclass:: tchannel.tornado.Response
     :members:
 
 
@@ -23,22 +24,19 @@ Exceptions
 .. automodule:: tchannel.errors
     :members:
 
-Connection
-----------
 
-.. automodule:: tchannel.tornado.connection
+Thrift
+------
+
+.. automodule:: tchannel.thrift.client
     :members:
 
 
-Request
--------
+Synchronous Client
+------------------
 
-.. automodule:: tchannel.tornado.request
+.. automodule:: tchannel.sync.client
     :members:
 
-
-Response
---------
-
-.. automodule:: tchannel.tornado.response
+.. automodule:: tchannel.sync.thrift
     :members:
