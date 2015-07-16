@@ -14,7 +14,7 @@ TEST_LOG_FILE=test-server.log
 
 .DEFAULT_GOAL := test-lint
 
-.PHONY: install test test_ci test-lint testhtml clean lint release
+.PHONY: install test test_ci test-lint testhtml clean lint release docs
 
 env/bin/activate:
 	virtualenv env
@@ -55,6 +55,9 @@ lint:
 	@$(flake8) $(project) tests examples
 
 test-lint: test lint
+
+docs:
+	make -C docs html
 
 release:
 	# TODO: zest releaser. For now version bumps are manual.
