@@ -25,15 +25,16 @@ from tchannel.tornado import TChannel
 from service import KeyValue
 
 
+KeyValueClient = client_for('keyvalue-server', KeyValue)
+
+
 @gen.coroutine
 def run():
     app_name = 'keyvalue-client'
 
     app = TChannel(app_name)
 
-    client_class = client_for('keyvalue-server', KeyValue)
-
-    client = client_class(app, 'localhost:8889')
+    client = KeyValueClient(app, 'localhost:8889')
 
     yield client.setValue("foo", "bar")
 
