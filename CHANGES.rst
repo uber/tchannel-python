@@ -4,7 +4,8 @@ Changelog
 0.10.4 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Added advertise support to sync client in `tchannel.sync.TChannelSyncClient.advertise`.
+- **BREAKING**  - renamed `router` argument to `routers` in `tchannel.tornado.TChannel.advertise`.
 
 
 0.10.3 (2015-07-13)

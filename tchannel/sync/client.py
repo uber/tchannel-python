@@ -89,12 +89,20 @@ class TChannelSyncClient(object):
         return operation
 
     def advertise(self, routers, name=None, timeout=None):
+        """Advertise with Hyperbahn.
+
+        :param routers: list of hyperbahn addresses to advertise to.
+        :param name: service name to advertise with.
+        :param timeout: backoff period for failed requests.
+        :returns: first advertise result.
+        :raises AdvertiseError: when unable to begin advertising.
+        """
 
         @gen.coroutine
         def make_request():
 
             response = yield self.async_client.advertise(
-                router=routers,
+                routers=routers,
                 name=name,
                 timeout=timeout,
             )
@@ -129,10 +137,8 @@ class TChannelSyncClient(object):
 class SyncClientOperation(object):
     """Allows making client operation requests synchronously.
 
-    Composes a tchannel.
-
     This object acts like tchannel.TChannelClientOperation, but instead
-    uses a temporary ioloop to make the request synchronously.
+    uses a threadloop to make the request synchronously.
     """
 
     def __init__(self, operation, threadloop):

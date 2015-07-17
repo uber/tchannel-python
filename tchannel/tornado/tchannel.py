@@ -126,7 +126,7 @@ class TChannel(object):
         else:
             return self._trace
 
-    def advertise(self, router, name=None, timeout=None):
+    def advertise(self, routers, name=None, timeout=None):
         """Advertise the given TChannel to Hyperbahn.
 
         This informs Hyperbahn that the given client/service is using TChannel
@@ -143,7 +143,7 @@ class TChannel(object):
             the first advertise finishes.
         """
         name = name or self.name
-        return hyperbahn.advertise(self, name, router, timeout)
+        return hyperbahn.advertise(self, name, routers, timeout)
 
     @property
     def closed(self):
