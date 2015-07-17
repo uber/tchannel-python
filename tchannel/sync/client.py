@@ -21,13 +21,14 @@
 from __future__ import absolute_import
 
 from collections import namedtuple
+from concurrent.futures import TimeoutError
 
 from threadloop import ThreadLoop
 from tornado import gen
 
 from tchannel import glossary
 from tchannel import tornado as async
-from tchannel.tornado.hyperbahn import FIRST_ADVERTISE_TIME
+from tchannel.tornado.hyperbahn import FIRST_ADVERTISE_TIME, AdvertiseError
 
 
 class TChannelSyncClient(object):
@@ -107,14 +108,20 @@ class TChannelSyncClient(object):
 
         future = self.threadloop.submit(make_request)
 
-        # we're going to wait 10% longer, or at max 1s,
-        # so advertise has a chance to timeout by itself
+        # we're going to wait 1s longer than advertises
+        # timeout mechanism, so it has a chance to timeout
         wait_until = timeout or FIRST_ADVERTISE_TIME
         wait_until += 1
 
         # block for advertise's first response,
         # using wait_until as a fallback timeout mechanism
-        result = future.result(wait_until)
+        try:
+            result = future.result(wait_until)
+        except TimeoutError:
+            raise AdvertiseError(
+                "Failed to register with Hyperbahn "
+                "(advertise did not timeout in time)"
+            )
 
         return result
 
