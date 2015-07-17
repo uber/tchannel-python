@@ -34,7 +34,8 @@ def run():
 
     app = TChannel(app_name)
 
-    client = KeyValueClient(app, 'localhost:8889')
+    # Note: When using Hyperbahn this `hostport` option is *NOT NEEDED*.
+    client = KeyValueClient(app, hostport='localhost:8889')
 
     yield client.setValue("foo", "bar")
 
