@@ -85,6 +85,30 @@ class TChannelSyncClient(object):
 
         return operation
 
+    def advertise(self, routers, name=None):
+
+        @gen.coroutine
+        def make_request():
+
+            response = yield self.async_client.advertise(
+                routers, name
+            )
+
+            import ipdb
+            ipdb.set_trace()
+
+            header = yield response.get_header()
+            body = yield response.get_body()
+
+            result = Response(header, body)
+
+            raise gen.Return(result)
+
+        future = self.threadloop.submit(make_request)
+        result = future.result()
+
+        return result
+
 
 class SyncClientOperation(object):
     """Allows making client operation requests synchronously.

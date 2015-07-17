@@ -20,6 +20,8 @@
 
 from __future__ import absolute_import
 
+import json
+
 import pytest
 
 from tchannel.sync import TChannelSyncClient
@@ -43,3 +45,30 @@ def test_sync_client_should_get_raw_response(tchannel_server):
 
     assert response.header == ""
     assert response.body == "OK"
+
+
+@pytest.mark.integration
+def test_advertise_should_result_in_peer_connections(tchannel_server):
+
+    body = {"hello": "world"}
+
+    tchannel_server.expect_call('ad', 'json').and_write(
+        headers="",
+        body=body,
+    )
+
+    routers = [
+        tchannel_server.tchannel.hostport
+    ]
+
+    client = TChannelSyncClient('test-client')
+    result = client.advertise(routers)
+
+    assert result.header == ""
+    # @todo https://github.com/uber/tchannel/issues/969
+    assert result.body == json.dumps(body)
+    assert client.async_client.peers.hosts == routers
+
+
+def test_advertise_exception_should_propagate(tchannel_server):
+    pass
