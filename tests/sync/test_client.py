@@ -85,3 +85,11 @@ def test_failing_advertise_should_raise(tchannel_server):
 
     with pytest.raises(AdvertiseError):
         client.advertise(routers, timeout=0.1)
+
+
+def test_should_discover_ip():
+
+    client = TChannelSyncClient('test-client')
+    hostport = client.async_client.hostport
+
+    assert '0.0.0.0:0' != hostport

@@ -26,7 +26,6 @@ from concurrent.futures import TimeoutError
 from threadloop import ThreadLoop
 from tornado import gen
 
-from tchannel import glossary
 from tchannel import tornado as async
 from tchannel.tornado.hyperbahn import FIRST_ADVERTISE_TIME, AdvertiseError
 
@@ -60,7 +59,6 @@ class TChannelSyncClient(object):
         """
         self.async_client = async.TChannel(
             name,
-            hostport=glossary.EPHEMERAL_HOSTPORT,
             process_name=process_name,
             known_peers=known_peers,
             trace=trace
