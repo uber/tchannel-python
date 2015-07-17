@@ -143,7 +143,8 @@ class TChannel(object):
 
         :param name:
             The identity of this service on the Hyperbahn. If not specified,
-            then the :class:`TChannel` must have been initialized with a name.
+            then the :py:class:`TChannel` must have been initialized with a
+            name.
 
         :returns:
             A future that resolves to the remote server's response after
