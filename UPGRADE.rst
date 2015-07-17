@@ -12,5 +12,6 @@ From 0.10 to 0.11
   using as kwarg will break.
 
   Before: ``tchannel.advertise(router=['localhost:21300'])``
+
   After: ``tchannel.advertise(routers=['localhost:21300'])``
 
