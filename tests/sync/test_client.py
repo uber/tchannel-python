@@ -65,7 +65,7 @@ def test_advertise_should_result_in_peer_connections(tchannel_server):
     result = client.advertise(routers)
 
     assert result.header == ""
-    # @todo https://github.com/uber/tchannel/issues/969
+    # @todo https://github.com/uber/tchannel-python/issues/34
     assert result.body == json.dumps(body)
     assert client.async_client.peers.hosts == routers
 
