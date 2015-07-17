@@ -126,8 +126,7 @@ class TChannelSyncClient(object):
             result = future.result(wait_until)
         except TimeoutError:
             raise AdvertiseError(
-                "Failed to register with Hyperbahn "
-                "(advertise did not timeout in time)"
+                "Failed to register with Hyperbahn."
             )
 
         return result
