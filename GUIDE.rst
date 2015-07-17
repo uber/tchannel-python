@@ -2,8 +2,8 @@
 Getting Started
 ===============
 
-The code matching this guide is
-`here <https://github.com/uber/tchannel-python/tree/master/examples>`_.
+The code matching this guide is `here
+<https://github.com/uber/tchannel-python/tree/master/examples/keyvalue>`_.
 
 
 -------------
@@ -54,13 +54,13 @@ Create a `Thrift <https://thrift.apache.org/>`_ file under
     }
 
     service KeyValue {
-        string get(
+        string getValue(
             1: string key,
         ) throws (
             1: NotFoundError notFound,
         )
 
-        string set(
+        void setValue(
             1: string key,
             2: string value,
         )
@@ -69,9 +69,9 @@ Create a `Thrift <https://thrift.apache.org/>`_ file under
 \
 This defines a service named ``KeyValue`` with two functions:
 
-``get``
+``getValue``
     a function which takes one string parameter, and returns a string.
-``set``
+``setValue``
     a void function that takes in two parameters.
 
 Once you have defined your service, generate corresponding Thrift types by
@@ -88,7 +88,7 @@ You may want to verify that your thrift code was generated successfully:
 
 .. code-block:: bash
 
-    $ python -m service.KeyValue
+    $ python -m keyvalue.service.KeyValue
 
 
 -------------
@@ -113,12 +113,12 @@ something like this:
 
 
     @app.register(KeyValue)
-    def Get(request, response, tchannel):
+    def getValue(request, response, tchannel):
         pass
 
 
     @app.register(KeyValue)
-    def Set(request, response, tchannel):
+    def setValue(request, response, tchannel):
         pass
 
 
@@ -179,7 +179,7 @@ our endpoints will manipulate:
 
 
     @app.register(KeyValue)
-    def Get(request, response, tchannel):
+    def getValue(request, response, tchannel):
         key = request.args.key
         value = values.get(key)
 
@@ -190,7 +190,7 @@ our endpoints will manipulate:
 
 
     @app.register(KeyValue)
-    def Set(request, response, tchannel):
+    def setValue(request, response, tchannel):
         key = request.args.key
         value = request.args.value
         values[key] = value
@@ -208,7 +208,7 @@ define our handlers as coroutines and yield to IO operations:
 
     @app.register(KeyValue)
     @tornado.gen.coroutine
-    def Set(request, response, tchannel):
+    def setValue(request, response, tchannel):
         key = request.args.key
         value = request.args.value
 
