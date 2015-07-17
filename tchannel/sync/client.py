@@ -94,9 +94,6 @@ class TChannelSyncClient(object):
                 routers, name
             )
 
-            import ipdb
-            ipdb.set_trace()
-
             header = yield response.get_header()
             body = yield response.get_body()
 
