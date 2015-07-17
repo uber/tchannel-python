@@ -31,20 +31,20 @@ import tornado.ioloop
 from ..errors import AdvertiseError
 from .response import StatusCode
 
-DEFAULT_EXPO_BASE = 1.4  # try this first
-DEFAULT_MAX_DELAY = 10  # sec
-DEFAULT_MAX_ATTEMPT = 7  # pow(1.4, 8) > 10
-DEFAULT_DELAY = 60 * 1000  # ms delay time for successful advertise
-DEFAULT_FIRST_ADVERTISE_TIME = 30  # sec
+EXPO_BASE = 1.4  # try this first
+MAX_DELAY = 10  # sec
+MAX_ATTEMPT = 7  # pow(1.4, 8) > 10
+DELAY = 60 * 1000  # ms delay time for successful advertise
+FIRST_ADVERTISE_TIME = 30  # sec
 
 log = logging.getLogger('tchannel')
 
 
 def _prepare_next_ad(attempt_counter):
     delay_time = random.uniform(
-        0, min(DEFAULT_MAX_DELAY, DEFAULT_EXPO_BASE ** attempt_counter)
+        0, min(MAX_DELAY, EXPO_BASE ** attempt_counter)
     )
-    attempt_counter = min(attempt_counter, DEFAULT_MAX_ATTEMPT)
+    attempt_counter = min(attempt_counter, MAX_ATTEMPT)
     return attempt_counter, delay_time
 
 
@@ -84,7 +84,7 @@ def _advertise_with_backoff(tchannel, service, timeout=None):
     start = time.time()
 
     while True:
-        if timeout and time.time() - start > 30:
+        if timeout and time.time() - start > timeout:
             raise AdvertiseError("Failed to register with Hyperbahn.")
 
         response = yield _advertise(tchannel, service)
@@ -101,7 +101,7 @@ def _advertise_with_backoff(tchannel, service, timeout=None):
 
 
 @tornado.gen.coroutine
-def advertise(tchannel, service, routers):
+def advertise(tchannel, service, routers, timeout=None):
     """Advertise the given TChannel to Hyperbahn using the given name.
 
     This informs Hyperbahn that the given service is hosted at this TChannel
@@ -119,6 +119,7 @@ def advertise(tchannel, service, routers):
         A future that resolves to the remote server's response after the first
         advertise finishes.
     """
+    timeout = timeout or FIRST_ADVERTISE_TIME
 
     for router in routers:
         # We use .get here instead of .add because we don't want to fail if a
@@ -126,12 +127,12 @@ def advertise(tchannel, service, routers):
         tchannel.peers.get(router)
 
     result = yield _advertise_with_backoff(
-        tchannel, service, timeout=DEFAULT_FIRST_ADVERTISE_TIME
+        tchannel, service, timeout=timeout
     )
 
     advertise_loop = tornado.ioloop.PeriodicCallback(
         lambda: _advertise_with_backoff(tchannel, service, timeout=None),
-        DEFAULT_DELAY,
+        DELAY,
     )
     advertise_loop.start()
 

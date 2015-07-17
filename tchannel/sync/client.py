@@ -85,13 +85,15 @@ class TChannelSyncClient(object):
 
         return operation
 
-    def advertise(self, routers, name=None):
+    def advertise(self, routers, name=None, timeout=None):
 
         @gen.coroutine
         def make_request():
 
             response = yield self.async_client.advertise(
-                routers, name
+                router=routers,
+                name=name,
+                timeout=timeout,
             )
 
             header = yield response.get_header()

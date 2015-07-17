@@ -25,6 +25,7 @@ import json
 import pytest
 
 from tchannel.sync import TChannelSyncClient
+from tchannel.tornado.hyperbahn import AdvertiseError
 
 
 @pytest.mark.integration
@@ -35,7 +36,7 @@ def test_sync_client_should_get_raw_response(tchannel_server):
         headers="",
         body="OK"
     )
-    hostport = 'localhost:%d' % tchannel_server.port
+    hostport = tchannel_server.tchannel.hostport
 
     client = TChannelSyncClient('test-client')
     request = client.request(hostport)
@@ -70,5 +71,17 @@ def test_advertise_should_result_in_peer_connections(tchannel_server):
     assert client.async_client.peers.hosts == routers
 
 
-def test_advertise_exception_should_propagate(tchannel_server):
-    pass
+def test_failing_advertise_should_raise(tchannel_server):
+
+    tchannel_server.expect_call('ad', 'json').and_raise(
+        Exception('great sadness')
+    )
+
+    routers = [
+        tchannel_server.tchannel.hostport
+    ]
+
+    client = TChannelSyncClient('test-client')
+
+    with pytest.raises(AdvertiseError):
+        client.advertise(routers, timeout=0.005)
