@@ -67,7 +67,6 @@ class TChannelSyncClient(object):
         )
         self.threadloop = ThreadLoop()
         self.threadloop.start()
-        self.wait_on_advertise_until = 1
 
     def request(self, *args, **kwargs):
         """Initiate a new request to a peer.
