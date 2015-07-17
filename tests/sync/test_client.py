@@ -84,4 +84,4 @@ def test_failing_advertise_should_raise(tchannel_server):
     client = TChannelSyncClient('test-client')
 
     with pytest.raises(AdvertiseError):
-        client.advertise(routers, timeout=0.005)
+        client.advertise(routers, timeout=0.1)

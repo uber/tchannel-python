@@ -27,6 +27,7 @@ from tornado import gen
 
 from tchannel import glossary
 from tchannel import tornado as async
+from tchannel.tornado.hyperbahn import FIRST_ADVERTISE_TIME
 
 
 class TChannelSyncClient(object):
@@ -65,6 +66,7 @@ class TChannelSyncClient(object):
         )
         self.threadloop = ThreadLoop()
         self.threadloop.start()
+        self.wait_on_advertise_until = 1
 
     def request(self, *args, **kwargs):
         """Initiate a new request to a peer.
@@ -104,7 +106,15 @@ class TChannelSyncClient(object):
             raise gen.Return(result)
 
         future = self.threadloop.submit(make_request)
-        result = future.result()
+
+        # we're going to wait 10% longer, or at max 1s,
+        # so advertise has a chance to timeout by itself
+        wait_until = timeout or FIRST_ADVERTISE_TIME
+        wait_until += 1
+
+        # block for advertise's first response,
+        # using wait_until as a fallback timeout mechanism
+        result = future.result(wait_until)
 
         return result
 
