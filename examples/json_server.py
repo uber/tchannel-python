@@ -18,20 +18,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from tornado import gen
-from tornado import ioloop
+from __future__ import absolute_import
 
-from hello import HelloService
-from tchannel.thrift import client_for
+import tornado.ioloop
+
+from handlers import register_example_endpoints
+from options import get_args
 from tchannel.tornado import TChannel
 
 
-@gen.coroutine
-def run():
-    tchannel = TChannel(name='thrift-client')
-    client = client_for('hello', HelloService)(tchannel, 'localhost:4040')
-    response = yield client.hello("world")
-    print response
+def main():
+    args = get_args()
+
+    app = TChannel(
+        name='json-server',
+        hostport='%s:%d' % (args.host, args.port),
+    )
+
+    register_example_endpoints(app)
+
+    def say_hi_json(request, response, proxy):
+        return {'hi': 'Hello, world!'}
+
+    app.register(endpoint="hi-json", scheme="json", handler=say_hi_json)
+
+    app.listen()
+
+    tornado.ioloop.IOLoop.instance().start()
 
 
-ioloop.IOLoop.current().run_sync(run)
+if __name__ == '__main__':  # pragma: no cover
+    main()

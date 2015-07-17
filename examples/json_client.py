@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Copyright (c) 2015 Uber Technologies, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,25 +23,30 @@
 from __future__ import absolute_import
 
 import tornado.ioloop
+import tornado.iostream
 
-from handler import register_example_endpoints
 from options import get_args
 from tchannel.tornado import TChannel
 
 
-def main():  # pragma: no cover
+@tornado.gen.coroutine
+def main():
+
     args = get_args()
 
-    client = TChannel(
-        name='tchannel_server',
-        hostport='%s:%d' % (args.host, args.port),
+    tchannel = TChannel(name='json-client')
+
+    # TODO: This is terrible.
+    request = tchannel.request(
+        hostport='%s:%s' % (args.host, args.port),
     )
 
-    register_example_endpoints(client)
-    client.listen()
+    #response = yield request.send('hi-json', {'as': 'json'}, None)
 
-    tornado.ioloop.IOLoop.instance().start()
+    body = yield response.get_body()
+
+    print body
 
 
-if __name__ == '__main__':  # pragma: no cover
-    main()
+if __name__ == '__main__':
+    tornado.ioloop.IOLoop.instance().run_sync(main)

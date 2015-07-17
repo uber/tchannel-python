@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Copyright (c) 2015 Uber Technologies, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,25 +20,32 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from tornado import ioloop
+from __future__ import absolute_import
 
-from hello import HelloService
+import tornado.ioloop
+import tornado.iostream
+
+from options import get_args
 from tchannel.tornado import TChannel
 
-app = TChannel('thrift-server', 'localhost:4040')
 
+@tornado.gen.coroutine
+def main():
 
-@app.register(HelloService)
-def hello(request, response, tchannel):
-    name = request.args.name
-    print "Hello, %s" % name
-    return "Hello, %s" % name
+    args = get_args()
 
+    tchannel = TChannel(name='raw-client')
 
-def run():
-    app.listen()
-    ioloop.IOLoop.current().start()
+    request = tchannel.request(
+        hostport='%s:%s' % (args.host, args.port),
+    )
+
+    response = yield request.send('hi', None, None)
+
+    body = yield response.get_body()
+
+    print body
 
 
 if __name__ == '__main__':
-    run()
+    tornado.ioloop.IOLoop.instance().run_sync(main)

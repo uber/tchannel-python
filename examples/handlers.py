@@ -24,13 +24,12 @@ import random
 
 import tornado.gen
 
-from tchannel.tornado.stream import InMemStream
 from tchannel.tornado.util import print_arg
 
 
 @tornado.gen.coroutine
 def say_hi(request, response, proxy):
-    yield response.write_body("hi")
+    yield response.write_body("Hello, world!")
 
 
 @tornado.gen.coroutine
@@ -38,7 +37,7 @@ def say_ok(request, response, proxy):
     yield print_arg(request, 1)
     yield print_arg(request, 2)
 
-    response.set_body_s(InMemStream("world"))
+    response.write_body("world")
 
 
 @tornado.gen.coroutine
