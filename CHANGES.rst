@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.10.4 (unreleased)
+0.11.0 (unreleased)
 -------------------
 
 - Added advertise support to sync client in ``tchannel.sync.TChannelSyncClient.advertise``.
