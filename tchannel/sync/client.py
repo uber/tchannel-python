@@ -94,6 +94,9 @@ class TChannelSyncClient(object):
         :returns: first advertise result.
         :raises AdvertiseError: when unable to begin advertising.
         """
+        # begin listening if hasn't already
+        if not self.async_client.is_listening():
+            self.async_client.listen()
 
         @gen.coroutine
         def make_request():

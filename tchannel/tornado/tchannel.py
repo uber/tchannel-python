@@ -37,6 +37,7 @@ from .. import scheme
 from ..enum import enum
 from ..event import EventEmitter
 from ..event import EventRegistrar
+from ..errors import AlreadyListeningError
 from ..handler import CallableRequestHandler
 from ..net import local_ip
 from ..zipkin.zipkin_trace import ZipkinTraceHook
@@ -123,6 +124,9 @@ class TChannel(object):
             for peer_hostport in known_peers:
                 self.peers.add(peer_hostport)
 
+        # server created from calling listening
+        self._server = None
+
     @property
     def trace(self):
         if callable(self._trace):
@@ -155,6 +159,10 @@ class TChannel(object):
             Advertisement will continue to happen periodically.
         """
         name = name or self.name
+
+        if not self.is_listening():
+            self.listen()
+
         return hyperbahn.advertise(self, name, routers, timeout)
 
     @property
@@ -221,7 +229,16 @@ class TChannel(object):
 
         :returns:
             Returns immediately.
+
+        :raises AlreadyListeningError:
+            If listen was already called.
         """
+
+        if self.is_listening():
+            raise AlreadyListeningError(
+                "listen has already been called"
+            )
+
         if port:
             assert not self._port, "Port has already been set."
             self._port = int(port)
@@ -236,6 +253,16 @@ class TChannel(object):
         self._port = sockets[0].getsockname()[1]
 
         server.add_sockets(sockets)
+
+        # assign server so we don't listen twice
+        self._server = server
+
+    def is_listening(self):
+
+        if self._server:
+            return True
+
+        return False
 
     @tornado.gen.coroutine
     def receive_call(self, message, connection):
