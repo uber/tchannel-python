@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.11.1 (unreleased)
+0.11.1 (2015-07-17)
 -------------------
 
 - Fix sync client using ``0.0.0.0`` host which gets rejected by Hyperbahn during advertise.
