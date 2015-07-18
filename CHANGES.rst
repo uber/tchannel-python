@@ -4,7 +4,7 @@ Changelog
 0.11.3 (unreleased)
 -------------------
 
-- Add ``TChannel.is_listening()`` to determine if listen has been called.
+- Created ``TChannel.is_listening()`` to determine if listen has been called.
 - Calling ``TChannel.listen()`` more than once raises a ``tchannel.errors.AlreadyListeningError``.
 - ``TChannel.advertise()`` will automatically listen if not already.
 
