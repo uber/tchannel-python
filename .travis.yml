@@ -29,14 +29,3 @@ script:
 after_success:
   - coveralls -v
 
-#
-# cache dependencies and directories
-# note this can be used on public repos when using container-based infra
-# @see http://docs.travis-ci.com/user/caching/
-# @see http://stackoverflow.com/questions/22024789/speeding-up-travis-ci-dependencies-installation-for-angularjs-project
-# @see https://github.com/rgalanakis/goless/blob/master/.travis.yml
-#
-cache:
-  directories:
-    - .tox
-    - $HOME/.cache/pip
