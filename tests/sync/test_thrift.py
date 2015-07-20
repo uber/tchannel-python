@@ -27,25 +27,22 @@ from tchannel.sync.thrift import client_for
 
 
 @pytest.fixture
-def thrift_sync_client(tchannel_server, thrift_service):
-
+def thrift_sync_client(mock_server, thrift_service):
     ServiceClient = client_for("service", thrift_service)
-
     tchannel_sync = TChannelSyncClient('test-client')
-    hostport = 'localhost:%d' % tchannel_server.port
-
-    thrift_sync_client = ServiceClient(tchannel_sync, hostport=hostport)
-
+    thrift_sync_client = ServiceClient(
+        tchannel_sync, hostport=mock_server.hostport
+    )
     return thrift_sync_client
 
 
 @pytest.mark.integration
-def test_call(tchannel_server, thrift_sync_client, thrift_service):
+def test_call(mock_server, thrift_sync_client, thrift_service):
     expected = thrift_service.Item(
         key='foo', value=thrift_service.Value(integerValue=42)
     )
 
-    tchannel_server.expect_call(
+    mock_server.expect_call(
         thrift_service,
         'thrift',
         method='getItem',
