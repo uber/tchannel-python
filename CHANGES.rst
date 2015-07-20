@@ -4,7 +4,7 @@ Changelog
 0.11.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fix sync client's advertise - needed to call listen in thread.
 
 
 0.11.1 (2015-07-17)
