@@ -57,14 +57,14 @@ class TChannelSyncClient(object):
         :param process_name:
             Name of the calling process. Used for logging purposes only.
         """
-        self.async_client = async.TChannel(
+        self._async_client = async.TChannel(
             name,
             process_name=process_name,
             known_peers=known_peers,
             trace=trace
         )
-        self.threadloop = ThreadLoop()
-        self.threadloop.start()
+        self._threadloop = ThreadLoop()
+        self._threadloop.start()
 
     def request(self, *args, **kwargs):
         """Initiate a new request to a peer.
@@ -80,8 +80,8 @@ class TChannelSyncClient(object):
         :returns SyncClientOperation:
             An object with a ``send(arg1, arg2, arg3)`` operation.
         """
-        operation = self.async_client.request(*args, **kwargs)
-        operation = SyncClientOperation(operation, self.threadloop)
+        operation = self._async_client.request(*args, **kwargs)
+        operation = SyncClientOperation(operation, self._threadloop)
 
         return operation
 
@@ -98,7 +98,7 @@ class TChannelSyncClient(object):
         @gen.coroutine
         def make_request():
 
-            response = yield self.async_client.advertise(
+            response = yield self._async_client.advertise(
                 routers=routers,
                 name=name,
                 timeout=timeout,
@@ -111,7 +111,7 @@ class TChannelSyncClient(object):
 
             raise gen.Return(result)
 
-        future = self.threadloop.submit(make_request)
+        future = self._threadloop.submit(make_request)
 
         # we're going to wait 1s longer than advertises
         # timeout mechanism, so it has a chance to timeout
@@ -141,7 +141,7 @@ class SyncClientOperation(object):
         assert operation, "operation is required"
         assert threadloop, "threadloop.ThreadLoop is required"
         self.operation = operation
-        self.threadloop = threadloop
+        self._threadloop = threadloop
 
     def send(self, arg1, arg2, arg3):
         """Send the given triple over the wire.
@@ -174,7 +174,7 @@ class SyncClientOperation(object):
 
             raise gen.Return(result)
 
-        future = self.threadloop.submit(make_request)
+        future = self._threadloop.submit(make_request)
         return future
 
 

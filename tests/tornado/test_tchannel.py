@@ -22,6 +22,7 @@ from __future__ import absolute_import
 
 import pytest
 
+from tchannel.errors import AlreadyListeningError
 from tchannel.tornado import TChannel
 from tchannel.tornado.peer import Peer
 
@@ -49,3 +50,43 @@ def test_known_peers():
 
     for peer in peers:
         assert tchannel.peers.lookup(peer)
+
+
+def test_is_listening_should_return_false_when_listen_not_called(tchannel):
+
+    assert tchannel.is_listening() is False
+
+
+def test_is_listening_should_return_true_when_listen_called(tchannel):
+
+    tchannel.listen()
+
+    assert tchannel.is_listening() is True
+
+
+def test_should_error_if_call_listen_twice(tchannel):
+
+    tchannel.listen()
+
+    with pytest.raises(AlreadyListeningError):
+        tchannel.listen()
+
+
+def test_advertise_should_listen_if_not_called_yet(tchannel, tchannel_server):
+
+    assert tchannel.is_listening() is False
+
+    tchannel_server.expect_call('ad', 'json').and_write(
+        headers="",
+        body={"hello": "world"},
+    )
+
+    routers = [
+        tchannel_server.tchannel.hostport
+    ]
+
+    tchannel.advertise(
+        routers=routers
+    )
+
+    assert tchannel.is_listening() is True
