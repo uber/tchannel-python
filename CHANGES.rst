@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.12.0 (unreleased)
+0.12.0 (2015-07-20)
 -------------------
 
 - Add ``TChannel.is_listening()`` to determine if ``listen`` has been called.
