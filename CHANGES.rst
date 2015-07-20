@@ -8,6 +8,7 @@ Changelog
 - Calling ``TChannel.listen()`` more than once raises a ``tchannel.errors.AlreadyListeningError``.
 - ``TChannel.advertise()`` will now automatically start listening for connections
   if ``listen()`` has not already been called.
+- Use ``threadloop==0.4``.
 
 
 0.11.2 (2015-07-20)
