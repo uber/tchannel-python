@@ -81,7 +81,7 @@ def test_example(examples_dir, example_type):
     with popen(server_path):
         # :(
         import time
-        time.sleep(0.01)
+        time.sleep(0.05)
         with popen(client_path) as client:
             assert (
                 client.stdout.read() == 'Hello, world!\n'
