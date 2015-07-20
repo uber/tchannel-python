@@ -58,15 +58,3 @@ test-lint: test lint
 
 docs:
 	make -C docs html
-
-release:
-	# TODO: zest releaser. For now version bumps are manual.
-	@echo "Packaging source distribution and wheel."
-	python setup.py sdist bdist_wheel
-	@echo "Finished packaging."
-	@echo
-	@echo "-----------------------------------------------------------------"
-	@echo
-	@echo "Please check the contents of the packaged files before uploading."
-	@echo "Run the following command to upload:\n\n\
-		twine dist/tchannel-`python setup.py --version`-*.whl dist/tchannel-`python setup.py --version`.tar.gz"

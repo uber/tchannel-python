@@ -21,12 +21,13 @@
 from __future__ import absolute_import
 
 from collections import namedtuple
+from concurrent.futures import TimeoutError
 
 from threadloop import ThreadLoop
 from tornado import gen
 
-from tchannel import glossary
 from tchannel import tornado as async
+from tchannel.tornado.hyperbahn import FIRST_ADVERTISE_TIME, AdvertiseError
 
 
 class TChannelSyncClient(object):
@@ -58,7 +59,6 @@ class TChannelSyncClient(object):
         """
         self.async_client = async.TChannel(
             name,
-            hostport=glossary.EPHEMERAL_HOSTPORT,
             process_name=process_name,
             known_peers=known_peers,
             trace=trace
@@ -85,14 +85,56 @@ class TChannelSyncClient(object):
 
         return operation
 
+    def advertise(self, routers, name=None, timeout=None):
+        """Advertise with Hyperbahn.
+
+        :param routers: list of hyperbahn addresses to advertise to.
+        :param name: service name to advertise with.
+        :param timeout: backoff period for failed requests.
+        :returns: first advertise result.
+        :raises AdvertiseError: when unable to begin advertising.
+        """
+
+        @gen.coroutine
+        def make_request():
+
+            response = yield self.async_client.advertise(
+                routers=routers,
+                name=name,
+                timeout=timeout,
+            )
+
+            header = yield response.get_header()
+            body = yield response.get_body()
+
+            result = Response(header, body)
+
+            raise gen.Return(result)
+
+        future = self.threadloop.submit(make_request)
+
+        # we're going to wait 1s longer than advertises
+        # timeout mechanism, so it has a chance to timeout
+        wait_until = timeout or FIRST_ADVERTISE_TIME
+        wait_until += 1
+
+        # block for advertise's first response,
+        # using wait_until as a fallback timeout mechanism
+        try:
+            result = future.result(wait_until)
+        except TimeoutError:
+            raise AdvertiseError(
+                "Failed to register with Hyperbahn."
+            )
+
+        return result
+
 
 class SyncClientOperation(object):
     """Allows making client operation requests synchronously.
 
-    Composes a tchannel.
-
     This object acts like tchannel.TChannelClientOperation, but instead
-    uses a temporary ioloop to make the request synchronously.
+    uses a threadloop to make the request synchronously.
     """
 
     def __init__(self, operation, threadloop):

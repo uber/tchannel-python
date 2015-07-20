@@ -20,9 +20,12 @@
 
 from __future__ import absolute_import
 
+import json
+
 import pytest
 
 from tchannel.sync import TChannelSyncClient
+from tchannel.tornado.hyperbahn import AdvertiseError
 
 
 @pytest.mark.integration
@@ -33,7 +36,7 @@ def test_sync_client_should_get_raw_response(tchannel_server):
         headers="",
         body="OK"
     )
-    hostport = 'localhost:%d' % tchannel_server.port
+    hostport = tchannel_server.tchannel.hostport
 
     client = TChannelSyncClient('test-client')
     request = client.request(hostport)
@@ -43,3 +46,50 @@ def test_sync_client_should_get_raw_response(tchannel_server):
 
     assert response.header == ""
     assert response.body == "OK"
+
+
+@pytest.mark.integration
+def test_advertise_should_result_in_peer_connections(tchannel_server):
+
+    body = {"hello": "world"}
+
+    tchannel_server.expect_call('ad', 'json').and_write(
+        headers="",
+        body=body,
+    )
+
+    routers = [
+        tchannel_server.tchannel.hostport
+    ]
+
+    client = TChannelSyncClient('test-client')
+    result = client.advertise(routers)
+
+    assert result.header == ""
+    # @todo https://github.com/uber/tchannel-python/issues/34
+    assert result.body == json.dumps(body)
+    assert client.async_client.peers.hosts == routers
+
+
+def test_failing_advertise_should_raise(tchannel_server):
+
+    tchannel_server.expect_call('ad', 'json').and_raise(
+        Exception('great sadness')
+    )
+
+    routers = [
+        tchannel_server.tchannel.hostport
+    ]
+
+    client = TChannelSyncClient('test-client')
+
+    with pytest.raises(AdvertiseError):
+        client.advertise(routers, timeout=0.1)
+
+
+def test_should_discover_ip():
+
+    client = TChannelSyncClient('test-client')
+    hostport = client.async_client.hostport
+
+    assert '0.0.0.0:0' != hostport
