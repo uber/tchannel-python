@@ -124,7 +124,7 @@ class TChannel(object):
             for peer_hostport in known_peers:
                 self.peers.add(peer_hostport)
 
-        # server created from calling listening
+        # server created from calling listen()
         self._server = None
 
     @property
