@@ -39,7 +39,7 @@ def main():
 
     app.listen()
 
-    print("listening on %s" % client.hostport)
+    print("listening on %s" % app.hostport)
     sys.stdout.flush()
 
     tornado.ioloop.IOLoop.instance().start()
