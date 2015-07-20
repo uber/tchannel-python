@@ -27,6 +27,8 @@ import tornado.iostream
 
 from options import get_args
 from tchannel.tornado import TChannel
+from tchannel.tornado.broker import ArgSchemeBroker
+from tchannel.scheme import JsonArgScheme
 
 
 @tornado.gen.coroutine
@@ -36,16 +38,21 @@ def main():
 
     tchannel = TChannel(name='json-client')
 
-    # TODO: This is terrible.
+    # TODO: Make this API friendly.
     request = tchannel.request(
         hostport='%s:%s' % (args.host, args.port),
     )
 
-    #response = yield request.send('hi-json', {'as': 'json'}, None)
+    response = yield ArgSchemeBroker(JsonArgScheme()).send(
+        request,
+        'hi-json',
+        None,
+        None,
+    )
 
     body = yield response.get_body()
 
-    print body
+    print body['hi']
 
 
 if __name__ == '__main__':

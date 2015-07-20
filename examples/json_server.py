@@ -38,7 +38,7 @@ def main():
     register_example_endpoints(app)
 
     def say_hi_json(request, response, proxy):
-        return {'hi': 'Hello, world!'}
+        response.write_body({'hi': 'Hello, world!'})
 
     app.register(endpoint="hi-json", scheme="json", handler=say_hi_json)
 
