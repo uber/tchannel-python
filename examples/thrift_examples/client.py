@@ -28,10 +28,14 @@ from tchannel.tornado import TChannel
 
 @gen.coroutine
 def run():
-    tchannel = TChannel(name='thrift-client')
-    client = client_for('hello', HelloService)(tchannel, 'localhost:4040')
+    app = TChannel(name='thrift-client')
+
+    client = client_for('hello', HelloService)(app, 'localhost:8888')
+
     response = yield client.hello("world")
+
     print response
 
 
-ioloop.IOLoop.current().run_sync(run)
+if __name__ == '__main__':  # pragma: no cover
+    ioloop.IOLoop.current().run_sync(run)

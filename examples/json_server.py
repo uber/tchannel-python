@@ -18,28 +18,31 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import sys
+from __future__ import absolute_import
 
 import tornado.ioloop
 
-from handler import register_example_endpoints
+from handlers import register_example_endpoints
 from options import get_args
 from tchannel.tornado import TChannel
 
 
-def main():  # pragma: no cover
+def main():
     args = get_args()
 
-    client = TChannel(
-        name='tchannel_server',
+    app = TChannel(
+        name='json-server',
         hostport='%s:%d' % (args.host, args.port),
     )
 
-    register_example_endpoints(client)
-    client.listen()
+    register_example_endpoints(app)
 
-    print("listening on %s" % client.hostport)
-    sys.stdout.flush()
+    def say_hi_json(request, response, proxy):
+        response.write_body({'hi': 'Hello, world!'})
+
+    app.register(endpoint="hi-json", scheme="json", handler=say_hi_json)
+
+    app.listen()
 
     tornado.ioloop.IOLoop.instance().start()
 

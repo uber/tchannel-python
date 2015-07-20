@@ -10,3 +10,4 @@ htmlcov
 .tox
 *.swp
 .hypothesis/
+.DS_Store

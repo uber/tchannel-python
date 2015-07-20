@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Copyright (c) 2015 Uber Technologies, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -17,32 +19,33 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from tornado import gen
-from tornado import ioloop
-from tchannel.thrift import client_for
+
+from __future__ import absolute_import
+
+import tornado.ioloop
+import tornado.iostream
+
+from options import get_args
 from tchannel.tornado import TChannel
 
-from service import KeyValue
 
+@tornado.gen.coroutine
+def main():
 
-KeyValueClient = client_for('keyvalue-server', KeyValue)
+    args = get_args()
 
+    tchannel = TChannel(name='raw-client')
 
-@gen.coroutine
-def run():
-    app_name = 'keyvalue-client'
+    request = tchannel.request(
+        hostport='%s:%s' % (args.host, args.port),
+    )
 
-    app = TChannel(app_name)
+    response = yield request.send('hi', None, None)
 
-    # Note: When using Hyperbahn this `hostport` option is *NOT NEEDED*.
-    client = KeyValueClient(app, hostport='localhost:8889')
+    body = yield response.get_body()
 
-    yield client.setValue("foo", "Hello, world!")
-
-    response = yield client.getValue("foo")
-
-    print response
+    print body
 
 
 if __name__ == '__main__':
-    ioloop.IOLoop.current().run_sync(run)
+    tornado.ioloop.IOLoop.instance().run_sync(main)

@@ -23,14 +23,14 @@ from tornado import ioloop
 from hello import HelloService
 from tchannel.tornado import TChannel
 
-app = TChannel('thrift-server', 'localhost:4040')
+app = TChannel('thrift-server', 'localhost:8888')
 
 
 @app.register(HelloService)
 def hello(request, response, tchannel):
     name = request.args.name
-    print "Hello, %s" % name
-    return "Hello, %s" % name
+    print "Hello, %s!" % name
+    return "Hello, %s!" % name
 
 
 def run():

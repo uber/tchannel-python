@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Copyright (c) 2015 Uber Technologies, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -17,32 +19,41 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from tornado import gen
-from tornado import ioloop
-from tchannel.thrift import client_for
+
+from __future__ import absolute_import
+
+import tornado.ioloop
+import tornado.iostream
+
+from options import get_args
 from tchannel.tornado import TChannel
-
-from service import KeyValue
-
-
-KeyValueClient = client_for('keyvalue-server', KeyValue)
+from tchannel.tornado.broker import ArgSchemeBroker
+from tchannel.scheme import JsonArgScheme
 
 
-@gen.coroutine
-def run():
-    app_name = 'keyvalue-client'
+@tornado.gen.coroutine
+def main():
 
-    app = TChannel(app_name)
+    args = get_args()
 
-    # Note: When using Hyperbahn this `hostport` option is *NOT NEEDED*.
-    client = KeyValueClient(app, hostport='localhost:8889')
+    tchannel = TChannel(name='json-client')
 
-    yield client.setValue("foo", "Hello, world!")
+    # TODO: Make this API friendly.
+    request = tchannel.request(
+        hostport='%s:%s' % (args.host, args.port),
+    )
 
-    response = yield client.getValue("foo")
+    response = yield ArgSchemeBroker(JsonArgScheme()).send(
+        request,
+        'hi-json',
+        None,
+        None,
+    )
 
-    print response
+    body = yield response.get_body()
+
+    print body['hi']
 
 
 if __name__ == '__main__':
-    ioloop.IOLoop.current().run_sync(run)
+    tornado.ioloop.IOLoop.instance().run_sync(main)
