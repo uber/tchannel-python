@@ -83,11 +83,11 @@ class Response(object):
         if status not in StatusCode:
             raise TChannelError("Invalid status code!")
 
-        self.code = status.value
+        self.code = status
 
     @property
     def ok(self):
-        return self.code == StatusCode.ok.value
+        return self.code == StatusCode.ok
 
     def get_header_s(self):
         """Get the raw stream of header.
