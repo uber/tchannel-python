@@ -18,6 +18,9 @@ setup(
         'threadloop>=0.4,<0.5',
         'futures',
     ],
+    extras_require={
+        'vcr': ['PyYAML', 'mock'],
+    },
     entry_points={
         'console_scripts': [
             'tcurl.py = tchannel.tcurl:start_ioloop'
