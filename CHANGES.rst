@@ -1,6 +1,7 @@
 Changelog
 =========
 
+
 0.12.0 (unreleased)
 -------------------
 
@@ -9,6 +10,7 @@ Changelog
 - ``TChannel.advertise()`` will now automatically start listening for connections
   if ``listen()`` has not already been called.
 - Use ``threadloop==0.4``.
+- Removed ``print_arg``.
 
 
 0.11.2 (2015-07-20)

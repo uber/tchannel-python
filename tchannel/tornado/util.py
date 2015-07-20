@@ -41,20 +41,6 @@ def get_arg(context, index):
         raise TChannelError()
 
 
-@tornado.gen.coroutine
-def print_arg(request, index):
-    assert index < len(request.argstreams)
-    try:
-        chunk = yield request.argstreams[index].read()
-        print chunk
-        while chunk:
-            chunk = yield request.argstreams[index].read()
-            if chunk:
-                print chunk
-    except Exception:
-        pass
-
-
 def chain(iterable, func):
     """Apply an asynchronous function to a list of items in order.
 
