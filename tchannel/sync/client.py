@@ -98,6 +98,11 @@ class TChannelSyncClient(object):
         @gen.coroutine
         def make_request():
 
+            # begin listening in thread, note that this
+            # running listen in the main thread will cause the
+            # sync clients advertise to not work
+            self.async_client.listen()
+
             response = yield self.async_client.advertise(
                 routers=routers,
                 name=name,
