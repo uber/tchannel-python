@@ -26,12 +26,11 @@ import pytest
 
 
 @contextlib.contextmanager
-def popen(path, pipe=subprocess.PIPE):
-
+def popen(path):
     process = subprocess.Popen(
         ['python', path],
-        stdout=pipe,
-        stderr=pipe,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
     process.poll()
 
@@ -58,21 +57,28 @@ def examples_dir():
 
 @pytest.mark.parametrize(
     'example_type',
-    ['raw', 'thrift_examples/thrift', 'json']#, 'stream'],
+    [
+        'raw_',
+        'json_',
+        'thrift_examples/thrift_',
+        'keyvalue/keyvalue/',
+        #'stream_',
+    ]
 )
 def test_example(examples_dir, example_type):
+    """Smoke test example code to ensure it still runs."""
 
     server_path = os.path.join(
         examples_dir,
-        example_type + '_server.py',
+        example_type + 'server.py',
     )
 
     client_path = os.path.join(
         examples_dir,
-        example_type + '_client.py',
+        example_type + 'client.py',
     )
 
-    with popen(server_path, pipe=None):
+    with popen(server_path):
         # :(
         import time
         time.sleep(0.01)

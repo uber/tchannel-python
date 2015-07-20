@@ -37,7 +37,7 @@ def run():
     # Note: When using Hyperbahn this `hostport` option is *NOT NEEDED*.
     client = KeyValueClient(app, hostport='localhost:8889')
 
-    yield client.setValue("foo", "bar")
+    yield client.setValue("foo", "Hello, world!")
 
     response = yield client.getValue("foo")
 
