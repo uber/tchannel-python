@@ -24,20 +24,10 @@ import random
 
 import tornado.gen
 
-from tchannel.tornado.util import print_arg
-
 
 @tornado.gen.coroutine
 def say_hi(request, response, proxy):
     yield response.write_body("Hello, world!")
-
-
-@tornado.gen.coroutine
-def say_ok(request, response, proxy):
-    yield print_arg(request, 1)
-    yield print_arg(request, 2)
-
-    response.write_body("world")
 
 
 @tornado.gen.coroutine
@@ -56,7 +46,6 @@ def slow(request, response, proxy):
 
 def register_example_endpoints(tchannel):
     tchannel.register(endpoint="hi", scheme="raw", handler=say_hi)
-    tchannel.register(endpoint="ok", scheme="raw", handler=say_ok)
     tchannel.register(endpoint="echo", scheme="raw", handler=echo)
     tchannel.register(endpoint="slow", scheme="raw", handler=slow)
 

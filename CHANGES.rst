@@ -1,10 +1,10 @@
 Changelog
 =========
 
-0.11.2 (unreleased)
+0.12 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Removed ``print_arg``.
 
 
 0.11.1 (2015-07-17)

@@ -28,7 +28,6 @@ from options import get_parser
 from tchannel.tornado import TChannel
 from tchannel.tornado.stream import InMemStream
 from tchannel.tornado.stream import PipeStream
-from tchannel.tornado.util import print_arg
 
 
 @tornado.gen.coroutine
@@ -37,14 +36,11 @@ def send_stream(arg1, arg2, arg3, host):
         name='stream-client',
     )
 
-    response = yield tchannel.request(host).send(
+    yield tchannel.request(host).send(
         arg1,
         arg2,
-        arg3)
-
-    yield print_arg(response, 0)
-    yield print_arg(response, 1)
-    yield print_arg(response, 2)
+        arg3,
+    )
 
 
 def main():
