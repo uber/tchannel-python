@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from __future__ import absolute_import
+import sys
 
 import tornado.ioloop
 
@@ -37,6 +37,9 @@ def main():  # pragma: no cover
 
     register_example_endpoints(client)
     client.listen()
+
+    print("listening on %s" % client.hostport)
+    sys.stdout.flush()
 
     tornado.ioloop.IOLoop.instance().start()
 
