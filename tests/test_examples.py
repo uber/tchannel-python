@@ -60,7 +60,7 @@ def examples_dir():
     [
         'raw_',
         'json_',
-        'thrift_examples/thrift_',
+        'thrift_examples/',
         'keyvalue/keyvalue/',
         # 'stream_',
     ]
