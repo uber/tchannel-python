@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.11.2 (unreleased)
+0.11.2 (2015-07-20)
 -------------------
 
 - Fix sync client's advertise - needed to call listen in thread.
