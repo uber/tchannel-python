@@ -72,11 +72,11 @@ def client_for(service, service_module, thrift_service_name=None):
 
     def init(self, tchannel_sync, hostport=None, trace=False):
         self.async_thrift = self.__async_client_class__(
-            tchannel_sync.async_client,
+            tchannel_sync._async_client,
             hostport,
             trace,
         )
-        self.threadloop = tchannel_sync.threadloop
+        self.threadloop = tchannel_sync._threadloop
 
     init.__name__ = '__init__'
     methods = {
