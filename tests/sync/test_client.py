@@ -68,7 +68,7 @@ def test_advertise_should_result_in_peer_connections(tchannel_server):
     assert result.header == ""
     # @todo https://github.com/uber/tchannel-python/issues/34
     assert result.body == json.dumps(body)
-    assert client.async_client.peers.hosts == routers
+    assert client._async_client.peers.hosts == routers
 
 
 def test_failing_advertise_should_raise(tchannel_server):
@@ -90,6 +90,6 @@ def test_failing_advertise_should_raise(tchannel_server):
 def test_should_discover_ip():
 
     client = TChannelSyncClient('test-client')
-    hostport = client.async_client.hostport
+    hostport = client._async_client.hostport
 
     assert '0.0.0.0:0' != hostport

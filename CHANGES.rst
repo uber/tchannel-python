@@ -1,10 +1,14 @@
 Changelog
 =========
 
-0.11.3 (unreleased)
+0.12.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Add ``TChannel.is_listening()`` to determine if ``listen`` has been called.
+- Calling ``TChannel.listen()`` more than once raises a ``tchannel.errors.AlreadyListeningError``.
+- ``TChannel.advertise()`` will now automatically start listening for connections
+  if ``listen()`` has not already been called.
+- Use ``threadloop==0.4``.
 
 
 0.11.2 (2015-07-20)

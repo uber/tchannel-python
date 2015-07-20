@@ -101,6 +101,11 @@ class AdvertiseError(TChannelError):
     pass
 
 
+class AlreadyListeningError(TChannelError):
+    """Represents exception from attempting to listen multiple times."""
+    pass
+
+
 class TChannelApplicationError(TChannelError):
     """The remote application returned an exception.
 
