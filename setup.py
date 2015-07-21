@@ -8,7 +8,7 @@ setup(
     author_email='dev@uber.com',
     description='Network multiplexing and framing protocol for RPC',
     license='MIT',
-    url='https://github.com/uber/tchannel',
+    url='https://github.com/uber/tchannel-python',
     packages=find_packages(exclude=['tests', 'tests.*']),
     install_requires=[
         'contextlib2',
