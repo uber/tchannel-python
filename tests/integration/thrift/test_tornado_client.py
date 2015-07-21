@@ -39,14 +39,14 @@ def mk_client(thrift_service, port, trace=False):
 
 
 @pytest.mark.gen_test
-def test_call(tchannel_server, thrift_service):
-    tchannel_server.expect_call(
+def test_call(mock_server, thrift_service):
+    mock_server.expect_call(
         thrift_service,
         'thrift',
         method='putItem',
     ).and_result(None)
 
-    client = mk_client(thrift_service, tchannel_server.port)
+    client = mk_client(thrift_service, mock_server.port)
     yield client.putItem(
         thrift_service.Item(
             key="foo",
@@ -57,14 +57,14 @@ def test_call(tchannel_server, thrift_service):
 
 
 @pytest.mark.gen_test
-def test_protocol_error(tchannel_server, thrift_service):
-    tchannel_server.expect_call(
+def test_protocol_error(mock_server, thrift_service):
+    mock_server.expect_call(
         thrift_service,
         'thrift',
         method='getItem',
     ).and_raise(ValueError("I was not defined in the IDL"))
 
-    client = mk_client(thrift_service, tchannel_server.port, trace=False)
+    client = mk_client(thrift_service, mock_server.port, trace=False)
     with pytest.raises(errors.ProtocolError):
         with patch(
             'tchannel.zipkin.tracers.TChannelZipkinTracer.record',
@@ -76,14 +76,14 @@ def test_protocol_error(tchannel_server, thrift_service):
 
 
 @pytest.mark.gen_test
-def test_thrift_exception(tchannel_server, thrift_service):
-    tchannel_server.expect_call(
+def test_thrift_exception(mock_server, thrift_service):
+    mock_server.expect_call(
         thrift_service,
         'thrift',
         method='getItem',
     ).and_raise(thrift_service.ItemDoesNotExist("stahp"))
 
-    client = mk_client(thrift_service, tchannel_server.port, trace=True)
+    client = mk_client(thrift_service, mock_server.port, trace=True)
 
     with patch(
         'tchannel.zipkin.tracers.TChannelZipkinTracer.record',

@@ -27,7 +27,7 @@ import tornado.gen
 from tchannel.scheme import JsonArgScheme
 from tchannel.tornado import TChannel
 from tchannel.tornado.broker import ArgSchemeBroker
-from tests.integration.test_server import TestServer
+from tests.mock_server import MockServer
 
 
 @pytest.fixture
@@ -82,8 +82,8 @@ def register(tchannel):
 
 
 @pytest.yield_fixture
-def json_server(random_open_port):
-    with TestServer(random_open_port) as server:
+def json_server():
+    with MockServer() as server:
         register(server.tchannel)
         yield server
 
@@ -92,8 +92,7 @@ def json_server(random_open_port):
 def test_json_server(json_server, sample_json):
     endpoint = "json_echo"
     tchannel = TChannel(name='test')
-    hostport = 'localhost:%d' % json_server.port
-    client = tchannel.request(hostport)
+    client = tchannel.request(json_server.hostport)
     header = sample_json
     body = sample_json
     resp = yield ArgSchemeBroker(JsonArgScheme()).send(

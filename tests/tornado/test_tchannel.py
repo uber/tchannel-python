@@ -72,18 +72,16 @@ def test_should_error_if_call_listen_twice(tchannel):
         tchannel.listen()
 
 
-def test_advertise_should_listen_if_not_called_yet(tchannel, tchannel_server):
+def test_advertise_should_listen_if_not_called_yet(tchannel, mock_server):
 
     assert tchannel.is_listening() is False
 
-    tchannel_server.expect_call('ad', 'json').and_write(
+    mock_server.expect_call('ad', 'json').and_write(
         headers="",
         body={"hello": "world"},
     )
 
-    routers = [
-        tchannel_server.tchannel.hostport
-    ]
+    routers = [mock_server.tchannel.hostport]
 
     tchannel.advertise(
         routers=routers

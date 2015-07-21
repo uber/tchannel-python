@@ -27,7 +27,7 @@ import tornado.gen
 from tchannel.tornado import TChannel
 from tchannel.tornado.stream import InMemStream
 from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
-from tests.integration.test_server import TestServer
+from tests.mock_server import MockServer
 
 try:
     from cStringIO import StringIO
@@ -65,8 +65,8 @@ trace_buf = StringIO()
 
 
 @pytest.yield_fixture
-def trace_server(random_open_port):
-    with TestServer(random_open_port) as server:
+def trace_server():
+    with MockServer() as server:
         register(server.tchannel)
         server.tchannel.hooks.register(
             ZipkinTraceHook(

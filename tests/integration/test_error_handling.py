@@ -32,8 +32,6 @@ from tchannel.messages.common import FlagsType
 from tchannel.tornado import TChannel
 from tchannel.tornado.connection import StreamConnection
 
-from .test_server import TestServer
-
 
 @tornado.gen.coroutine
 def handler1(request, response, proxy):
@@ -51,20 +49,18 @@ def register(tchannel):
     tchannel.register("endpoint2", "raw", handler2)
 
 
-@pytest.yield_fixture
-def tchannel_server(random_open_port):
-    with TestServer(random_open_port) as server:
-        register(server.tchannel)
-        yield server
+@pytest.fixture
+def mock_server(mock_server):
+    register(mock_server.tchannel)
+    return mock_server
 
 
 @pytest.mark.gen_test
-def test_unexpected_error_from_handler(tchannel_server):
+def test_unexpected_error_from_handler(mock_server):
     # test for invalid call request message
-    hostport = 'localhost:%d' % tchannel_server.port
     tchannel = TChannel(name='test')
     connection = yield StreamConnection.outgoing(
-        hostport=hostport,
+        hostport=mock_server.hostport,
         tchannel=tchannel,
     )
 
@@ -83,12 +79,11 @@ def test_unexpected_error_from_handler(tchannel_server):
 
 
 @pytest.mark.gen_test
-def test_invalid_message_during_streaming(tchannel_server):
+def test_invalid_message_during_streaming(mock_server):
     # test for invalid call request message
-    hostport = 'localhost:%d' % tchannel_server.port
     tchannel = TChannel(name='test')
     connection = yield StreamConnection.outgoing(
-        hostport=hostport,
+        hostport=mock_server.hostport,
         tchannel=tchannel,
     )
 
@@ -129,12 +124,11 @@ def test_invalid_message_during_streaming(tchannel_server):
 
 
 @pytest.mark.gen_test
-def test_continue_message_error(tchannel_server):
+def test_continue_message_error(mock_server):
     # test for invalid call request message
-    hostport = 'localhost:%d' % tchannel_server.port
     tchannel = TChannel(name='test')
     connection = yield StreamConnection.outgoing(
-        hostport=hostport,
+        hostport=mock_server.hostport,
         tchannel=tchannel,
     )
 

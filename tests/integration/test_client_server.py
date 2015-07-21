@@ -32,10 +32,12 @@ from tests.util import big_arg
 
 
 @pytest.mark.gen_test
-def test_tornado_client_with_server_not_there(random_open_port):
+def test_tornado_client_with_server_not_there():
     with pytest.raises(ConnectionClosedError):
         yield StreamConnection.outgoing(
-            'localhost:%d' % random_open_port,
+            # Try a random port that we're not listening on.
+            # This should fail.
+            'localhost:41942'
         )
 
 
@@ -53,21 +55,18 @@ def test_tornado_client_with_server_not_there(random_open_port):
 ],
     ids=lambda arg: str(len(arg))
 )
-def test_tchannel_call_request_fragment(tchannel_server,
+def test_tchannel_call_request_fragment(mock_server,
                                         arg2, arg3):
     endpoint = b'tchannelpeertest'
 
-    tchannel_server.expect_call(endpoint).and_write(
+    mock_server.expect_call(endpoint).and_write(
         headers=endpoint, body=arg3
     )
 
     tchannel = TChannel(name='test')
-
-    hostport = 'localhost:%d' % (tchannel_server.port)
-
-    response = yield tchannel.request(hostport).send(InMemStream(endpoint),
-                                                     InMemStream(arg2),
-                                                     InMemStream(arg3))
+    response = yield tchannel.request(mock_server.hostport).send(
+        InMemStream(endpoint), InMemStream(arg2), InMemStream(arg3)
+    )
     header = yield response.get_header()
     body = yield response.get_body()
     assert header == endpoint
@@ -76,16 +75,16 @@ def test_tchannel_call_request_fragment(tchannel_server,
 
 
 @pytest.mark.gen_test
-def test_tcurl(tchannel_server):
+def test_tcurl(mock_server):
     endpoint = b'tcurltest'
 
-    tchannel_server.expect_call(endpoint).and_write(
+    mock_server.expect_call(endpoint).and_write(
         headers=endpoint,
         body="hello"
     )
 
     hostport = 'localhost:%d/%s' % (
-        tchannel_server.port, endpoint.decode('ascii')
+        mock_server.port, endpoint.decode('ascii')
     )
     responses = yield tcurl.main(['--host', hostport, '-d', ''])
 
@@ -100,17 +99,15 @@ def test_tcurl(tchannel_server):
 
 
 @pytest.mark.gen_test
-def test_endpoint_not_found(tchannel_server):
+def test_endpoint_not_found(mock_server):
     endpoint = b'tchanneltest'
-    tchannel_server.expect_call(endpoint).and_write(
+    mock_server.expect_call(endpoint).and_write(
         headers=endpoint,
         body='world'
     )
     tchannel = TChannel(name='test')
 
-    hostport = 'localhost:%d' % (tchannel_server.port)
-
     with pytest.raises(TChannelError):
-        yield tchannel.request(hostport).send(InMemStream(),
-                                              InMemStream(),
-                                              InMemStream())
+        yield tchannel.request(
+            mock_server.hostport
+        ).send(InMemStream(), InMemStream(), InMemStream())

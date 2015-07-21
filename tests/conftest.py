@@ -20,11 +20,9 @@
 
 from __future__ import absolute_import
 
-import socket
-
 import pytest
 
-from tests.integration.test_server import TestServer
+from .mock_server import MockServer
 from .util import get_thrift_service_module
 
 
@@ -47,20 +45,9 @@ def connection():
     return _MockConnection()
 
 
-@pytest.fixture
-def random_open_port():
-    """Find and return a random open TCP port."""
-    sock = socket.socket(socket.AF_INET)
-    try:
-        sock.bind(('', 0))
-        return sock.getsockname()[1]
-    finally:
-        sock.close()
-
-
 @pytest.yield_fixture
-def tchannel_server(random_open_port):
-    with TestServer(random_open_port) as server:
+def mock_server():
+    with MockServer() as server:
         yield server
 
 

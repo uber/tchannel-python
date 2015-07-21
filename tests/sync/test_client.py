@@ -29,14 +29,14 @@ from tchannel.tornado.hyperbahn import AdvertiseError
 
 
 @pytest.mark.integration
-def test_sync_client_should_get_raw_response(tchannel_server):
+def test_sync_client_should_get_raw_response(mock_server):
 
     endpoint = 'health'
-    tchannel_server.expect_call(endpoint).and_write(
+    mock_server.expect_call(endpoint).and_write(
         headers="",
         body="OK"
     )
-    hostport = tchannel_server.tchannel.hostport
+    hostport = mock_server.tchannel.hostport
 
     client = TChannelSyncClient('test-client')
     request = client.request(hostport)
@@ -49,17 +49,17 @@ def test_sync_client_should_get_raw_response(tchannel_server):
 
 
 @pytest.mark.integration
-def test_advertise_should_result_in_peer_connections(tchannel_server):
+def test_advertise_should_result_in_peer_connections(mock_server):
 
     body = {"hello": "world"}
 
-    tchannel_server.expect_call('ad', 'json').and_write(
+    mock_server.expect_call('ad', 'json').and_write(
         headers="",
         body=body,
     )
 
     routers = [
-        tchannel_server.tchannel.hostport
+        mock_server.tchannel.hostport
     ]
 
     client = TChannelSyncClient('test-client')
@@ -71,16 +71,13 @@ def test_advertise_should_result_in_peer_connections(tchannel_server):
     assert client._async_client.peers.hosts == routers
 
 
-def test_failing_advertise_should_raise(tchannel_server):
+def test_failing_advertise_should_raise(mock_server):
 
-    tchannel_server.expect_call('ad', 'json').and_raise(
+    mock_server.expect_call('ad', 'json').and_raise(
         Exception('great sadness')
     )
 
-    routers = [
-        tchannel_server.tchannel.hostport
-    ]
-
+    routers = [mock_server.tchannel.hostport]
     client = TChannelSyncClient('test-client')
 
     with pytest.raises(AdvertiseError):

@@ -28,8 +28,28 @@ import tchannel.tornado.tchannel as tornado_tchannel
 from tchannel.errors import TChannelError
 
 
+class UnexpectedCallException(Exception):
+    pass
+
+
+class _LimitCount(object):
+
+    def __init__(self, function, count):
+        self.remaining = count
+        self.function = function
+
+    def __call__(self, request, response):
+        if self.remaining <= 0:
+            raise UnexpectedCallException(
+                'Received unexpected call to %s' % request.endpoint
+            )
+
+        self.remaining -= 1
+        return self.function(request, response)
+
+
 class Expectation(object):
-    """Represents an expectation for the TestServer."""
+    """Represents an expectation for the MockServer."""
 
     def __init__(self):
         self.execute = None
@@ -39,7 +59,6 @@ class Expectation(object):
         def execute(request, response):
             if headers:
                 response.write_header(headers)
-
             response.write_body(body)
 
         self.execute = execute
@@ -49,15 +68,7 @@ class Expectation(object):
         def execute(request, response):
             response.write_result(result)
 
-        # raw message to respond with
-        self.response = None
-        self.protocoal_error = None
-
         self.execute = execute
-
-    def return_error(self, error):
-        """Write the given Error as a error response"""
-        self.protocoal_error = error
 
     def and_raise(self, exc):
 
@@ -79,15 +90,23 @@ class Expectation(object):
             # stop normal response streams
             response.set_exception(TChannelError("stop stream"))
 
+    def times(self, count):
+        self.execute = _LimitCount(self.execute, count)
+        return self
 
-class TestServer(object):
+    def once(self):
+        return self.times(1)
+
+
+class MockServer(object):
     TIMEOUT = 0.15
 
-    def __init__(self, port, timeout=None):
-        self.port = port
+    def __init__(self, port=None, timeout=None):
+        port = port or 0
+
         self.tchannel = tornado_tchannel.TChannel(
             name='test',
-            hostport="localhost:%d" % self.port,
+            hostport="localhost:%s" % str(port),
         )
 
         self.timeout = timeout or self.TIMEOUT
@@ -95,9 +114,16 @@ class TestServer(object):
         self.ready = False
         self.io_loop = None
 
+    @property
+    def port(self):
+        return int(self.hostport.rsplit(':', 1)[1])
+
+    @property
+    def hostport(self):
+        return self.tchannel.hostport
+
     def expect_call(self, endpoint, scheme=None, **kwargs):
-        if scheme is not None:
-            assert isinstance(scheme, basestring)
+        assert scheme is None or isinstance(scheme, basestring)
 
         expectation = Expectation()
 
@@ -128,7 +154,11 @@ class TestServer(object):
         self.io_loop.make_current()
 
         self.tchannel.listen()
-        self.ready = True
+
+        def callback():
+            self.ready = True
+
+        self.io_loop.add_callback(callback)
         self.io_loop.start()
 
     def stop(self):
