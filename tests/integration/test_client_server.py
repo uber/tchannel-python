@@ -35,7 +35,9 @@ from tests.util import big_arg
 def test_tornado_client_with_server_not_there():
     with pytest.raises(ConnectionClosedError):
         yield StreamConnection.outgoing(
-            'localhost:%d' % 41942
+            # Try a random port that we're not listening on.
+            # This should fail.
+            'localhost:41942'
         )
 
 
