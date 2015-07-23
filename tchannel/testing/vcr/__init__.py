@@ -10,6 +10,9 @@
         service_client = MyServiceClient(channel)
 
         yield service_client.myMethod()
+
+It is heavily inspired by the `vcrpy <https://github.com/kevin1024/vcrpy/>`_
+library.
 """
 from __future__ import absolute_import
 

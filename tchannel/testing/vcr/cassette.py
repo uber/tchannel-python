@@ -5,7 +5,8 @@ from collections import deque
 
 from . import types
 from . import yaml
-from .exceptions import RequestNotFoundError, UnsupportedVersionError
+from .exceptions import RequestNotFoundError
+from .exceptions import UnsupportedVersionError
 
 
 # Version of the storage format.

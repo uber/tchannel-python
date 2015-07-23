@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from functools import wraps
 
 import mock
-from contextlib2 import ExitStack, contextmanager
+import contextlib2
 
 from tchannel.tornado import peer
 
@@ -17,9 +17,9 @@ class Patcher(object):
 
     def __init__(self, cassette):
         self.cassette = cassette
-        self._exit_stack = ExitStack()
+        self._exit_stack = contextlib2.ExitStack()
 
-    @contextmanager
+    @contextlib2.contextmanager
     def _patch_choose(self):
 
         # TODO the choose() implementation should prodably be moved elsewhere

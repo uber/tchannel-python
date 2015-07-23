@@ -15,7 +15,10 @@ class FakeServer(object):
         self.real_peer = real_peer
         self.tchannel = TChannel('fake-server')
 
-        self.tchannel.register(self.tchannel.FALLBACK)(self.handle_request)
+        self.tchannel.register(
+            endpoint=self.tchannel.FALLBACK,
+            handler=self.handle_request
+        )
 
     @gen.coroutine
     def handle_request(self, req, res, channel):
