@@ -70,11 +70,15 @@ def client_for(service, service_module, thrift_service_name=None):
 
     method_names = get_service_methods(service_module.Iface)
 
-    def init(self, tchannel_sync, hostport=None, trace=False):
+    def init(self, tchannel_sync,
+             hostport=None,
+             trace=False,
+             protocol_headers=None):
         self.async_thrift = self.__async_client_class__(
             tchannel_sync._async_client,
             hostport,
             trace,
+            protocol_headers,
         )
         self.threadloop = tchannel_sync._threadloop
 
