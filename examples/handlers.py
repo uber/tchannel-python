@@ -20,32 +20,38 @@
 
 from __future__ import absolute_import
 
-import tornado.ioloop
+import random
 
-from handlers import register_example_endpoints
-from options import get_args
-from tchannel.tornado import TChannel
+import tornado.gen
 
 
-def main():
-    args = get_args()
-
-    app = TChannel(
-        name='json-server',
-        hostport='%s:%d' % (args.host, args.port),
-    )
-
-    register_example_endpoints(app)
-
-    def say_hi_json(request, response, proxy):
-        response.write_body({'hi': 'Hello, world!'})
-
-    app.register(endpoint="hi-json", scheme="json", handler=say_hi_json)
-
-    app.listen()
-
-    tornado.ioloop.IOLoop.instance().start()
+@tornado.gen.coroutine
+def say_hi(request, response, proxy):
+    yield response.write_body("Hello, world!")
 
 
-if __name__ == '__main__':  # pragma: no cover
-    main()
+@tornado.gen.coroutine
+def echo(request, response, proxy):
+    # stream args right back to request side
+    response.set_header_s(request.get_header_s())
+    response.set_body_s(request.get_body_s())
+
+
+@tornado.gen.coroutine
+def slow(request, response, proxy):
+    yield tornado.gen.sleep(random.random())
+    yield response.write_body("done")
+    response.flush()
+
+
+def register_example_endpoints(tchannel):
+    tchannel.register(endpoint="hi", scheme="raw", handler=say_hi)
+    tchannel.register(endpoint="echo", scheme="raw", handler=echo)
+    tchannel.register(endpoint="slow", scheme="raw", handler=slow)
+
+    @tchannel.register("bye", scheme="raw")
+    def say_bye(request, response, proxy):
+        print (yield request.get_header())
+        print (yield request.get_body())
+
+        response.write_body("world")

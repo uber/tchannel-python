@@ -31,14 +31,19 @@ from tchannel.tornado import TChannel
 
 @tornado.gen.coroutine
 def main():
+
     args = get_args()
+
     tchannel = TChannel(name='raw-client')
 
-    response = yield tchannel.request(
+    request = tchannel.request(
         hostport='%s:%s' % (args.host, args.port),
-    ).send('hi', None, None)
+    )
+
+    response = yield request.send('hi', None, None)
 
     body = yield response.get_body()
+
     print body
 
 

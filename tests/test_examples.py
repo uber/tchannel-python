@@ -21,8 +21,6 @@
 import contextlib
 import os
 import subprocess
-import socket
-import time
 
 import pytest
 
@@ -57,33 +55,17 @@ def examples_dir():
         os.chdir(cwd)
 
 
-def wait_until_connectable(port):
-    count = 0
-    while count < 50:
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect(('127.0.0.1', port))
-        except socket.error as e:
-            count += 1
-            time.sleep(0.01)
-        else:
-            sock.close()
-            return
-
-    raise Exception('Could not connect to server at port %d' % port)
-
-
 @pytest.mark.parametrize(
-    'example_type, port',
+    'example_type',
     [
-        ('raw_', 8888),
-        ('json_', 8888),
-        ('thrift_examples/', 8888),
-        ('keyvalue/keyvalue/', 8889),
+        'raw_',
+        'json_',
+        'thrift_examples/',
+        'keyvalue/keyvalue/',
         # 'stream_',
     ]
 )
-def test_example(examples_dir, example_type, port):
+def test_example(examples_dir, example_type):
     """Smoke test example code to ensure it still runs."""
 
     server_path = os.path.join(
@@ -97,8 +79,9 @@ def test_example(examples_dir, example_type, port):
     )
 
     with popen(server_path):
-        wait_until_connectable(port)
-
+        # :(
+        import time
+        time.sleep(0.05)
         with popen(client_path) as client:
             assert (
                 client.stdout.read() == 'Hello, world!\n'
