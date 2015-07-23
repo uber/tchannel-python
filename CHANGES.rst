@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.12.1 (unreleased)
+0.13.0 (2015-07-23)
 -------------------
 
 - Add support for specifying transport headers for Thrift clients.
