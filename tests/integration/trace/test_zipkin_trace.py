@@ -18,23 +18,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import base64
 import json
 
-import base64
 import pytest
 import tornado
 import tornado.gen
 
-from tornado.gen import Future
 from tchannel.tornado import TChannel
 from tchannel.tornado.stream import InMemStream
-from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
-from tchannel.zipkin.tracers import TChannelZipkinTracer
-from tchannel.zipkin.trace import Trace
-from tchannel.zipkin.thrift.ttypes import Response
-from tchannel.zipkin.annotation import client_send
 from tchannel.zipkin.annotation import Endpoint
+from tchannel.zipkin.annotation import client_send
 from tchannel.zipkin.thrift import TCollector
+from tchannel.zipkin.thrift.ttypes import Response
+from tchannel.zipkin.trace import Trace
+from tchannel.zipkin.tracers import TChannelZipkinTracer
+from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
 from tests.mock_server import MockServer
 
 try:
@@ -134,14 +133,6 @@ def test_tcollector_submit(monkeypatch, trace_server):
     trace = Trace(endpoint=Endpoint("1.0.0.1", 1111, "tcollector"))
     anns = [client_send()]
 
-    f = Future()
+    results = yield TChannelZipkinTracer(tchannel).record([(trace, anns)])
 
-    def submit_callback(self, trace_f):
-        f.set_result(trace_f.result())
-
-    monkeypatch.setattr(
-        TChannelZipkinTracer, 'submit_callback', submit_callback
-    )
-    TChannelZipkinTracer(tchannel).record([(trace, anns)])
-    r = yield f
-    assert r.ok
+    assert results[0].ok

@@ -20,9 +20,9 @@
 
 from __future__ import absolute_import
 
-import tornado.concurrent
 import mock
 import pytest
+import tornado.concurrent
 
 from tchannel.messages.error import ErrorCode
 from tchannel.tornado.dispatch import RequestDispatcher

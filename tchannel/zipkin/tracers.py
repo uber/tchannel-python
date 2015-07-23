@@ -149,6 +149,7 @@ class TChannelZipkinTracer(object):
             )
 
     def record(self, traces):
+        fus = []
         for (trace, annotations) in traces:
             client = TCollectorClient(
                 self._tchannel,
@@ -156,6 +157,9 @@ class TChannelZipkinTracer(object):
             )
             f = client.submit(thrift_formatter(trace, annotations))
             f.add_done_callback(self.submit_callback)
+            fus.append(f)
+
+        return fus
 
 
 class ZipkinTracer(object):
