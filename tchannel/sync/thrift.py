@@ -75,10 +75,10 @@ def client_for(service, service_module, thrift_service_name=None):
              trace=False,
              protocol_headers=None):
         self.async_thrift = self.__async_client_class__(
-            tchannel_sync._async_client,
-            hostport,
-            trace,
-            protocol_headers,
+            tchannel=tchannel_sync._async_client,
+            hostport=hostport,
+            trace=trace,
+            protocol_headers=protocol_headers,
         )
         self.threadloop = tchannel_sync._threadloop
 
