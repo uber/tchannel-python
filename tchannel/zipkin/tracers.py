@@ -141,14 +141,15 @@ class TChannelZipkinTracer(object):
 
         self._tchannel = tchannel
 
-    def submit_callback(self, f):
-        if f.exception():
-            log.error(
-                'Fail to submit zipkin trace',
-                exc_info=f.exc_info()
-            )
-
     def record(self, traces):
+
+        def submit_callback(f):
+            if f.exception():
+                log.error(
+                    'Fail to submit zipkin trace',
+                    exc_info=f.exc_info()
+                )
+
         fus = []
         for (trace, annotations) in traces:
             client = TCollectorClient(
@@ -156,7 +157,7 @@ class TChannelZipkinTracer(object):
                 protocol_headers={'shardKey': i64_to_base64(trace.trace_id)}
             )
             f = client.submit(thrift_formatter(trace, annotations))
-            f.add_done_callback(self.submit_callback)
+            f.add_done_callback(submit_callback)
             fus.append(f)
 
         return fus
