@@ -22,6 +22,7 @@ import sys
 
 import tornado.ioloop
 
+from handlers import register_example_endpoints
 from options import get_args
 from tchannel.tornado import TChannel
 
@@ -34,9 +35,7 @@ def main():
         hostport='%s:%d' % (args.host, args.port),
     )
 
-    @app.register('hi', 'raw')
-    def hi(request, response, channel):
-        response.write_body('Hello, world!')
+    register_example_endpoints(app)
 
     app.listen()
 
