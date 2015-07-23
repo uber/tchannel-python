@@ -22,7 +22,6 @@ from __future__ import absolute_import
 
 import tornado.ioloop
 
-from handlers import register_example_endpoints
 from options import get_args
 from tchannel.tornado import TChannel
 
@@ -35,15 +34,11 @@ def main():
         hostport='%s:%d' % (args.host, args.port),
     )
 
-    register_example_endpoints(app)
-
-    def say_hi_json(request, response, proxy):
+    @app.register('hi-json', 'json')
+    def say_hi_json(request, response, channel):
         response.write_body({'hi': 'Hello, world!'})
 
-    app.register(endpoint="hi-json", scheme="json", handler=say_hi_json)
-
     app.listen()
-
     tornado.ioloop.IOLoop.instance().start()
 
 
