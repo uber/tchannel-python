@@ -5,7 +5,8 @@ Changelog
 0.12.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Add transport header support for thrift call.
+- Fix zipkin trace.
 
 
 0.12.0 (2015-07-20)

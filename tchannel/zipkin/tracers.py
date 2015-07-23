@@ -40,6 +40,7 @@ from collections import defaultdict
 
 from .formatters import json_formatter
 from .formatters import thrift_formatter
+from .formatters import i64_to_base64
 from .thrift import TCollector
 from .thrift import constants
 
@@ -138,20 +139,24 @@ class TChannelZipkinTracer(object):
         from ..thrift import client_for
 
         # TODO add different thrift service name
-        TCollectorClient = client_for('tcollector', TCollector)
-
+        self.TCollectorClient = client_for('tcollector', TCollector)
         self._tchannel = tchannel
-        self.client = TCollectorClient(self._tchannel)
+
+    def submit_callback(self, f):
+        if f.exception():
+            log.error(
+                'Fail to submit zipkin trace',
+                exc_info=f.exc_info()
+            )
 
     def record(self, traces):
-        def submit_callback(f):
-            if f.exception():
-                log.error('Fail to submit zipkin trace',
-                          exc_info=f.exc_info())
-
         for (trace, annotations) in traces:
-            f = self.client.submit(thrift_formatter(trace, annotations))
-            f.add_done_callback(submit_callback)
+            client = self.TCollectorClient(
+                self._tchannel,
+                protocol_headers={'shardKey': i64_to_base64(trace.trace_id)}
+            )
+            f = client.submit(thrift_formatter(trace, annotations))
+            f.add_done_callback(self.submit_callback)
 
 
 class ZipkinTracer(object):

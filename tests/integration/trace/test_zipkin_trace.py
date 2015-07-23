@@ -20,13 +20,21 @@
 
 import json
 
+import base64
 import pytest
 import tornado
 import tornado.gen
 
+from tornado.gen import Future
 from tchannel.tornado import TChannel
 from tchannel.tornado.stream import InMemStream
 from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
+from tchannel.zipkin.tracers import TChannelZipkinTracer
+from tchannel.zipkin.trace import Trace
+from tchannel.zipkin.thrift.ttypes import Response
+from tchannel.zipkin.annotation import client_send
+from tchannel.zipkin.annotation import Endpoint
+from tchannel.zipkin.thrift import TCollector
 from tests.mock_server import MockServer
 
 try:
@@ -55,11 +63,21 @@ def handler1(request, response, proxy):
     response.flush()
 
 
+def submit(request, response, proxy):
+    span = request.args.span
+    r = Response()
+    r.ok = request.transport.headers['shardKey'] == base64.b64encode(
+        span.traceId
+    )
+
+    return r
+
+
 @pytest.fixture
 def register(tchannel):
     tchannel.register("endpoint1", "raw", handler1)
     tchannel.register("endpoint2", "raw", handler2)
-
+    tchannel.register(TCollector, "thrift", submit)
 
 trace_buf = StringIO()
 
@@ -107,3 +125,27 @@ def test_zipkin_trace(trace_server):
             span_id = trace[0][u'span_id']
 
     assert parent_span_id == span_id
+
+
+@pytest.mark.gen_test
+def test_tcollector_submit(monkeypatch, trace_server):
+
+    tchannel = TChannel(name='test')
+
+    hostport = 'localhost:%d' % trace_server.port
+    tchannel.peers.get(hostport)
+
+    trace = Trace(endpoint=Endpoint("1.0.0.1", 1111, "tcollector"))
+    anns = [client_send()]
+
+    f = Future()
+
+    def submit_callback(self, trace_f):
+        f.set_result(trace_f.result())
+
+    monkeypatch.setattr(
+        TChannelZipkinTracer, 'submit_callback', submit_callback
+    )
+    TChannelZipkinTracer(tchannel).record([(trace, anns)])
+    r = yield f
+    assert r.ok

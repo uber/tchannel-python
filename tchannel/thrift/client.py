@@ -32,7 +32,10 @@ from .scheme import ThriftArgScheme
 from .util import get_service_methods
 
 # Generated clients will use this base class.
-_ClientBase = namedtuple('_ClientBase', 'tchannel hostport service trace')
+_ClientBase = namedtuple(
+    '_ClientBase',
+    'tchannel hostport service trace protocol_headers'
+)
 
 
 def client_for(service, service_module, thrift_service_name=None):
@@ -75,15 +78,21 @@ def client_for(service, service_module, thrift_service_name=None):
 
     method_names = get_service_methods(service_module.Iface)
 
-    def new(cls, tchannel, hostport=None, trace=False):
+    def new(cls, tchannel, hostport=None, trace=False, protocol_headers=None):
         """
         :param tchannel:
             TChannel through which the requests will be sent.
         :param hostport:
             Address of the machine to which the requests will be sent, or None
             if the TChannel will do peer selection on a per-request basis.
+        :param trace:
+            Flag to turn on/off trace in tchannel.
+        :param protocol_headers:
+            Protocol headers of tchannel.
         """
-        return _ClientBase.__new__(cls, tchannel, hostport, service, trace)
+        return _ClientBase.__new__(
+            cls, tchannel, hostport, service, trace, protocol_headers
+        )
 
     new.__name__ = '__new__'
     methods = {'__new__': new}
@@ -152,8 +161,9 @@ def generate_method(service_module, service_name, method_name):
                 hostport=self.hostport, service=self.service
             ),
             endpoint,
-            {},  # TODO: Figure out how to receive headers for the call
+            {},
             call_args,
+            protocol_headers=self.protocol_headers,
             traceflag=self.trace
         )
 
