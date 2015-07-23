@@ -86,9 +86,9 @@ def client_for(service, service_module, thrift_service_name=None):
             Address of the machine to which the requests will be sent, or None
             if the TChannel will do peer selection on a per-request basis.
         :param trace:
-            Flag to turn on/off trace in tchannel.
+            Whether Zipkin tracing is enabled.
         :param protocol_headers:
-            Protocol headers of tchannel.
+            Protocol-level headers to send with the request.
         """
         return _ClientBase.__new__(
             cls, tchannel, hostport, service, trace, protocol_headers

@@ -129,11 +129,7 @@ def test_zipkin_trace(trace_server):
 
 @pytest.mark.gen_test
 def test_tcollector_submit(monkeypatch, trace_server):
-
-    tchannel = TChannel(name='test')
-
-    hostport = 'localhost:%d' % trace_server.port
-    tchannel.peers.get(hostport)
+    tchannel = TChannel(name='test', known_peers=[trace_server.hostport])
 
     trace = Trace(endpoint=Endpoint("1.0.0.1", 1111, "tcollector"))
     anns = [client_send()]
