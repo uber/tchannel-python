@@ -107,7 +107,8 @@ class PeerGroup(object):
 
         self._resetting = True
         try:
-            yield [peer.close() for peer in self._peers.values()]
+            for peer in self._peers.values():
+                peer.close()
         finally:
             self._peers = {}
             self._resetting = False
@@ -377,10 +378,10 @@ class Peer(object):
                 return True
         return False
 
-    @gen.coroutine
     def close(self):
         # TODO: Debounce like PeerGroup?
-        yield [connection.close() for connection in self.connections]
+        for connection in self.connections:
+            connection.close()
 
 
 class PeerState(object):
@@ -493,8 +494,7 @@ class PeerClientOperation(object):
         :param retry_delay:
             Delay between each retry (ms).
         :return:
-            Future that contains the response from the peer. If None, an empty
-            stream is used.
+            Future that contains the response from the peer.
         """
 
         arg1, arg2, arg3 = (

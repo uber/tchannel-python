@@ -59,6 +59,8 @@ State = enum(
 class TChannel(object):
     """Manages inbound and outbound connections to various hosts."""
 
+    FALLBACK = RequestDispatcher.FALLBACK
+
     _SCHEMES = {
         'raw': scheme.RawArgScheme,
         'json': scheme.JsonArgScheme,
@@ -333,10 +335,10 @@ class TChannel(object):
             app.register(Foo, "hello", hello_thrift_handler)
 
         :param endpoint:
-            Name of the endpoint being registered for raw and JSON arg
-            schemes. Reference to the Thrift-generated module for the Thrift
-            arg scheme.
-
+            Name of the endpoint being registered. This should be a reference
+            to the Thrift-generated module if this is a Thrift endpoint. It
+            may also be ``TChannel.FALLBACK`` if it's intended to be a
+            catch-all endpoint.
         :param scheme:
             Name of the scheme under which the endpoint is being registered.
             One of "raw", "json", and "thrift". Defaults to "raw", except if
@@ -352,7 +354,14 @@ class TChannel(object):
             it returns a decorator that can be applied to a function to
             register it as the handler.
         """
-        assert endpoint, "endpoint is required"
+        assert endpoint is not None, "endpoint is required"
+
+        if endpoint is TChannel.FALLBACK:
+            decorator = partial(self._handler.register, TChannel.FALLBACK)
+            if handler is not None:
+                return decorator(handler)
+            else:
+                return decorator
 
         if not scheme:
             # scheme defaults to raw, unless the endpoint is a service module.
