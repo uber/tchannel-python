@@ -5,7 +5,8 @@ Changelog
 0.12.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Add support for specifying transport headers for Thrift clients.
+- Always pass ``shardKey`` for TCollector tracing calls. This fixes Zipkin tracing for Thrift clients.
 
 
 0.12.0 (2015-07-20)

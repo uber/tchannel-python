@@ -22,14 +22,13 @@ from __future__ import absolute_import
 
 import mock
 import pytest
-
 from thrift.Thrift import TType
 
-from tchannel.tornado.stream import InMemStream
-from tchannel.tornado.request import Request
-from tchannel.tornado.response import Response
 from tchannel.thrift.scheme import ThriftArgScheme
 from tchannel.thrift.server import build_handler
+from tchannel.tornado.request import Request
+from tchannel.tornado.response import Response
+from tchannel.tornado.stream import InMemStream
 
 
 class FakeException(Exception):

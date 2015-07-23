@@ -64,8 +64,11 @@ class ArgSchemeBroker(object):
         return handler(req, resp, proxy)
 
     @tornado.gen.coroutine
-    def send(self, client, endpoint, header, body, traceflag=None,
-             attempt_times=None, ttl=None,
+    def send(self, client, endpoint, header, body,
+             protocol_headers=None,
+             traceflag=None,
+             attempt_times=None,
+             ttl=None,
              retry_delay=None):
         """Serialize and deserialize header and body into certain format
             based on arg scheme.
@@ -86,11 +89,13 @@ class ArgSchemeBroker(object):
         except Exception as e:
             raise TChannelError(e.message)
 
+        protocol_headers = protocol_headers or {}
+        protocol_headers['as'] = self.arg_scheme.type()
         resp = yield client.send(
             endpoint,
             raw_header,
             raw_body,
-            headers={'as': self.arg_scheme.type()},
+            headers=protocol_headers,
             traceflag=traceflag,
             attempt_times=attempt_times,
             ttl=ttl,

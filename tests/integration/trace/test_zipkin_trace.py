@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import base64
 import json
 
 import pytest
@@ -26,6 +27,12 @@ import tornado.gen
 
 from tchannel.tornado import TChannel
 from tchannel.tornado.stream import InMemStream
+from tchannel.zipkin.annotation import Endpoint
+from tchannel.zipkin.annotation import client_send
+from tchannel.zipkin.thrift import TCollector
+from tchannel.zipkin.thrift.ttypes import Response
+from tchannel.zipkin.trace import Trace
+from tchannel.zipkin.tracers import TChannelZipkinTracer
 from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
 from tests.mock_server import MockServer
 
@@ -55,11 +62,21 @@ def handler1(request, response, proxy):
     response.flush()
 
 
+def submit(request, response, proxy):
+    span = request.args.span
+    r = Response()
+    r.ok = request.transport.headers['shardKey'] == base64.b64encode(
+        span.traceId
+    )
+
+    return r
+
+
 @pytest.fixture
 def register(tchannel):
     tchannel.register("endpoint1", "raw", handler1)
     tchannel.register("endpoint2", "raw", handler2)
-
+    tchannel.register(TCollector, "thrift", submit)
 
 trace_buf = StringIO()
 
@@ -107,3 +124,15 @@ def test_zipkin_trace(trace_server):
             span_id = trace[0][u'span_id']
 
     assert parent_span_id == span_id
+
+
+@pytest.mark.gen_test
+def test_tcollector_submit(monkeypatch, trace_server):
+    tchannel = TChannel(name='test', known_peers=[trace_server.hostport])
+
+    trace = Trace(endpoint=Endpoint("1.0.0.1", 1111, "tcollector"))
+    anns = [client_send()]
+
+    results = yield TChannelZipkinTracer(tchannel).record([(trace, anns)])
+
+    assert results[0].ok

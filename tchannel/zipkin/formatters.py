@@ -135,6 +135,10 @@ def i64_to_string(data):
     return struct.pack('>q', data)
 
 
+def i64_to_base64(data):
+    return base64.b64encode(i64_to_string(data))
+
+
 def thrift_formatter(trace, annotations, isbased64=False):
     thrift_annotations = []
     binary_annotations = []

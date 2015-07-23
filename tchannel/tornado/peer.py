@@ -624,7 +624,7 @@ class PeerClientOperation(object):
                 )
 
                 if not connection:
-                    raise
+                    raise protocol_error
             except TimeoutError as operational_error:
                 # event: on_operational_error_per_attempt
                 self.peer.tchannel.event_emitter.fire(

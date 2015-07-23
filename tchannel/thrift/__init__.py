@@ -20,5 +20,5 @@
 
 from __future__ import absolute_import
 
-from .server import register  # noqa
 from .client import client_for  # noqa
+from .server import register  # noqa

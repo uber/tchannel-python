@@ -21,7 +21,8 @@
 from __future__ import absolute_import
 
 from tchannel.messages.common import FlagsType
-from tchannel.tornado.request import Request, TransportMetadata
+from tchannel.tornado.request import Request
+from tchannel.tornado.request import TransportMetadata
 
 
 def test_transport_metadata_creation():
