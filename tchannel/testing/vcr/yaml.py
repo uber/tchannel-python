@@ -22,11 +22,11 @@ from __future__ import absolute_import
 
 import yaml
 
-try:
-    # Prefer LibYAML-based parser and serializer
+try:  # pragma: no cover
     from yaml import CLoader as Loader
     from yaml import CDumper as Dumper
-except ImportError:
+    # Prefer LibYAML-based parser and serializer
+except ImportError:  # pragma: no cover
     from yaml import Loader
     from yaml import Dumper
 

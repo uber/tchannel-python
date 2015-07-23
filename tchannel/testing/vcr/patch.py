@@ -66,11 +66,11 @@ class Patcher(object):
             yield
 
     def __enter__(self):
+        self._exit_stack.enter_context(self.cassette)
         self._exit_stack.enter_context(self._patch_choose())
         return self.cassette
 
     def __exit__(self, *args):
-        self.cassette.save()
         self._exit_stack.close()
 
     def __call__(self, function):
