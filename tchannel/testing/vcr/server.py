@@ -25,6 +25,7 @@ from tornado import gen
 from tchannel.tornado import TChannel
 
 from . import types
+from .exceptions import CannotWriteCassetteError
 
 
 class FakeServer(object):
@@ -57,6 +58,14 @@ class FakeServer(object):
             res.write_header(response.headers)
             res.write_body(response.body)
             return
+
+        if self.cassette.write_protected:
+            raise CannotWriteCassetteError(
+                'Could not find a matching response for request %s and the '
+                'record mode %s prevents new interactions from being '
+                'recorded. Your test may be performing an uenxpected '
+                'request.' % (request, self.cassette.record_mode)
+            )
 
         # TODO propagate other request and response parameters
         # TODO record modes

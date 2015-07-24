@@ -22,87 +22,113 @@ from __future__ import absolute_import
 
 import pytest
 
-from tchannel.testing.vcr.types import Request, Response
 from tchannel.testing.vcr.cassette import Cassette
 from tchannel.testing.vcr.exceptions import (
+    VCRError,
     RequestNotFoundError,
     UnsupportedVersionError,
 )
+from tchannel.testing.vcr.record_modes import RecordMode
+from tchannel.testing.vcr.types import Request, Response
 
 
-def test_path_does_not_exist(tmpdir):
-    cass = Cassette(str(tmpdir.join('data.yaml')))
+@pytest.fixture
+def path(tmpdir):
+    return tmpdir.join('data.yaml')
+
+
+def test_path_does_not_exist(path):
+    cass = Cassette(str(path))
     assert len(cass.data) == 0
 
 
-def test_save_without_recording(tmpdir):
-    path = tmpdir.join('data.yaml')
-
+def test_save_without_recording(path):
     cass = Cassette(str(path))
     cass.save()
 
     assert not path.check()
 
 
-def test_save_and_replay(tmpdir):
-    path = tmpdir.join('data.yaml')
-    cass = Cassette(str(path))
+def test_record_mode_invalid(path):
+    with pytest.raises(VCRError):
+        Cassette(str(path), record_mode='not_valid')
 
+
+def test_empty_file(path):
+    path.write('')
+    cass = Cassette(str(path))
+    assert len(cass.data) == 0
+
+
+def test_save_and_replay(path):
     request = Request('foo', 'bar', '', 'body')
     response = Response(0, '', 'response body')
 
-    cass.record(request, response)
+    with Cassette(str(path)) as cass:
+        cass.record(request, response)
 
-    # Can't replay until saved.
-    assert not cass.can_replay(request)
+        # Can't replay until saved.
+        assert not cass.can_replay(request)
 
-    cass.save()
-    cass = Cassette(str(path))
+    with Cassette(str(path)) as cass:
+        assert cass.can_replay(request)
+        assert cass.replay(request) == response
+        assert cass.play_count == 1
 
-    assert cass.can_replay(request)
-    assert cass.replay(request) == response
-    assert cass.play_count == 1
-
-    with pytest.raises(RequestNotFoundError):
-        # a single request can only be played once in a given session.
-        cass.replay(request)
+        with pytest.raises(RequestNotFoundError):
+            # a single request can only be played once in a given session.
+            cass.replay(request)
 
 
-def test_replay_unknown(tmpdir):
-    path = tmpdir.join('data.yaml')
-    cass = Cassette(str(path))
-
-    cass.record(Request('foo', 'bar', '', 'body'), Response(0, '', 'resp'))
-    cass.save()
-
+def test_replay_unknown(path):
     request = Request('another', 'method', '', 'body')
 
-    assert not cass.can_replay(request)
-    with pytest.raises(RequestNotFoundError):
-        cass.replay(request)
+    with Cassette(str(path)) as cass:
+        cass.record(
+            Request('foo', 'bar', '', 'body'),
+            Response(0, '', 'resp')
+        )
+
+        assert not cass.can_replay(request)
+        with pytest.raises(RequestNotFoundError):
+            cass.replay(request)
 
 
-def test_record_same(tmpdir):
-    path = tmpdir.join('data.yaml')
-    cass = Cassette(str(path))
+def test_record_same(path):
+    with Cassette(str(path)) as cass:
+        request = Request('foo', 'bar', '', 'body')
+        response1 = Response(0, '', 'resp')
+        response2 = Response(1, '', 'two')
 
-    request = Request('foo', 'bar', '', 'body')
-    response1 = Response(0, '', 'resp')
-    response2 = Response(1, '', 'two')
+        cass.record(request, response1)
+        cass.record(request, response2)
 
-    cass.record(request, response1)
-    cass.record(request, response2)
-    cass.save()
+    with Cassette(str(path)) as cass:
 
-    cass = Cassette(str(path))
-
-    assert cass.replay(request) == response1
-    assert cass.replay(request) == response2
-    assert cass.play_count == 2
+        assert cass.replay(request) == response1
+        assert cass.replay(request) == response2
+        assert cass.play_count == 2
 
 
-def test_unsupported_version(tmpdir):
-    path = tmpdir.join('data.yaml')
+def test_does_not_forget_on_new_interactions(path):
+    req1 = Request('service', 'endpoint1', '', 'body')
+    res1 = Response(0, '', 'response body')
+
+    with Cassette(str(path)) as cass:
+        cass.record(req1, res1)
+
+    req2 = Request('service', 'endpoint2', '', 'body2')
+    res2 = Response(0, '', 'endpoint2 response body')
+
+    with Cassette(str(path), record_mode=RecordMode.NEW_EPISODES) as cass:
+        cass.record(req2, res2)
+
+    with Cassette(str(path)) as cass:
+        assert res1 == cass.replay(req1)
+        assert res2 == cass.replay(req2)
+
+
+def test_unsupported_version(path):
     path.write(
         '\n'.join([
             'interactions:',
@@ -121,3 +147,39 @@ def test_unsupported_version(tmpdir):
 
     with pytest.raises(UnsupportedVersionError):
         Cassette(str(path))
+
+
+def test_record_mode_none(path):
+    req = Request('service', 'endpoint1', '', 'body')
+    res = Response(0, '', 'response body')
+
+    with Cassette(str(path), record_mode=RecordMode.NONE) as cass:
+        with pytest.raises(AssertionError):
+            cass.record(req, res)
+
+    # save and try again
+    with Cassette(str(path)) as cass:
+        cass.record(req, res)
+
+    with Cassette(str(path), record_mode=RecordMode.NONE) as cass:
+        assert res == cass.replay(req)
+
+
+def test_record_mode_all(path):
+    req = Request('service', 'endpoint1', '', 'body')
+    res = Response(0, '', 'response body')
+    res2 = Response(0, '', 'response body 2')
+
+    with Cassette(str(path)) as cass:
+        cass.record(req, res)
+
+    with Cassette(str(path), record_mode=RecordMode.ALL) as cass:
+        assert not cass.can_replay(req)
+        with pytest.raises(AssertionError):
+            cass.replay(req)
+
+    with Cassette(str(path), record_mode=RecordMode.ALL) as cass:
+        cass.record(req, res2)
+
+    with Cassette(str(path)) as cass:
+        assert res2 == cass.replay(req)

@@ -30,6 +30,7 @@ from tchannel.tornado import TChannel
 from tchannel.tornado.stream import InMemStream
 from tchannel.tornado.response import Response
 from tchannel.testing.vcr.server import FakeServer
+from tchannel.testing.vcr.exceptions import CannotWriteCassetteError
 
 
 def stream(s):
@@ -40,7 +41,9 @@ def stream(s):
 
 @pytest.fixture
 def cassette():
-    return InstanceDouble('tchannel.testing.vcr.cassette.Cassette')
+    cass = InstanceDouble('tchannel.testing.vcr.cassette.Cassette')
+    cass.write_protected = False
+    return cass
 
 
 @pytest.fixture
@@ -71,7 +74,7 @@ def call(server):
 
 
 @pytest.mark.gen_test
-def test_can_replay(server, cassette, call):
+def test_replay(server, cassette, call):
     allow(cassette).can_replay.and_return(True)
     expect(cassette).replay.and_return(
         vcr.Response(0, '{key: value}', 'response body')
@@ -84,7 +87,7 @@ def test_can_replay(server, cassette, call):
 
 
 @pytest.mark.gen_test
-def test_cant_replay(server, cassette, real_peer, call):
+def test_record(server, cassette, real_peer, call):
     allow(cassette).can_replay.and_return(False)
     expect(cassette).record.with_args(
         vcr.Request('service', 'endpoint', 'headers', 'body'),
@@ -112,3 +115,13 @@ def test_cant_replay(server, cassette, real_peer, call):
 
     assert (yield response.get_header()) == 'response headers'
     assert (yield response.get_body()) == 'response body'
+
+
+@pytest.mark.xfail(reason='Pending deletion of FakeServer')
+@pytest.mark.gen_test
+def test_write_protected(server, cassette, call):
+    cassette.write_protected = True
+    allow(cassette).can_replay.and_return(False)
+
+    with pytest.raises(CannotWriteCassetteError):
+        yield call('endpoint', 'request body')
