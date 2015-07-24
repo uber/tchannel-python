@@ -600,6 +600,7 @@ class PeerClientOperation(object):
 
     @gen.coroutine
     def send_with_retry(self, request, peer, attempt_times, retry_delay):
+
         # black list to record all used peers, so they aren't chosen again.
         blacklist = set()
         response = None

@@ -27,8 +27,7 @@ from thrift import Thrift
 from tornado import gen
 
 from tchannel.tornado.broker import ArgSchemeBroker
-
-from .scheme import ThriftArgScheme
+from tchannel.dep.thrift_arg_scheme import DeprecatedThriftArgScheme
 from .util import get_service_methods
 
 # Generated clients will use this base class.
@@ -124,7 +123,7 @@ def generate_method(service_module, service_name, method_name):
     # TODO result_type is None when the method is oneway.
     # We don't support oneway yet.
 
-    arg_scheme = ThriftArgScheme(result_type)
+    arg_scheme = DeprecatedThriftArgScheme(result_type)
     result_spec = result_type.thrift_spec
     # result_spec is a tuple of tuples in the form:
     #
@@ -162,7 +161,7 @@ def generate_method(service_module, service_name, method_name):
             ),
             endpoint,
             {},
-            call_args,
+            call_args,  # body
             protocol_headers=self.protocol_headers,
             traceflag=self.trace
         )
