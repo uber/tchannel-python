@@ -27,7 +27,7 @@ from . import types
 from . import yaml
 from .exceptions import RequestNotFoundError
 from .exceptions import UnsupportedVersionError
-from .exceptions import VCRError
+from .record_modes import RecordMode
 
 
 __all__ = ['Cassette']
@@ -35,46 +35,6 @@ __all__ = ['Cassette']
 
 # Version of the storage format.
 VERSION = 1
-
-
-class RecordMode(object):
-    """A RecordMode dictates a cassette's behavior on recording and replays.
-
-    :param name:
-        Name of the record mode.
-    :param replayable:
-        Whether this record mode allows requests to be replayed.
-    :param can_record:
-        Whether this record mode allows new interactions to be recorded. This
-        may be a boolean or a function that accepts the cassette and returns a
-        boolean.
-    """
-
-    __slots__ = ('name', 'replayable', 'can_record')
-
-    def __init__(self, name, replayable, can_record):
-        self.name = name
-        self.replayable = replayable
-        if not callable(can_record):
-            self.can_record = (lambda _: can_record)
-        else:
-            self.can_record = can_record
-
-
-RECORD_MODES = {m.name: m for m in [
-    RecordMode(
-        name='once',
-        replayable=True,
-        can_record=(lambda c: not c.existed),
-    ),
-    RecordMode(
-        name='new_episodes',
-        replayable=True,
-        can_record=True,
-    ),
-    RecordMode(name='none', replayable=True, can_record=False),
-    RecordMode(name='all', replayable=False, can_record=True),
-]}
 
 
 class Cassette(object):
@@ -87,16 +47,12 @@ class Cassette(object):
             File path at which this cassette will be stored.
         :param record_mode:
             One of 'once', 'none', 'all', 'new_episodes'. See
-            :ref:`record-modes`.
+            :py:class:`tchannel.testing.vcr.RecordMode`.
         """
         # TODO move documentation around
-        record_mode = record_mode or 'once'
-        if record_mode not in RECORD_MODES:
-            raise VCRError(
-                'Invalid record mode %s. It must be one of "once", "none", '
-                '"all", or "new_episodes". Check the documentation for more '
-                'information' % repr(record_mode)
-            )
+        record_mode = record_mode or RecordMode.ONCE
+        if isinstance(record_mode, basestring):
+            record_mode = RecordMode.from_name(record_mode)
 
         self.path = path
 
@@ -104,8 +60,7 @@ class Cassette(object):
         # this was a new cassette and the YAML file did not exist.
         self.existed = False
 
-        self._record_mode = RECORD_MODES[record_mode]
-
+        self._record_mode = record_mode
         self._available = deque()
         self._played = deque()
         self._recorded = deque()

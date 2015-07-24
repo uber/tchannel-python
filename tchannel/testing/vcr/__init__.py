@@ -37,34 +37,17 @@ The simplest way to use this is with the :py:func:`use_cassette` function.
 Configuration
 -------------
 
-.. _record-modes:
-
 Record Modes
 ~~~~~~~~~~~~
 
-Record modes dictate how a cassette behaves when interactions are replayed or
-recorded. The following record modes are supported.
+.. autoclass:: RecordMode
 
-once
-    If the YAML file did not exist, record new interactions and save them.  If
-    the YAML file already existed, replay existing interactions but disallow
-    any new interactions. This is the default and usually what you want.
-none
-    Replay existing interactions and disallow any new interactions.  This is
-    a good choice for tests whose behavior is unlikely to change in the near
-    future. It ensures that those tests don't accidentally start making new
-    requests.
-all
-    Record all interactions. Do not replay anything. This is useful for
-    re-recording everything anew.
-new_episodes
-    Replay existing interactions and allow recording new ones. This is usually
-    undesirable since it reduces predictability in tests.
 """
 from __future__ import absolute_import
 
 from .patch import Patcher
 from .cassette import Cassette
+from .record_modes import RecordMode
 
 
 def use_cassette(path, record_mode=None):
@@ -85,7 +68,7 @@ def use_cassette(path, record_mode=None):
 
 
         def test_bar():
-            with vcr.use_cassette('tests/data/bar.yaml'):
+            with vcr.use_cassette('tests/data/bar.yaml', record_mode='none'):
                 # ...
 
     :param path:
@@ -94,13 +77,15 @@ def use_cassette(path, record_mode=None):
         the record mode).
     :param record_mode:
         The record mode dictates whether a cassette is allowed to record or
-        replay interactions. This must be one of "once", "none", "all", or
-        "new_episodes". Defaults to "once". See :ref:`record-modes` for
-        details on supported record modes and how to use them.
+        replay interactions. This may be a string specifying the record mode
+        name or an element from the :py:class:`RecordMode` object. This
+        parameter defaults to :py:attr:`RecordMode.ONCE`. See
+        :py:class:`RecordMode` for details on supported record modes and how
+        to use them.
     """
     # TODO create some sort of configurable VCR object which implements
     # use_cassette. Top-level use_cassette can just use a default instance.
     return Patcher(Cassette(path=path, record_mode=record_mode))
 
 
-__all__ = ['use_cassette']
+__all__ = ['use_cassette', 'RecordMode']

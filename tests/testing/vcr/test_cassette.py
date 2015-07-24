@@ -22,13 +22,14 @@ from __future__ import absolute_import
 
 import pytest
 
-from tchannel.testing.vcr.types import Request, Response
 from tchannel.testing.vcr.cassette import Cassette
 from tchannel.testing.vcr.exceptions import (
     VCRError,
     RequestNotFoundError,
     UnsupportedVersionError,
 )
+from tchannel.testing.vcr.record_modes import RecordMode
+from tchannel.testing.vcr.types import Request, Response
 
 
 @pytest.fixture
@@ -119,7 +120,7 @@ def test_does_not_forget_on_new_interactions(path):
     req2 = Request('service', 'endpoint2', '', 'body2')
     res2 = Response(0, '', 'endpoint2 response body')
 
-    with Cassette(str(path), record_mode='new_episodes') as cass:
+    with Cassette(str(path), record_mode=RecordMode.NEW_EPISODES) as cass:
         cass.record(req2, res2)
 
     with Cassette(str(path)) as cass:
@@ -152,7 +153,7 @@ def test_record_mode_none(path):
     req = Request('service', 'endpoint1', '', 'body')
     res = Response(0, '', 'response body')
 
-    with Cassette(str(path), record_mode='none') as cass:
+    with Cassette(str(path), record_mode=RecordMode.NONE) as cass:
         with pytest.raises(AssertionError):
             cass.record(req, res)
 
@@ -160,7 +161,7 @@ def test_record_mode_none(path):
     with Cassette(str(path)) as cass:
         cass.record(req, res)
 
-    with Cassette(str(path), record_mode='none') as cass:
+    with Cassette(str(path), record_mode=RecordMode.NONE) as cass:
         assert res == cass.replay(req)
 
 
@@ -171,12 +172,12 @@ def test_record_mode_all(path):
     with Cassette(str(path)) as cass:
         cass.record(req, res)
 
-    with Cassette(str(path), record_mode='all') as cass:
+    with Cassette(str(path), record_mode=RecordMode.ALL) as cass:
         assert not cass.can_replay(req)
         with pytest.raises(AssertionError):
             cass.replay(req)
 
-    with Cassette(str(path), record_mode='all') as cass:
+    with Cassette(str(path), record_mode=RecordMode.ALL) as cass:
         cass.record(req, res)
 
     with Cassette(str(path)) as cass:
