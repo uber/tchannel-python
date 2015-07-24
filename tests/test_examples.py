@@ -24,6 +24,13 @@ import subprocess
 
 import pytest
 
+try:
+    import __pypy__  # noqa
+except ImportError:
+    PYPY = False
+else:
+    PYPY = True
+
 
 @contextlib.contextmanager
 def popen(path):
@@ -55,6 +62,7 @@ def examples_dir():
         os.chdir(cwd)
 
 
+@pytest.mark.skipif(PYPY, reason='flaky in pypy')
 @pytest.mark.parametrize(
     'example_type',
     [
