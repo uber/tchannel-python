@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Ensures that the license blurb is added to all source code.
+
+findup() {
+	if [[ -f "$1/$2" ]]; then
+		echo "$1"
+	else
+		findUp "$1/.." "$2"
+	fi
+}
+
+ROOT=$(realpath "$(findup "." "setup.py")")
+LICENSE_EXEC="$ROOT/node_modules/.bin/uber-licence"
+
+ensure_license() {
+	cwd="$(pwd)"
+	# This is ugly but it basically executes the uber-license tool, parses the
+	# output to figure out which files were changed, and stages them into the
+	# commit.
+	("$LICENSE_EXEC" --file '*.py' || exit 1) \
+		| grep '^fixed file ' |  perl -F"'" -ane 'print "$F[1]\n"' \
+		| while read fileName; do
+			echo "License added to $cwd/$fileName"
+			git add "$fileName"
+		  done
+}
+
+unset GIT_DIR
+
+# Ensure uber-licence is installed.
+if [[ ! -x "$LICENSE_EXEC" ]]; then
+	echo "uber-licence is not installed. Installing."
+	pushd "$ROOT" &>/dev/null
+	npm i uber-licence
+	popd &>/dev/null
+fi
+
+for d in tchannel tests examples; do
+	pushd "$ROOT/$d" &>/dev/null
+	ensure_license
+	popd &>/dev/null
+done
