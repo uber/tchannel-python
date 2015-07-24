@@ -36,13 +36,18 @@ class _RecordMode(object):
         Whether this record mode allows new interactions to be recorded. This
         may be a boolean or a function that accepts the cassette and returns a
         boolean.
+    :param save_unplayed:
+        Whether the cassette remembers previously saved unplayed interactions
+        when the cassette is saved again. This is useful when the record mode
+        needs to forget unused interactions.
     """
 
-    __slots__ = ('name', 'replayable', 'can_record')
+    __slots__ = ('name', 'replayable', 'can_record', 'save_unplayed')
 
-    def __init__(self, name, replayable, can_record):
+    def __init__(self, name, replayable, can_record, save_unplayed):
         self.name = name
         self.replayable = replayable
+        self.save_unplayed = save_unplayed
         if not callable(can_record):
             self.can_record = (lambda _: can_record)
         else:
@@ -72,24 +77,40 @@ class RecordMode(object):
     #: disallow any new interactions. This is the default and usually what you
     #: want.
     ONCE = _RecordMode(
-        name='once', replayable=True, can_record=(lambda c: not c.existed),
+        name='once',
+        replayable=True,
+        can_record=(lambda c: not c.existed),
+        save_unplayed=True,
     )
 
     #: Replay existing interactions and allow recording new ones. This is
     #: usually undesirable since it reduces predictability in tests.
     NEW_EPISODES = _RecordMode(
-        name='new_episodes', replayable=True, can_record=True,
+        name='new_episodes',
+        replayable=True,
+        can_record=True,
+        save_unplayed=True,
     )
 
     #: Replay existing interactions and disallow any new interactions.  This
     #: is a good choice for tests whose behavior is unlikely to change in the
     #: near future. It ensures that those tests don't accidentally start
     #: making new requests.
-    NONE = _RecordMode(name='none', replayable=True, can_record=False)
+    NONE = _RecordMode(
+        name='none',
+        replayable=True,
+        can_record=False,
+        save_unplayed=True,
+    )
 
-    #: Record all interactions. Do not replay anything. This is useful for
-    #: re-recording everything anew.
-    ALL = _RecordMode(name='all', replayable=False, can_record=True)
+    #: Do not replay anything and record all new interactions. Forget all
+    #: existing interactions. This may be used to record everything anew.
+    ALL = _RecordMode(
+        name='all',
+        replayable=False,
+        can_record=True,
+        save_unplayed=False,
+    )
 
     @classmethod
     def from_name(cls, name):

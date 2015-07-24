@@ -168,6 +168,7 @@ def test_record_mode_none(path):
 def test_record_mode_all(path):
     req = Request('service', 'endpoint1', '', 'body')
     res = Response(0, '', 'response body')
+    res2 = Response(0, '', 'response body 2')
 
     with Cassette(str(path)) as cass:
         cass.record(req, res)
@@ -178,7 +179,7 @@ def test_record_mode_all(path):
             cass.replay(req)
 
     with Cassette(str(path), record_mode=RecordMode.ALL) as cass:
-        cass.record(req, res)
+        cass.record(req, res2)
 
     with Cassette(str(path)) as cass:
-        assert res == cass.replay(req)
+        assert res2 == cass.replay(req)

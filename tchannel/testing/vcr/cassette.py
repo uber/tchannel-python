@@ -121,7 +121,16 @@ class Cassette(object):
         if not self._recorded:
             return
 
-        interactions = self.data
+        # Order:
+        # - things that were played in the order that were played
+        # - things that haven't been played yet -- assuming the record mode
+        #   allows it.
+        # - things that were recorded in this session
+        interactions = deque(self._played)
+        if self._record_mode.save_unplayed:
+            interactions.extend(self._available)
+        interactions.extend(self._recorded)
+
         data = yaml.dump(
             {
                 'interactions': [i.to_primitive() for i in interactions],
