@@ -24,7 +24,7 @@ class TChannel(NodeInspiredTChannel):
     @gen.coroutine
     def call_raw(self, service, endpoint, body, headers=None, timeout=None):
 
-        response = yield self.call('raw', service, endpoint, body, timeout)
+        response = yield self.call('raw', service, endpoint, body, headers, timeout)
 
         raise gen.Return(response)
 
