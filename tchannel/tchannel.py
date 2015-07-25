@@ -13,12 +13,20 @@ __all__ = ['TChannel']
 class TChannel(NodeInspiredTChannel):
 
     @gen.coroutine
-    def call(self, argscheme, service, endpoint, body, headers={}, timeout=DEFAULT_TIMEOUT):
-        pass
+    def call(self, argscheme, service, endpoint, body, headers=None, timeout=None):
+
+        if headers is None:
+            headers = {}
+
+        if timeout is None:
+            timeout = DEFAULT_TIMEOUT
 
     @gen.coroutine
-    def call_raw(self):
-        pass
+    def call_raw(self, service, endpoint, body, headers=None, timeout=None):
+
+        response = yield self.call('raw', service, endpoint, body, timeout)
+
+        raise gen.Return(response)
 
     @gen.coroutine
     def call_json(self):
