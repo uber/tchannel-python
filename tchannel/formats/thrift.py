@@ -8,6 +8,7 @@ from tchannel.format import Formatter
 
 class ThriftFormat(Formatter):
 
+    @property
     def name(self):
         return 'thrift'
 

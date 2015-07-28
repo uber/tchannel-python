@@ -8,6 +8,7 @@ from tchannel.format import Formatter
 
 class JsonFormat(Formatter):
 
+    @property
     def name(self):
         return 'json'
 
