@@ -8,7 +8,7 @@ from tornado import gen
 
 from .formats import DEFAULT_FORMATS
 from .glossary import DEFAULT_TIMEOUT
-from .tornado import TChannel as NodeInspiredTChannel
+from .tornado import TChannel as DeprecatedTChannel
 from .tornado.stream import InMemStream
 
 __all__ = ['TChannel', 'Response']
@@ -19,8 +19,9 @@ class TChannel(object):
     def __init__(self, name, hostport=None, process_name=None,
                  known_peers=None, formatters=None, trace=False):
 
-
-        self._dep_tchannel = NodeInspiredTChannel(
+        # until we move everything here,
+        # lets compose the old tchannel
+        self._dep_tchannel = DeprecatedTChannel(
             name, hostport, process_name, known_peers, trace
         )
 
