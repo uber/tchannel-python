@@ -2,11 +2,10 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals
 )
 
+from .base import BaseFormat
 
-from tchannel.format import Formatter
 
-
-class JsonFormat(Formatter):
+class JsonFormat(BaseFormat):
 
     name = 'json'
 

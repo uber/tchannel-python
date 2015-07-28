@@ -6,7 +6,6 @@ from collections import namedtuple
 
 from tornado import gen
 
-from .format import Formatter
 from .formats import DEFAULT_FORMATS
 from .glossary import DEFAULT_TIMEOUT
 from .tornado import TChannel as NodeInspiredTChannel
@@ -30,11 +29,6 @@ class TChannel(NodeInspiredTChannel):
 
         # set formatters
         for f in formatters:
-            # if not abc, blow up
-            if not issubclass(f, Formatter):
-                raise Exception("not valid formatter")
-
-            # init and set on self
             f = f(self)
             setattr(self, f.name, f)
 
