@@ -20,15 +20,34 @@
 
 from __future__ import absolute_import
 
-import yaml
+import pytest
+from doubles import InstanceDouble
+
+from tchannel.tornado import TChannel
+from tchannel.testing.vcr.patch import Patcher
+from tchannel.testing.vcr.patch import PatchedClientOperation
 
 
-def load(s):
-    return yaml.load(s)
+@pytest.fixture
+def vcr_client():
+    return InstanceDouble('tchannel.testing.vcr.VCRProxyClient')
 
 
-def dump(d):
-    return yaml.dump(d, default_flow_style=False)
+def test_patching_as_context_manager(vcr_client):
+    chan = TChannel('client')
+    with Patcher(vcr_client):
+        ops = chan.request(service='foo')
+        assert isinstance(ops, PatchedClientOperation)
+        assert ops.vcr_client is vcr_client
 
 
-__all__ = ['load', 'dump']
+def test_patching_as_decorator():
+    chan = TChannel('client')
+
+    @Patcher(vcr_client)
+    def f():
+        ops = chan.request(service='foo')
+        assert isinstance(ops, PatchedClientOperation)
+        assert ops.vcr_client is vcr_client
+
+    f()

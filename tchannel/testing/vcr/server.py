@@ -20,80 +20,129 @@
 
 from __future__ import absolute_import
 
+from functools import wraps
+
 from tornado import gen
 
+from tchannel.errors import ProtocolError
 from tchannel.tornado import TChannel
 
-from . import types
-from .exceptions import CannotWriteCassetteError
+from .proxy import VCRProxy
 
 
-class FakeServer(object):
-    """A fake TChannel server to record or replay requests."""
+def wrap_uncaught(func=None, reraise=None):
+    """Catches uncaught exceptions and raises VCRServiceErrors instead.
 
-    def __init__(self, cassette, real_peer):
+    :param reraise:
+        Collection of exception clasess that should be re-raised as-is.
+    """
+    reraise = reraise or ()
+
+    def decorator(f):
+
+        @wraps(f)
+        @gen.coroutine
+        def new_f(*args, **kwargs):
+            try:
+                result = yield gen.maybe_future(f(*args, **kwargs))
+            except Exception as e:
+                if any(isinstance(e, cls) for cls in reraise):
+                    # TODO maybe use traceback.format_exc to also send a
+                    # traceback?
+                    raise e
+                raise VCRProxy.VCRServiceError(e.message)
+            else:
+                raise gen.Return(result)
+
+        return new_f
+
+    if func is not None:
+        return decorator(func)
+    else:
+        return decorator
+
+
+class VCRProxyService(object):
+
+    def __init__(self, cassette, unpatch):
+        """
+        :param unpatch:
+            A function returning a context manager which temporarily unpatches
+            any monkey patched code so that a real request can be made.
+        :param cassette:
+            Cassette being played.
+        """
+        self.unpatch = unpatch
         self.cassette = cassette
-        self.real_peer = real_peer
-        self.tchannel = TChannel('fake-server')
 
-        self.tchannel.register(
-            endpoint=self.tchannel.FALLBACK,
-            handler=self.handle_request
-        )
+        self.tchannel = TChannel('proxy-server')
+        self.tchannel.register(VCRProxy, handler=self.send)
 
+    @wrap_uncaught(reraise=(
+        VCRProxy.CannotRecordInteractionsError,
+        VCRProxy.RemoteServiceError,
+        VCRProxy.VCRServiceError,
+    ))
     @gen.coroutine
-    def handle_request(self, req, res, channel):
-        endpoint = req.endpoint
-        headers = yield req.get_header()
-        body = yield req.get_body()
-
-        request = types.Request(req.service, endpoint, headers, body)
+    def send(self, request, response, channel):
+        cassette = self.cassette
+        request = request.args.request
 
         # TODO decode requests and responses based on arg scheme into more
         # readable formats.
 
-        if self.cassette.can_replay(request):
-            response = self.cassette.replay(request)
-            res.status_code = response.status
-            res.write_header(response.headers)
-            res.write_body(response.body)
-            return
+        # Because Thrift doesn't handle UTF-8 correctly right now
+        request.serviceName = request.serviceName.decode('utf-8')
+        request.endpoint = request.endpoint.decode('utf-8')
 
-        if self.cassette.write_protected:
-            raise CannotWriteCassetteError(
+        # TODO do we care about hostport being the same?
+        if cassette.can_replay(request):
+            vcr_response = cassette.replay(request)
+            raise gen.Return(vcr_response)
+
+        if cassette.write_protected:
+            raise VCRProxy.CannotRecordInteractionsError(
                 'Could not find a matching response for request %s and the '
                 'record mode %s prevents new interactions from being '
                 'recorded. Your test may be performing an uenxpected '
-                'request.' % (request, self.cassette.record_mode)
+                'request.' % (str(request), cassette.record_mode)
             )
 
-        # TODO propagate other request and response parameters
-        # TODO record modes
+        arg_scheme = VCRProxy.ArgScheme.to_name(request.argScheme).lower()
 
-        real_response = yield self.real_peer.request(
-            request.service,
-            arg_scheme=req.arg_scheme,
-            hostport=self.real_peer.hostport,
-            retry='n',
-            # TODO other parameters
-        ).send(
-            request.endpoint,
-            request.headers,
-            request.body,
-            headers=req.headers,  # protocol headers
+        with self.unpatch():
+            # TODO propagate other request and response parameters
+            # TODO might make sense to tag all VCR requests with a protocol
+            # header of some kind
+            response_future = channel.request(
+                service=request.serviceName,
+                arg_scheme=arg_scheme,
+                hostport=request.hostPort,
+            ).send(
+                request.endpoint,
+                request.headers,
+                request.body,
+                headers={h.key: h.value for h in request.transportHeaders},
+            )
+
+        # Don't actually yield while everything is unpatched.
+        try:
+            response = yield response_future
+        except ProtocolError as e:
+            raise VCRProxy.RemoteServiceError(
+                code=e.code,
+                message=e.message,
+            )
+        response_headers = yield response.get_header()
+        response_body = yield response.get_body()
+
+        vcr_response = VCRProxy.Response(
+            response.status_code,
+            response_headers,
+            response_body,
         )
-
-        res_headers = yield real_response.get_header()
-        res_body = yield real_response.get_body()
-
-        response = types.Response(
-            real_response.status_code, res_headers, res_body
-        )
-        self.cassette.record(request, response)
-
-        res.status_code = response.status
-        res.write_header(response.headers)
-        res.write_body(response.body)
+        cassette.record(request, vcr_response)
+        raise gen.Return(vcr_response)
 
     @property
     def hostport(self):

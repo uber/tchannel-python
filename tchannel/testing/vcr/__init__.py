@@ -22,8 +22,8 @@
 VCR
 ===
 
-``tchannel.testing.vcr`` provides VCR-like functionality for TChannel. It is
-heavily inspired by the `vcrpy <https://github.com/kevin1024/vcrpy/>`_
+``tchannel.testing.vcr`` provides VCR-like functionality for TChannel. Its
+API is heavily inspired by the `vcrpy <https://github.com/kevin1024/vcrpy/>`_
 library.
 
 This allows recording TChannel requests and their responses into YAML files
@@ -45,11 +45,21 @@ Record Modes
 """
 from __future__ import absolute_import
 
-from .patch import Patcher
+import contextlib2
+
+from tchannel.tornado import TChannel
+from tchannel.thrift import client_for
+
 from .cassette import Cassette
+from .patch import Patcher, force_reset
 from .record_modes import RecordMode
+from .server import VCRProxyService, VCRProxy
 
 
+VCRProxyClient = client_for('vcr', VCRProxy)
+
+
+@contextlib2.contextmanager
 def use_cassette(path, record_mode=None):
     """Use or create a cassette to record/replay TChannel requests.
 
@@ -83,9 +93,28 @@ def use_cassette(path, record_mode=None):
         :py:class:`RecordMode` for details on supported record modes and how
         to use them.
     """
+
     # TODO create some sort of configurable VCR object which implements
     # use_cassette. Top-level use_cassette can just use a default instance.
-    return Patcher(Cassette(path=path, record_mode=record_mode))
+
+    with contextlib2.ExitStack() as exit_stack:
+        cassette = exit_stack.enter_context(
+            Cassette(path=path, record_mode=record_mode)
+        )
+
+        server = exit_stack.enter_context(
+            VCRProxyService(cassette=cassette, unpatch=force_reset)
+        )
+
+        # TODO Maybe instead of using this instance of the TChannel client, we
+        # should use the one being patched to make the requests?
+        client = VCRProxyClient(
+            tchannel=TChannel('proxy-client'),
+            hostport=server.hostport,
+        )
+        exit_stack.enter_context(Patcher(client))
+
+        yield cassette
 
 
 __all__ = ['use_cassette', 'RecordMode']
