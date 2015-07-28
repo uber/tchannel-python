@@ -9,8 +9,17 @@ class RawFormat(BaseFormat):
 
     name = 'raw'
 
-    def call(self):
-        pass
+    def call(self, service, endpoint, body,
+             headers=None, timeout=None):
+
+        return self.tchannel.call(
+            format=self.name,
+            service=service,
+            endpoint=endpoint,
+            body=body,
+            headers=headers,
+            timeout=timeout,
+        )
 
     def stream(self):
         pass
