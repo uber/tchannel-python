@@ -14,12 +14,13 @@ from .tornado.stream import InMemStream
 __all__ = ['TChannel', 'Response']
 
 
-class TChannel(NodeInspiredTChannel):
+class TChannel(object):
 
     def __init__(self, name, hostport=None, process_name=None,
                  known_peers=None, formatters=None, trace=False):
 
-        super(TChannel, self).__init__(
+
+        self._dep_tchannel = NodeInspiredTChannel(
             name, hostport, process_name, known_peers, trace
         )
 
@@ -42,7 +43,7 @@ class TChannel(NodeInspiredTChannel):
         if timeout is None:
             timeout = DEFAULT_TIMEOUT
 
-        operation = self.request(
+        operation = self._dep_tchannel.request(
            hostport=service,
            arg_scheme=format
         )
