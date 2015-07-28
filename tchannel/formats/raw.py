@@ -8,9 +8,7 @@ from tchannel.format import Formatter
 
 class RawFormat(Formatter):
 
-    @property
-    def name(self):
-        return 'raw'
+    name = 'raw'
 
     def call(self):
         pass
