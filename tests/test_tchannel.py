@@ -4,8 +4,7 @@ from __future__ import (
 
 import pytest
 
-from tchannel import TChannel, Response
-from tchannel.formats import DEFAULT_FORMATS
+from tchannel import TChannel, Response, formats
 
 
 @pytest.mark.call
@@ -13,7 +12,7 @@ def test_should_get_default_formatters():
 
     tchannel = TChannel(name='test')
 
-    for f in DEFAULT_FORMATS:
+    for f in formats.DEFAULT_FORMATS:
         format = getattr(tchannel, f.name)
         assert format, "default format not found"
         assert isinstance(format, f)
@@ -33,7 +32,7 @@ def test_call_should_get_response(mock_server):
     tchannel = TChannel(name='test')
 
     response = yield tchannel.call(
-        format="raw",
+        format=formats.RAW,
         service=mock_server.hostport,
         endpoint=endpoint,
         body=body
