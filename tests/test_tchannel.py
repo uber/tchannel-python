@@ -34,8 +34,9 @@ def test_call_should_get_response(mock_server):
     response = yield tchannel.call(
         format=formats.RAW,
         service=mock_server.hostport,
-        endpoint=endpoint,
-        body=body
+        arg1=endpoint,
+        arg2=None,
+        arg3=body
     )
 
     assert isinstance(response, Response)
