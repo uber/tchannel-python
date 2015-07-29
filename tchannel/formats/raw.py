@@ -7,7 +7,7 @@ from .base import BaseFormat
 
 
 class RawFormat(BaseFormat):
-    """Add semantic params and serialization for raw."""
+    """Semantic params and serialization for raw."""
 
     NAME = RAW
 

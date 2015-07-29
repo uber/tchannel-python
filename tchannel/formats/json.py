@@ -11,6 +11,7 @@ from .base import BaseFormat
 
 
 class JsonFormat(BaseFormat):
+    """Semantic params and serialization for json."""
 
     NAME = JSON
 

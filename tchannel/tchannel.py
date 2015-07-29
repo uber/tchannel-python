@@ -14,7 +14,7 @@ __all__ = ['TChannel', 'Response']
 class TChannel(object):
 
     def __init__(self, name, hostport=None, process_name=None,
-                 known_peers=None, formatters=None, trace=False):
+                 known_peers=None, trace=False):
 
         # until we move everything here,
         # lets compose the old tchannel
@@ -22,14 +22,10 @@ class TChannel(object):
             name, hostport, process_name, known_peers, trace
         )
 
-        # if no formatters, use defaults
-        if not formatters:
-            formatters = formats.DEFAULT_FORMATS
-
-        # set formatters
-        for f in formatters:
-            f = f(self)
-            setattr(self, f.NAME, f)
+        # add main API's
+        self.raw = formats.RawFormat(self)
+        self.json = formats.JsonFormat(self)
+        self.thrift = formats.ThriftFormat(self)
 
     @gen.coroutine
     def call(self, format, service, arg1, arg2=None, arg3=None, timeout=None):
