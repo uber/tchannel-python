@@ -2,14 +2,11 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals
 )
 
-from collections import namedtuple
-
 from tornado import gen
 
-from . import formats, scheme
+from . import formats
 from .glossary import DEFAULT_TIMEOUT
 from .tornado import TChannel as DeprecatedTChannel
-from .tornado.broker import ArgSchemeBroker
 
 __all__ = ['TChannel', 'Response']
 
@@ -57,23 +54,12 @@ class TChannel(object):
            arg_scheme=format
         )
 
-        # execute response, note that formats.RAW
-        # goes to the else clause; this allows custom
-        # formats to continue to work. TODO this function
-        # should have no specialization per-format.
-        if format == formats.JSON:
-            response = yield ArgSchemeBroker(scheme.JsonArgScheme()).send(
-                client=operation,
-                endpoint=arg1,
-                header=arg2,
-                body=arg3,
-            )
-        else:
-            response = yield operation.send(
-                arg1=arg1,
-                arg2=arg2,
-                arg3=arg3,
-            )
+        # fire operation
+        response = yield operation.send(
+            arg1=arg1,
+            arg2=arg2,
+            arg3=arg3,
+        )
 
         # unwrap response
         header = yield response.get_header()
@@ -83,4 +69,7 @@ class TChannel(object):
         raise gen.Return(result)
 
 
-Response = namedtuple('Response', 'header, body')
+class Response(object):
+    def __init__(self, header, body):
+        self.header = header
+        self.body = body
