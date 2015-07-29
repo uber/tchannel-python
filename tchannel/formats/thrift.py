@@ -10,7 +10,7 @@ class ThriftFormat(BaseFormat):
 
     NAME = THRIFT
 
-    def call(self):
+    def __call__(self):
         pass
 
     def stream(self):

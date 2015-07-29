@@ -20,7 +20,7 @@ def test_call_should_get_response(mock_server):
 
     tchannel = TChannel(name='test')
 
-    response = yield tchannel.raw.call(
+    response = yield tchannel.raw(
         service=mock_server.hostport,
         endpoint=endpoint,
         body=body,

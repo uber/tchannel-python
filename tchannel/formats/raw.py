@@ -11,7 +11,7 @@ class RawFormat(BaseFormat):
 
     NAME = RAW
 
-    def call(self, service, endpoint, body=None,
+    def __call__(self, service, endpoint, body=None,
              headers=None, timeout=None):
 
         return self.tchannel.call(
