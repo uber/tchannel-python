@@ -12,7 +12,7 @@ from .base import BaseFormat
 
 class JsonFormat(BaseFormat):
 
-    name = JSON
+    NAME = JSON
 
     @gen.coroutine
     def call(self, service, endpoint, body=None,
@@ -24,7 +24,7 @@ class JsonFormat(BaseFormat):
         body = json.dumps(body)
 
         response = yield self.tchannel.call(
-            format=self.name,
+            format=self.NAME,
             service=service,
             arg1=endpoint,
             arg2=headers,

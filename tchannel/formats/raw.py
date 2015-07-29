@@ -9,13 +9,13 @@ from .base import BaseFormat
 class RawFormat(BaseFormat):
     """Add semantic params and serialization for raw."""
 
-    name = RAW
+    NAME = RAW
 
     def call(self, service, endpoint, body=None,
              headers=None, timeout=None):
 
         return self.tchannel.call(
-            format=self.name,
+            format=self.NAME,
             service=service,
             arg1=endpoint,
             arg2=headers,

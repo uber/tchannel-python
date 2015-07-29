@@ -8,7 +8,7 @@ from .base import BaseFormat
 
 class ThriftFormat(BaseFormat):
 
-    name = THRIFT
+    NAME = THRIFT
 
     def call(self):
         pass

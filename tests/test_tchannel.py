@@ -13,7 +13,7 @@ def test_should_get_default_formatters():
     tchannel = TChannel(name='test')
 
     for f in formats.DEFAULT_FORMATS:
-        format = getattr(tchannel, f.name)
+        format = getattr(tchannel, f.NAME)
         assert format, "default format not found"
         assert isinstance(format, f)
 

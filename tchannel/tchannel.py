@@ -29,7 +29,7 @@ class TChannel(object):
         # set formatters
         for f in formatters:
             f = f(self)
-            setattr(self, f.name, f)
+            setattr(self, f.NAME, f)
 
     @gen.coroutine
     def call(self, format, service, arg1, arg2, arg3, timeout=None):
