@@ -34,7 +34,7 @@ class TChannel(object):
             f = f(self)
             setattr(self, f.name, f)
 
-    @gen.coroutine
+    @gen.coroutine  # TODO dont use coroutine
     def call(self, format, service, arg1, arg2, arg3, timeout=None):
 
         # TODO - dont use asserts for public API
