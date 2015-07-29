@@ -11,11 +11,12 @@ from .base import BaseFormat
 
 
 class JsonFormat(BaseFormat):
+    """Semantic params and serialization for json."""
 
     NAME = JSON
 
     @gen.coroutine
-    def call(self, service, endpoint, body=None,
+    def __call__(self, service, endpoint, body=None,
              headers=None, timeout=None):
 
         if body is None:

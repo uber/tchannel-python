@@ -7,11 +7,11 @@ from .base import BaseFormat
 
 
 class RawFormat(BaseFormat):
-    """Add semantic params and serialization for raw."""
+    """Semantic params and serialization for raw."""
 
     NAME = RAW
 
-    def call(self, service, endpoint, body=None,
+    def __call__(self, service, endpoint, body=None,
              headers=None, timeout=None):
 
         return self.tchannel.call(
