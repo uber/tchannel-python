@@ -12,7 +12,7 @@ class RawFormat(BaseFormat):
     NAME = RAW
 
     def __call__(self, service, endpoint, body=None,
-             headers=None, timeout=None):
+                 headers=None, timeout=None):
 
         return self.tchannel.call(
             format=self.NAME,

@@ -17,7 +17,7 @@ class JsonFormat(BaseFormat):
 
     @gen.coroutine
     def __call__(self, service, endpoint, body=None,
-             headers=None, timeout=None):
+                 headers=None, timeout=None):
 
         if body is None:
             body = {}
