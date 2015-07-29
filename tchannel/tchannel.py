@@ -4,11 +4,12 @@ from __future__ import (
 
 from tornado import gen
 
-from . import formats
+from . import formats, transport
 from .glossary import DEFAULT_TIMEOUT
+from .response import Response, ResponseTransportHeaders
 from .tornado import TChannel as DeprecatedTChannel
 
-__all__ = ['TChannel', 'Response']
+__all__ = ['TChannel']
 
 
 class TChannel(object):
@@ -58,14 +59,11 @@ class TChannel(object):
         )
 
         # unwrap response
-        header = yield response.get_header()
+        header = yield response.get_header()  # TODO WHY IS THIS ONE HEADER?
         body = yield response.get_body()
-        result = Response(header, body)
+        t = transport.to_kwargs(response.headers)
+        t = ResponseTransportHeaders(**t)
+
+        result = Response(header, body, t)
 
         raise gen.Return(result)
-
-
-class Response(object):
-    def __init__(self, header, body):
-        self.header = header
-        self.body = body

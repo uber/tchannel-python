@@ -4,7 +4,8 @@ from __future__ import (
 
 import pytest
 
-from tchannel import TChannel, Response, formats
+from tchannel import TChannel, formats
+from tchannel import response
 
 
 @pytest.mark.call
@@ -31,7 +32,7 @@ def test_call_should_get_response(mock_server):
 
     tchannel = TChannel(name='test')
 
-    response = yield tchannel.call(
+    resp = yield tchannel.call(
         format=formats.RAW,
         service=mock_server.hostport,
         arg1=endpoint,
@@ -39,6 +40,11 @@ def test_call_should_get_response(mock_server):
         arg3=body
     )
 
-    # TODO not asserting header...
-    assert isinstance(response, Response)
-    assert response.body == body
+    # verify body
+    assert isinstance(resp, response.Response)
+    assert resp.body == body
+
+    # verify response transport headers
+    assert isinstance(resp.transport, response.ResponseTransportHeaders)
+    assert resp.transport.format == formats.RAW
+    assert resp.transport.failure_domain is None

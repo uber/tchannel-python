@@ -5,6 +5,7 @@ from __future__ import (
 RAW = 'raw'
 JSON = 'json'
 THRIFT = 'thrift'
+DEFAULT = RAW
 
 DEFAULT_NAMES = (
     RAW,
