@@ -32,7 +32,7 @@ class TChannel(object):
             setattr(self, f.NAME, f)
 
     @gen.coroutine
-    def call(self, format, service, arg1, arg2, arg3, timeout=None):
+    def call(self, format, service, arg1, arg2=None, arg3=None, timeout=None):
 
         # TODO - dont use asserts for public API
         assert format, "format is required"
