@@ -19,9 +19,8 @@ def test_call_should_get_response(mock_server):
     )
 
     tchannel = TChannel(name='test')
-    format = formats.RawFormat(tchannel)
 
-    response = yield format.call(
+    response = yield tchannel.raw.call(
         service=mock_server.hostport,
         endpoint=endpoint,
         body=body,

@@ -21,9 +21,8 @@ def test_call_should_get_response(mock_server):
     )
 
     tchannel = TChannel(name='test')
-    format = formats.JsonFormat(tchannel)
 
-    response = yield format.call(
+    response = yield tchannel.json.call(
         service=mock_server.hostport,
         endpoint=endpoint,
         body=body,
