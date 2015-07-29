@@ -3,13 +3,15 @@ from __future__ import (
 )
 
 from . import RAW
-from .base import BaseFormat
 
 
-class RawFormat(BaseFormat):
+class RawFormat(object):
     """Semantic params and serialization for raw."""
 
     NAME = RAW
+
+    def __init__(self, tchannel):
+        self.tchannel = tchannel
 
     def __call__(self, service, endpoint, body=None,
                  headers=None, timeout=None):

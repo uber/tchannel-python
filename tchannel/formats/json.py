@@ -7,13 +7,15 @@ import json
 from tornado import gen
 
 from . import JSON
-from .base import BaseFormat
 
 
-class JsonFormat(BaseFormat):
+class JsonFormat(object):
     """Semantic params and serialization for json."""
 
     NAME = JSON
+
+    def __init__(self, tchannel):
+        self.tchannel = tchannel
 
     @gen.coroutine
     def __call__(self, service, endpoint, body=None,

@@ -3,12 +3,14 @@ from __future__ import (
 )
 
 from . import THRIFT
-from .base import BaseFormat
 
 
-class ThriftFormat(BaseFormat):
+class ThriftFormat(object):
 
     NAME = THRIFT
+
+    def __init__(self, tchannel):
+        self.tchannel = tchannel
 
     def __call__(self):
         pass
