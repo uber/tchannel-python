@@ -30,7 +30,7 @@ from tchannel.testing.vcr.patch import PatchedClientOperation
 
 @pytest.fixture
 def vcr_client():
-    return InstanceDouble('tchannel.testing.vcr.VCRProxyClient')
+    return InstanceDouble('tchannel.testing.vcr.config.VCRProxyClient')
 
 
 def test_patching_as_context_manager(vcr_client):
