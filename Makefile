@@ -60,4 +60,4 @@ docs:
 	make -C docs html
 
 gen_thrift:
-    thrift --gen py:new_style,slots,dynamic -out tests/data tests/data/ThriftTest.thrift
+    thrift --gen py:new_style,slots,dynamic -out tests/data/generated tests/data/idls/ThriftTest.thrift

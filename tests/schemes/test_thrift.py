@@ -10,11 +10,17 @@ from tchannel import (
     schemes, response
 )
 from tchannel.tornado import TChannel as DeprecatedTChannel
+from tests.data.generated.ThriftTest import ThriftTest
 
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_call_should_get_response(ThriftClass):
+def test_call_should_get_response():
+    return
+
+    assert ThriftTest
+
+    return
 
     # Given this test server:
 
@@ -42,7 +48,7 @@ def test_call_should_get_response(ThriftClass):
     # Make a call:
 
     tchannel = TChannel(name='client')
-    service = from_thrift_class(ThriftClass)
+    service = from_thrift_class(ThriftTest)
 
     resp = yield tchannel.thrift(
         rpc=service.getItem("key"),
