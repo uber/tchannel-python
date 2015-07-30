@@ -5,4 +5,5 @@ from __future__ import (
 
 def from_thrift_class(thrift_class):
     """Create a ThriftRequestSet from a generated Thrift class."""
+
     return True

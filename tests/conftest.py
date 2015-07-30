@@ -55,3 +55,9 @@ def mock_server():
 def thrift_service(tmpdir):
     with get_thrift_service_module(tmpdir, True) as m:
         yield m
+
+
+@pytest.yield_fixture
+def ThriftClass(tmpdir):
+    with get_thrift_service_module(tmpdir, True) as m:
+        yield m

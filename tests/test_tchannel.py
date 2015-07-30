@@ -46,7 +46,7 @@ def test_call_should_get_response():
 
     # Make a call:
 
-    tchannel = TChannel(name='test')
+    tchannel = TChannel(name='client')
 
     resp = yield tchannel.call(
         scheme=schemes.RAW,

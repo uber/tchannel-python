@@ -8,7 +8,10 @@ from tchannel import from_thrift_class
 
 
 @pytest.mark.call
-def test_from_thrift_class_should_return_request_set():
+def test_from_thrift_class_should_return_request_set(ThriftClass):
+
+    import ipdb; ipdb.set_trace()
+
     request_set = from_thrift_class('some_generated_thrift_class')
 
     assert request_set

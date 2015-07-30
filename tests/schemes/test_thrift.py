@@ -5,20 +5,22 @@ from __future__ import (
 import pytest
 import tornado
 
-from tchannel import TChannel, schemes
-from tchannel import response
+from tchannel import (
+    TChannel, from_thrift_class,
+    schemes, response
+)
 from tchannel.tornado import TChannel as DeprecatedTChannel
 
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_call_should_get_response():
+def test_call_should_get_response(ThriftClass):
 
     # Given this test server:
 
     server = DeprecatedTChannel(name='server')
 
-    @server.register('endpoint', schemes.JSON)
+    @server.register('endpoint', schemes.THRIFT)
     @tornado.gen.coroutine
     def endpoint(request, response, proxy):
 
@@ -40,12 +42,11 @@ def test_call_should_get_response():
     # Make a call:
 
     tchannel = TChannel(name='client')
+    service = from_thrift_class(ThriftClass)
 
-    resp = yield tchannel.json(
-        service=server.hostport,
-        endpoint='endpoint',
+    resp = yield tchannel.thrift(
+        rpc=service.getItem("key"),
         header={'req': 'header'},
-        body={'req': 'body'},
     )
 
     # verify response
