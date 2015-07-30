@@ -13,7 +13,7 @@ class RawArgScheme(object):
     def __init__(self, tchannel):
         self._tchannel = tchannel
 
-    def call(self, service, endpoint, body=None,
+    def __call__(self, service, endpoint, body=None,
              header=None, timeout=None):
 
         return self._tchannel.call(
