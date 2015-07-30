@@ -14,7 +14,7 @@ class RawArgScheme(object):
         self._tchannel = tchannel
 
     def __call__(self, service, endpoint, body=None,
-             header=None, timeout=None):
+                 header=None, timeout=None):
 
         return self._tchannel.call(
             scheme=self.NAME,
