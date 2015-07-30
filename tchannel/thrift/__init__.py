@@ -21,4 +21,5 @@
 from __future__ import absolute_import
 
 from .client import client_for  # noqa
+from .generated import from_thrift_class  # noqa
 from .server import register  # noqa
