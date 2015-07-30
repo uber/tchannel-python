@@ -152,6 +152,15 @@ def test_valid_ping_request():
         'checksum': (messages.ChecksumType.crc32, 1),
         'args': None,
     }),
+    (messages.ClaimMessage, messages.claim_rw, {
+        'ttl': 4,
+        'tracing': messages.Tracing(0, 0, 0, 1),
+    }),
+    (messages.CancelMessage, messages.cancel_rw, {
+        'ttl': 4,
+        'tracing': messages.Tracing(0, 0, 0, 1),
+        'why': 'foo',
+    }),
 ])
 def test_roundtrip_message(message_class, message_rw, attrs):
     """Verify all message types serialize and deserialize properly."""
