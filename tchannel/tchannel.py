@@ -59,7 +59,7 @@ class TChannel(object):
         )
 
         # unwrap response
-        header = yield response.get_header()  # TODO WHY IS THIS ONE HEADER?
+        header = yield response.get_header()
         body = yield response.get_body()
         t = transport.to_kwargs(response.headers)
         t = ResponseTransportHeaders(**t)

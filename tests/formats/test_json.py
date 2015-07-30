@@ -3,31 +3,59 @@ from __future__ import (
 )
 
 import pytest
+import tornado
 
-from tchannel import TChannel, Response
+from tchannel import TChannel, formats
+from tchannel import response
+from tchannel.tornado import TChannel as DeprecatedTChannel
 
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_call_should_get_response(mock_server):
+def test_call_should_get_response():
 
-    endpoint = 'endpoint'
-    body = {
-        'key': 'value'
-    }
+    # Given this test server:
 
-    mock_server.expect_call(endpoint, scheme='json').and_write(
-        headers=endpoint, body=body
-    )
+    server = DeprecatedTChannel(name='server')
+
+    @server.register('endpoint', formats.JSON)
+    @tornado.gen.coroutine
+    def endpoint(request, response, proxy):
+
+        print("HELLOOOOO SUSSYYY")
+
+        header = yield request.get_header()
+        body = yield request.get_body()
+
+        assert header == {'req': 'header'}
+        assert body == {'req': 'body'}
+
+        response.write_header({
+            'resp': 'header'
+        })
+        response.write_body({
+            'resp': 'body'
+        })
+
+    server.listen()
+
+    # Make a call:
 
     tchannel = TChannel(name='test')
 
-    response = yield tchannel.json(
-        service=mock_server.hostport,
-        endpoint=endpoint,
-        body=body,
+    resp = yield tchannel.json(
+        service=server.hostport,
+        endpoint='endpoint',
+        header={'req': 'header'},
+        body={'req': 'body'},
     )
 
-    # TODO not asserting header...
-    assert isinstance(response, Response)
-    assert response.body == body
+    # verify response
+    assert isinstance(resp, response.Response)
+    assert resp.header == {'resp': 'header'}
+    assert resp.body == {'resp': 'body'}
+
+    # verify response transport headers
+    assert isinstance(resp.transport, response.ResponseTransportHeaders)
+    assert resp.transport.format == formats.JSON
+    assert resp.transport.failure_domain is None

@@ -12,7 +12,7 @@ from tchannel.tornado import TChannel as DeprecatedTChannel
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_call_should_get_response(mock_server):
+def test_call_should_get_response():
 
     # Given this test server:
 
