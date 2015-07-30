@@ -15,7 +15,7 @@ class JsonArgScheme(object):
     NAME = JSON
 
     def __init__(self, tchannel):
-        self.tchannel = tchannel
+        self._tchannel = tchannel
 
     @gen.coroutine
     def __call__(self, service, endpoint, body=None,
@@ -31,7 +31,7 @@ class JsonArgScheme(object):
         header = json.dumps(header)
         body = json.dumps(body)
 
-        response = yield self.tchannel.call(
+        response = yield self._tchannel.call(
             scheme=self.NAME,
             service=service,
             arg1=endpoint,

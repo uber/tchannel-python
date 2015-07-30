@@ -10,7 +10,7 @@ class ThriftArgScheme(object):
     NAME = THRIFT
 
     def __init__(self, tchannel):
-        self.tchannel = tchannel
+        self._tchannel = tchannel
 
     def __call__(self):
         pass

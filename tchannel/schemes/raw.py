@@ -11,12 +11,12 @@ class RawArgScheme(object):
     NAME = RAW
 
     def __init__(self, tchannel):
-        self.tchannel = tchannel
+        self._tchannel = tchannel
 
-    def __call__(self, service, endpoint, body=None,
-                 header=None, timeout=None):
+    def call(self, service, endpoint, body=None,
+             header=None, timeout=None):
 
-        return self.tchannel.call(
+        return self._tchannel.call(
             scheme=self.NAME,
             service=service,
             arg1=endpoint,
