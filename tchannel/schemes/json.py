@@ -9,7 +9,7 @@ from tornado import gen
 from . import JSON
 
 
-class JsonFormat(object):
+class JsonArgScheme(object):
     """Semantic params and serialization for json."""
 
     NAME = JSON
@@ -32,7 +32,7 @@ class JsonFormat(object):
         body = json.dumps(body)
 
         response = yield self.tchannel.call(
-            format=self.NAME,
+            scheme=self.NAME,
             service=service,
             arg1=endpoint,
             arg2=header,
@@ -47,4 +47,7 @@ class JsonFormat(object):
         raise gen.Return(response)
 
     def stream(self):
+        pass
+
+    def register(self):
         pass

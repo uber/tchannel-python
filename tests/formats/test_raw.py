@@ -5,7 +5,7 @@ from __future__ import (
 import pytest
 import tornado
 
-from tchannel import TChannel, formats
+from tchannel import TChannel, schemes
 from tchannel import response
 from tchannel.tornado import TChannel as DeprecatedTChannel
 
@@ -18,7 +18,7 @@ def test_call_should_get_response():
 
     server = DeprecatedTChannel(name='server')
 
-    @server.register('endpoint', formats.RAW)
+    @server.register('endpoint', schemes.RAW)
     @tornado.gen.coroutine
     def endpoint(request, response, proxy):
 
@@ -51,5 +51,5 @@ def test_call_should_get_response():
 
     # verify response transport headers
     assert isinstance(resp.transport, response.ResponseTransportHeaders)
-    assert resp.transport.format == formats.RAW
+    assert resp.transport.scheme == schemes.RAW
     assert resp.transport.failure_domain is None

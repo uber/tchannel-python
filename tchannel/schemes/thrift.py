@@ -5,7 +5,7 @@ from __future__ import (
 from . import THRIFT
 
 
-class ThriftFormat(object):
+class ThriftArgScheme(object):
 
     NAME = THRIFT
 
@@ -16,4 +16,7 @@ class ThriftFormat(object):
         pass
 
     def stream(self):
+        pass
+
+    def register(self):
         pass

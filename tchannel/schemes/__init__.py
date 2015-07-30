@@ -13,12 +13,12 @@ DEFAULT_NAMES = (
     THRIFT
 )
 
-from .raw import RawFormat  # noqa
-from .json import JsonFormat  # noqa
-from .thrift import ThriftFormat  # noqa
+from .raw import RawArgScheme  # noqa
+from .json import JsonArgScheme  # noqa
+from .thrift import ThriftArgScheme  # noqa
 
-DEFAULT_FORMATS = (
-    RawFormat,
-    JsonFormat,
-    ThriftFormat
+DEFAULT_SCHEMES = (
+    RawArgScheme,
+    JsonArgScheme,
+    ThriftArgScheme
 )

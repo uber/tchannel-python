@@ -5,20 +5,20 @@ from __future__ import (
 import pytest
 import tornado
 
-from tchannel import TChannel, formats
+from tchannel import TChannel, schemes
 from tchannel import response
 from tchannel.tornado import TChannel as DeprecatedTChannel
 
 
 @pytest.mark.call
-def test_should_get_default_formatters():
+def test_should_have_default_schemes():
 
     tchannel = TChannel(name='test')
 
-    for f in formats.DEFAULT_FORMATS:
-        format = getattr(tchannel, f.NAME)
-        assert format, "default format not found"
-        assert isinstance(format, f)
+    for f in schemes.DEFAULT_SCHEMES:
+        scheme = getattr(tchannel, f.NAME)
+        assert scheme, "default scheme not found"
+        assert isinstance(scheme, f)
 
 
 @pytest.mark.gen_test
@@ -29,7 +29,7 @@ def test_call_should_get_response():
 
     server = DeprecatedTChannel(name='server')
 
-    @server.register('endpoint', formats.RAW)
+    @server.register('endpoint', schemes.RAW)
     @tornado.gen.coroutine
     def endpoint(request, response, proxy):
 
@@ -49,7 +49,7 @@ def test_call_should_get_response():
     tchannel = TChannel(name='test')
 
     resp = yield tchannel.call(
-        format=formats.RAW,
+        scheme=schemes.RAW,
         service=server.hostport,
         arg1='endpoint',
         arg2='raw req header',
@@ -63,5 +63,5 @@ def test_call_should_get_response():
 
     # verify response transport headers
     assert isinstance(resp.transport, response.ResponseTransportHeaders)
-    assert resp.transport.format == formats.RAW
+    assert resp.transport.scheme == schemes.RAW
     assert resp.transport.failure_domain is None

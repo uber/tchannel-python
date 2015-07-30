@@ -5,7 +5,7 @@ from __future__ import (
 from . import RAW
 
 
-class RawFormat(object):
+class RawArgScheme(object):
     """Semantic params and serialization for raw."""
 
     NAME = RAW
@@ -17,7 +17,7 @@ class RawFormat(object):
                  header=None, timeout=None):
 
         return self.tchannel.call(
-            format=self.NAME,
+            scheme=self.NAME,
             service=service,
             arg1=endpoint,
             arg2=header,
@@ -26,4 +26,7 @@ class RawFormat(object):
         )
 
     def stream(self):
+        pass
+
+    def register(self):
         pass
