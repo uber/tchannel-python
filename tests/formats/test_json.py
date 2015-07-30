@@ -22,8 +22,6 @@ def test_call_should_get_response():
     @tornado.gen.coroutine
     def endpoint(request, response, proxy):
 
-        print("HELLOOOOO SUSSYYY")
-
         header = yield request.get_header()
         body = yield request.get_body()
 
