@@ -25,7 +25,6 @@ import logging
 import os
 import sys
 from functools import partial
-from warnings import warn
 
 import tornado.gen
 import tornado.ioloop
@@ -213,12 +212,6 @@ class TChannel(object):
 
             Defaults to 'c'.
         """
-        # TODO: do not warn if being called from tchannel.TChannel
-        warn(
-            "this method is deprecated, "
-            "please use tchannel.TChannel.call instead"
-        )
-
         return self.peers.request(hostport=hostport,
                                   service=service,
                                   arg_scheme=arg_scheme,

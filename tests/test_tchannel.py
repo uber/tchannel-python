@@ -3,9 +3,11 @@ from __future__ import (
 )
 
 import pytest
+import tornado
 
 from tchannel import TChannel, formats
 from tchannel import response
+from tchannel.tornado import TChannel as DeprecatedTChannel
 
 
 @pytest.mark.call
@@ -21,28 +23,43 @@ def test_should_get_default_formatters():
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_call_should_get_response(mock_server):
+def test_call_should_get_response():
 
-    endpoint = 'endpoint'
-    body = 'body'
+    # Given this test server:
 
-    mock_server.expect_call(endpoint).and_write(
-        headers=endpoint, body=body
-    )
+    server = DeprecatedTChannel(name='server')
+
+    @server.register('endpoint', formats.RAW)
+    @tornado.gen.coroutine
+    def endpoint(request, response, proxy):
+
+        header = yield request.get_header()
+        body = yield request.get_body()
+
+        assert header == 'raw req header'
+        assert body == 'raw req body'
+
+        response.write_header('raw resp header')
+        response.write_body('raw resp body')
+
+    server.listen()
+
+    # Make a call:
 
     tchannel = TChannel(name='test')
 
     resp = yield tchannel.call(
         format=formats.RAW,
-        service=mock_server.hostport,
-        arg1=endpoint,
-        arg2=None,
-        arg3=body
+        service=server.hostport,
+        arg1='endpoint',
+        arg2='raw req header',
+        arg3='raw req body'
     )
 
-    # verify body
+    # verify response
     assert isinstance(resp, response.Response)
-    assert resp.body == body
+    assert resp.header == 'raw resp header'
+    assert resp.body == 'raw resp body'
 
     # verify response transport headers
     assert isinstance(resp.transport, response.ResponseTransportHeaders)

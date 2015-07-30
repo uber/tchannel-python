@@ -4,7 +4,7 @@ from __future__ import (
 
 import pytest
 
-from tchannel import TChannel, Response, formats
+from tchannel import TChannel, Response
 
 
 @pytest.mark.gen_test
