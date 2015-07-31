@@ -21,15 +21,18 @@ def test_call_should_get_response():
     server = DeprecatedTChannel(name='server')
 
     @server.register(ThriftTest)
-    def testString(request, response, proxy):
+    def testStruct(request, response, proxy):
 
-        assert request.header == {'req': 'header'}
-        assert request.args.thing == "req string"
+        # assert request.header == {'req': 'header'}
+        assert request.args.thing.string_thing == 'req string'
 
-        response.write_header({
-            'resp': 'header'
-        })
-        response.write_result("resp string")
+        # response.write_header({
+        #    'resp': 'header'
+        # })
+
+        return ThriftTest.Xtruct(
+            string_thing="resp string"
+        )
 
     server.listen()
 
@@ -38,21 +41,23 @@ def test_call_should_get_response():
     tchannel = TChannel(name='client')
 
     service = from_thrift_module(
-        service=server.hostport,
+        service='ThriftTest',  # TODO service name ThriftTest is so confusing
         thrift_module=ThriftTest
     )
 
     resp = yield tchannel.thrift(
-        tchannel=service.testString("req string"),
+        request=service.testStruct(ThriftTest.Xtruct("req string")),
         header={'req': 'header'},
+        hostport=server.hostport,
     )
 
     # verify response
     assert isinstance(resp, response.Response)
-    assert resp.header == {'resp': 'header'}
-    assert resp.body == "resp string"
+    #assert resp.header == {'resp': 'header'}
+    assert resp.body == ThriftTest.Xtruct("resp string")
 
     # verify response transport headers
     assert isinstance(resp.transport, response.ResponseTransportHeaders)
     assert resp.transport.scheme == schemes.THRIFT
     assert resp.transport.failure_domain is None
+

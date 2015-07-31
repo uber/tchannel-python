@@ -29,7 +29,7 @@ class TChannel(object):
         self.thrift = schemes.ThriftArgScheme(self)
 
     @gen.coroutine
-    def call(self, scheme, service, arg1, arg2=None, arg3=None, timeout=None):
+    def call(self, scheme, service, arg1, arg2=None, arg3=None, timeout=None, hostport=None):
 
         # TODO - dont use asserts for public API
         assert format, "format is required"
@@ -47,7 +47,8 @@ class TChannel(object):
         # get operation
         # TODO lets treat hostport and service as the same param
         operation = self._dep_tchannel.request(
-           hostport=service,
+           service=service,
+           hostport=hostport or service,
            arg_scheme=scheme
         )
 
@@ -56,6 +57,7 @@ class TChannel(object):
             arg1=arg1,
             arg2=arg2,
             arg3=arg3,
+            headers={'as': scheme}  # TODO this is nasty...
         )
 
         # unwrap response

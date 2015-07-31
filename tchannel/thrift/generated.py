@@ -2,6 +2,7 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals
 )
 
+import inspect
 import types
 
 from .util import get_service_methods
@@ -26,8 +27,6 @@ def from_thrift_module(service, thrift_module):
 
 class ThriftRequestMaker(object):
 
-    prop = "SUP"
-
     def __init__(self, service, thrift_module):
         self.service = service
         self.thrift_module = thrift_module
@@ -40,11 +39,25 @@ class ThriftRequestMaker(object):
         args_type = getattr(self.thrift_module, method_name + '_args')
         result_type = getattr(self.thrift_module, method_name + '_result')
 
+        # create call_args from args & kwargs
+        call_args = args_type()
+        params = inspect.getcallargs(
+            getattr(self.thrift_module.Iface, method_name),
+            self,
+            *args,
+            **kwargs
+        )
+        params.pop('self')  # self is already known
+        call_args = args_type()
+        for name, value in params.items():
+            setattr(call_args, name, value)
+
         request = ThriftRequest(
             service=self.service,
             endpoint=endpoint,
             args_type=args_type,
-            result_type=result_type
+            result_type=result_type,
+            call_args=call_args
         )
 
         return request
@@ -52,11 +65,12 @@ class ThriftRequestMaker(object):
 
 class ThriftRequest(object):
 
-    def __init__(self, service, endpoint, args_type, result_type):
+    def __init__(self, service, endpoint, args_type, result_type, call_args):
         self.service = service
         self.endpoint = endpoint
         self.args_type = args_type
         self.result_type = result_type
+        self.call_args = call_args
 
 
 def _create_methods(thrift_module):

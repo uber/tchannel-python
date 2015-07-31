@@ -162,7 +162,7 @@ def generate_method(service_module, service_name, method_name):
             ),
             endpoint,
             {},
-            call_args,
+            call_args,  # body
             protocol_headers=self.protocol_headers,
             traceflag=self.trace
         )
