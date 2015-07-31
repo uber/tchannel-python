@@ -20,15 +20,40 @@
 
 from __future__ import absolute_import
 
-import yaml
+from hypothesis.strategies import (
+    binary,
+    builds,
+    lists,
+    sampled_from,
+    text,
+)
+
+from tchannel.testing.vcr.proxy import VCRProxy
+
+arg_schemes = sampled_from(VCRProxy.ArgScheme.values())
+
+transport_headers = builds(
+    VCRProxy.TransportHeader,
+    key=binary(),
+    value=binary(),
+)
 
 
-def load(s):
-    return yaml.load(s)
+requests = builds(
+    VCRProxy.Request,
+    serviceName=text(),
+    hostPort=sampled_from(('localhost', '')),
+    endpoint=text(min_size=1),
+    headers=binary(),
+    body=binary(),
+    argScheme=arg_schemes,
+    transportHeaders=lists(transport_headers),
+)
 
 
-def dump(d):
-    return yaml.dump(d, default_flow_style=False)
-
-
-__all__ = ['load', 'dump']
+responses = builds(
+    VCRProxy.Response,
+    code=sampled_from(VCRProxy.StatusCode.values()),
+    headers=binary(),
+    body=binary(),
+)

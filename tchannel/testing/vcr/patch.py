@@ -24,51 +24,124 @@ from functools import wraps
 
 import mock
 import contextlib2
+from tornado import gen
 
-from tchannel.tornado import peer
+from tchannel.errors import ProtocolError
+from tchannel.tornado import TChannel
+from tchannel.tornado.response import Response
+from tchannel.tornado.stream import maybe_stream
+from tchannel.tornado.stream import read_full
+from tchannel.transport_header import ArgSchemeType
 
-from .server import FakeServer
+from .proxy import VCRProxy
 
 
-_PeerGroup_choose = peer.PeerGroup.choose
+_TChannel_request = TChannel.request
+
+
+@contextlib2.contextmanager
+def force_reset():
+    with contextlib2.ExitStack() as exit_stack:
+        exit_stack.enter_context(
+            mock.patch.object(TChannel, 'request', _TChannel_request)
+        )
+        yield
+
+
+class PatchedClientOperation(object):
+
+    def __init__(
+        self,
+        vcr_client,
+        hostport=None,
+        service=None,
+        arg_scheme=None,
+        retry=None,
+        parent_tracing=None,
+        score_threshold=None,
+    ):
+        self.vcr_client = vcr_client
+        self.hostport = hostport
+        self.service = service or ''
+        self.arg_scheme = arg_scheme or ArgSchemeType.DEFAULT
+
+        # TODO what to do with retry, parent_tracing and score_threshold
+
+    @gen.coroutine
+    def send(self, arg1, arg2, arg3,
+             headers=None,
+             traceflag=None,
+             attempt_times=None,
+             ttl=None,
+             retry_delay=None):
+        arg1, arg2, arg3 = map(maybe_stream, [arg1, arg2, arg3])
+
+        endpoint = yield read_full(arg1)
+
+        headers = headers or {}
+        headers.setdefault('as', self.arg_scheme)
+
+        vcr_request = VCRProxy.Request(
+            serviceName=self.service.encode('utf-8'),
+            hostPort=self.hostport,
+            endpoint=endpoint,
+            headers=(yield read_full(arg2)),
+            body=(yield read_full(arg3)),
+            argScheme=getattr(VCRProxy.ArgScheme, self.arg_scheme.upper()),
+            transportHeaders=[
+                VCRProxy.TransportHeader(k, v) for k, v in headers.items()
+            ],
+        )
+
+        # TODO what to do with traceflag, attempt-times, ttl, and retry_delay
+        # TODO catch protocol errors
+
+        with force_reset():
+            vcr_response_future = self.vcr_client.send(vcr_request)
+        try:
+            vcr_response = yield vcr_response_future
+        except VCRProxy.RemoteServiceError as e:
+            raise ProtocolError(
+                code=e.code,
+                description=(
+                    "The remote service threw a protocol error: %s" %
+                    e.message
+                )
+            )
+        response = Response(
+            code=vcr_response.code,
+            argstreams=[
+                maybe_stream(endpoint),
+                maybe_stream(vcr_response.headers),
+                maybe_stream(vcr_response.body),
+            ],
+            # TODO headers=vcr_response.transportHeaders,
+        )
+
+        raise gen.Return(response)
 
 
 class Patcher(object):
+    """Monkey patches classes to use a VCRProxyClient to send requests."""
 
-    def __init__(self, cassette):
-        self.cassette = cassette
+    def __init__(self, vcr_client):
+        """
+        :param vcr_client:
+            The VCRProxyClient through which requests will be made.
+        """
+        self.vcr_client = vcr_client
         self._exit_stack = contextlib2.ExitStack()
 
-    @contextlib2.contextmanager
-    def _patch_choose(self):
+    def _patch_request(self):
 
-        # TODO the choose() implementation should prodably be moved elsewhere
+        @wraps(_TChannel_request)
+        def request(channel, *args, **kwargs):
+            return PatchedClientOperation(self.vcr_client, *args, **kwargs)
 
-        def choose(group, *args, **kwargs):
-            real_peer = _PeerGroup_choose(group, *args, **kwargs)
-            server = FakeServer(self.cassette, real_peer)
-
-            # This starts the fake server. The server will stop when the
-            # system exits the Patcher context.
-            self._exit_stack.enter_context(server)
-
-            # Return a Peer pointing to the fake server instead. The server
-            # will forward the request to the real peer if it can't replay it.
-            fake_peer = _PeerGroup_choose(group, hostport=server.hostport)
-
-            # TODO It may be worth creating a proxy object that redirects all
-            # but the .send calls to the real peer.
-            return fake_peer
-
-        # TODO investigate if something other than choose can be patched
-        # instead, or investigate how this interacts with TCollector, etc.
-        with mock.patch.object(peer.PeerGroup, 'choose', choose):
-            yield
+        return mock.patch.object(TChannel, 'request', request)
 
     def __enter__(self):
-        self._exit_stack.enter_context(self.cassette)
-        self._exit_stack.enter_context(self._patch_choose())
-        return self.cassette
+        self._exit_stack.enter_context(self._patch_request())
 
     def __exit__(self, *args):
         self._exit_stack.close()

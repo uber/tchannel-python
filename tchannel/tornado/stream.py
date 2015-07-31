@@ -251,3 +251,27 @@ class PipeStream(Stream):
 
         if self._rs and self.auto_close:
             self._rs.close()
+
+
+def maybe_stream(s):
+    """Ensure that the given argument is a stream."""
+    if isinstance(s, Stream):
+        return s
+
+    if s is None:
+        stream = InMemStream()
+        stream.close()  # we don't intend to write anything
+        return stream
+
+    if isinstance(s, unicode):
+        s = s.encode('utf-8')
+    if isinstance(s, bytearray):
+        s = bytes(s)
+
+    if isinstance(s, bytes):
+        stream = InMemStream(s)
+        stream.close()  # we don't intend to write anything
+        return stream
+
+    # s may still conform to the Stream interface. Yay duck typing.
+    return s

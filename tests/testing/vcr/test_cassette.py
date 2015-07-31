@@ -29,7 +29,8 @@ from tchannel.testing.vcr.exceptions import (
     UnsupportedVersionError,
 )
 from tchannel.testing.vcr.record_modes import RecordMode
-from tchannel.testing.vcr.types import Request, Response
+
+from .strategies import requests, responses
 
 
 @pytest.fixture
@@ -54,6 +55,11 @@ def test_record_mode_invalid(path):
         Cassette(str(path), record_mode='not_valid')
 
 
+def test_invalid_matcher(path):
+    with pytest.raises(KeyError):
+        Cassette(str(path), matchers=('serviceName', 'not a matcher'))
+
+
 def test_empty_file(path):
     path.write('')
     cass = Cassette(str(path))
@@ -61,8 +67,8 @@ def test_empty_file(path):
 
 
 def test_save_and_replay(path):
-    request = Request('foo', 'bar', '', 'body')
-    response = Response(0, '', 'response body')
+    request = requests.example()
+    response = responses.example()
 
     with Cassette(str(path)) as cass:
         cass.record(request, response)
@@ -81,13 +87,10 @@ def test_save_and_replay(path):
 
 
 def test_replay_unknown(path):
-    request = Request('another', 'method', '', 'body')
+    request = requests.example()
 
     with Cassette(str(path)) as cass:
-        cass.record(
-            Request('foo', 'bar', '', 'body'),
-            Response(0, '', 'resp')
-        )
+        cass.record(requests.example(), responses.example())
 
         assert not cass.can_replay(request)
         with pytest.raises(RequestNotFoundError):
@@ -95,11 +98,11 @@ def test_replay_unknown(path):
 
 
 def test_record_same(path):
-    with Cassette(str(path)) as cass:
-        request = Request('foo', 'bar', '', 'body')
-        response1 = Response(0, '', 'resp')
-        response2 = Response(1, '', 'two')
+    request = requests.example()
+    response1 = responses.example()
+    response2 = responses.example()
 
+    with Cassette(str(path)) as cass:
         cass.record(request, response1)
         cass.record(request, response2)
 
@@ -111,14 +114,14 @@ def test_record_same(path):
 
 
 def test_does_not_forget_on_new_interactions(path):
-    req1 = Request('service', 'endpoint1', '', 'body')
-    res1 = Response(0, '', 'response body')
+    req1 = requests.example()
+    res1 = responses.example()
 
     with Cassette(str(path)) as cass:
         cass.record(req1, res1)
 
-    req2 = Request('service', 'endpoint2', '', 'body2')
-    res2 = Response(0, '', 'endpoint2 response body')
+    req2 = requests.example()
+    res2 = responses.example()
 
     with Cassette(str(path), record_mode=RecordMode.NEW_EPISODES) as cass:
         cass.record(req2, res2)
@@ -150,8 +153,8 @@ def test_unsupported_version(path):
 
 
 def test_record_mode_none(path):
-    req = Request('service', 'endpoint1', '', 'body')
-    res = Response(0, '', 'response body')
+    req = requests.example()
+    res = responses.example()
 
     with Cassette(str(path), record_mode=RecordMode.NONE) as cass:
         with pytest.raises(AssertionError):
@@ -166,9 +169,9 @@ def test_record_mode_none(path):
 
 
 def test_record_mode_all(path):
-    req = Request('service', 'endpoint1', '', 'body')
-    res = Response(0, '', 'response body')
-    res2 = Response(0, '', 'response body 2')
+    req = requests.example()
+    res = responses.example()
+    res2 = responses.example()
 
     with Cassette(str(path)) as cass:
         cass.record(req, res)

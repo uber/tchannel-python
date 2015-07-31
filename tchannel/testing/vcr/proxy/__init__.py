@@ -18,17 +18,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from __future__ import absolute_import
-
-import yaml
-
-
-def load(s):
-    return yaml.load(s)
-
-
-def dump(d):
-    return yaml.dump(d, default_flow_style=False)
-
-
-__all__ = ['load', 'dump']
+__all__ = ['ttypes', 'constants', 'VCRProxy']

@@ -23,14 +23,14 @@ from __future__ import absolute_import
 import pytest
 from doubles import InstanceDouble, allow, expect
 
-from tornado import gen
+from contextlib2 import contextmanager
 
-import tchannel.testing.vcr.types as vcr
+from tchannel.thrift import client_for
+from tchannel.errors import ProtocolError
 from tchannel.tornado import TChannel
 from tchannel.tornado.stream import InMemStream
-from tchannel.tornado.response import Response
-from tchannel.testing.vcr.server import FakeServer
-from tchannel.testing.vcr.exceptions import CannotWriteCassetteError
+from tchannel.testing.vcr.proxy import VCRProxy
+from tchannel.testing.vcr.server import VCRProxyService
 
 
 def stream(s):
@@ -47,64 +47,83 @@ def cassette():
 
 
 @pytest.fixture
-def real_peer():
-    peer = InstanceDouble('tchannel.tornado.peer.Peer')
-    peer.hostport = 'localhost:40000'
-    return peer
+def unpatch():
+    @contextmanager
+    def reset():
+        yield
+    return reset
 
 
 @pytest.yield_fixture
-def server(cassette, real_peer, io_loop):
-    with FakeServer(cassette, real_peer) as server:
-        yield server
+def vcr_service(cassette, unpatch, io_loop):
+    with VCRProxyService(cassette, unpatch) as vcr_service:
+        yield vcr_service
 
 
 @pytest.fixture
-def call(server):
-    channel = TChannel('test-client')
+def client(vcr_service):
+    return client_for('vcr', VCRProxy)(
+        TChannel('proxy-client'), hostport=vcr_service.hostport
+    )
 
-    def f(endpoint, body, headers=None, service=None, scheme=None):
-        return channel.request(
-            hostport=server.hostport,
-            service=service,
-            arg_scheme=scheme,
-        ).send(endpoint, headers or '', body)
+
+@pytest.fixture
+def call(client, mock_server):
+    """A fixture that returns a function to send a call through the system."""
+
+    def f(endpoint, body, headers=None, service=None):
+        kwargs = {
+            'serviceName': service or '',
+            'endpoint': endpoint,
+            'body': body,
+        }
+        if headers is not None:
+            kwargs['headers'] = headers
+        vcr_request = VCRProxy.Request(
+            serviceName=service or '',
+            endpoint=endpoint,
+            headers=headers or '',
+            body=body,
+            hostPort=mock_server.hostport,
+        )
+        return client.send(vcr_request)
 
     return f
 
 
 @pytest.mark.gen_test
-def test_replay(server, cassette, call):
+def test_replay(cassette, call):
     allow(cassette).can_replay.and_return(True)
     expect(cassette).replay.and_return(
-        vcr.Response(0, '{key: value}', 'response body')
+        VCRProxy.Response(
+            code=0, headers='{key: value}', body='response body'
+        )
     )
 
     response = yield call('endpoint', 'request body')
-    assert response.status_code == 0
-    assert (yield response.get_header()) == '{key: value}'
-    assert (yield response.get_body()) == 'response body'
+    assert response.code == 0
+    assert response.headers == '{key: value}'
+    assert response.body == 'response body'
 
 
 @pytest.mark.gen_test
-def test_record(server, cassette, real_peer, call):
+def test_record(vcr_service, cassette, call, mock_server):
     allow(cassette).can_replay.and_return(False)
     expect(cassette).record.with_args(
-        vcr.Request('service', 'endpoint', 'headers', 'body'),
-        vcr.Response(0, 'response headers', 'response body'),
+        VCRProxy.Request(
+            serviceName='service',
+            endpoint='endpoint',
+            headers='headers',
+            body='body',
+            hostPort=mock_server.hostport,
+        ),
+        VCRProxy.Response(0, 'response headers', 'response body'),
     )
 
-    response = Response(
-        argstreams=[
-            stream('endpoint'),
-            stream('response headers'),
-            stream('response body'),
-        ]
-    )
-
-    clientop = InstanceDouble('tchannel.tornado.peer.PeerClientOperation')
-    expect(clientop).send.and_return(gen.maybe_future(response))
-    allow(real_peer).request.and_return(clientop)
+    mock_server.expect_call('endpoint').and_write(
+        headers='response headers',
+        body='response body',
+    ).once()
 
     response = yield call(
         service='service',
@@ -113,15 +132,45 @@ def test_record(server, cassette, real_peer, call):
         body='body',
     )
 
-    assert (yield response.get_header()) == 'response headers'
-    assert (yield response.get_body()) == 'response body'
+    assert response.headers == 'response headers'
+    assert response.body == 'response body'
 
 
-@pytest.mark.xfail(reason='Pending deletion of FakeServer')
 @pytest.mark.gen_test
-def test_write_protected(server, cassette, call):
+def test_write_protected(vcr_service, cassette, call):
+    cassette.record_mode = 'none'
     cassette.write_protected = True
     allow(cassette).can_replay.and_return(False)
 
-    with pytest.raises(CannotWriteCassetteError):
+    with pytest.raises(VCRProxy.CannotRecordInteractionsError):
         yield call('endpoint', 'request body')
+
+
+@pytest.mark.gen_test
+def test_unexpected_error(vcr_service, cassette, call):
+    allow(cassette).can_replay.and_raise(SomeException("great sadness"))
+
+    with pytest.raises(VCRProxy.VCRServiceError) as exc_info:
+        yield call('endpoint', 'body')
+
+    assert 'great sadness' in str(exc_info)
+
+
+@pytest.mark.gen_test
+def test_protocol_error(vcr_service, cassette, call, mock_server):
+    allow(cassette).can_replay.and_return(False)
+    expect(cassette).record.never()
+
+    mock_server.expect_call('endpoint').and_error(
+        ProtocolError(code=1, description='great sadness')
+    )
+
+    with pytest.raises(VCRProxy.RemoteServiceError) as exc_info:
+        yield call('endpoint', 'body')
+
+    assert 'great sadness' in str(exc_info)
+    assert exc_info.value.code == 1
+
+
+class SomeException(Exception):
+    pass

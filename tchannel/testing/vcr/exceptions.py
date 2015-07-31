@@ -31,7 +31,3 @@ class RequestNotFoundError(VCRError):
 
 class UnsupportedVersionError(VCRError):
     "Raised when the version of a recording is not supported."
-
-
-class CannotWriteCassetteError(VCRError):
-    "Raised when the record mode for a cassette prevents it from recording."

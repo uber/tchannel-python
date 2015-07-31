@@ -214,6 +214,9 @@ class TChannel(object):
 
             Defaults to 'c'.
         """
+        # TODO disallow certain parameters or don't propagate them backwards.
+        # For example, blacklist and score threshold aren't really
+        # user-configurable right now.
         return self.peers.request(hostport=hostport,
                                   service=service,
                                   arg_scheme=arg_scheme,
