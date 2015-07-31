@@ -15,16 +15,17 @@ _headers_rw = rw.headers(
 )
 
 
-def serialize_header(headers):
+def serialize_headers(headers):
 
     result = _headers_rw.write(headers, io.BytesIO()).getvalue()
 
     return result
 
 
-def deserialize_header(s):
+def deserialize_headers(headers):
 
-    result = _headers_rw.read(io.BytesIO(s))
+    headers = io.BytesIO(headers)
+    result = _headers_rw.read(headers)
 
     return result
 
@@ -39,9 +40,9 @@ def serialize_body(call_args):
     return result
 
 
-def deserialize_body(s, result_type):
+def deserialize_body(body, result_type):
 
-    trans = TTransport.TMemoryBuffer(s)
+    trans = TTransport.TMemoryBuffer(body)
     proto = TBinaryProtocol.TBinaryProtocolAccelerated(trans)
 
     result = result_type()

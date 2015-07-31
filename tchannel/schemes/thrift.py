@@ -19,8 +19,8 @@ class ThriftArgScheme(object):
     def __call__(self, request=None, header=None, timeout=None, hostport=None):
 
         # serialize
-        header = serializer.serialize_header(header)
-        body = serializer.serialize_body(request.call_args)
+        header = serializer.serialize_headers(headers=header)
+        body = serializer.serialize_body(call_args=request.call_args)
 
         response = yield self._tchannel.call(
             scheme=self.NAME,
@@ -32,8 +32,13 @@ class ThriftArgScheme(object):
         )
 
         # deserialize
-        response.header = serializer.deserialize_header(response.header)
-        body = serializer.deserialize_body(response.body, request.result_type)
+        response.header = serializer.deserialize_headers(
+            headers=response.header
+        )
+        body = serializer.deserialize_body(
+            body=response.body,
+            result_type=request.result_type
+        )
         response.body = body.success
 
         raise gen.Return(response)
