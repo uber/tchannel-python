@@ -16,11 +16,17 @@ _headers_rw = rw.headers(
 
 
 def serialize_header(headers):
-    return _headers_rw.write(headers, io.BytesIO()).getvalue()
+
+    result = _headers_rw.write(headers, io.BytesIO()).getvalue()
+
+    return result
 
 
 def deserialize_header(s):
-    return _headers_rw.read(io.BytesIO(s))
+
+    result = _headers_rw.read(io.BytesIO(s))
+
+    return result
 
 
 def serialize_body(call_args):
