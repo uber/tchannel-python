@@ -8,8 +8,8 @@ __all__ = ['Response']
 
 
 class Response(object):
-    def __init__(self, header, body, transport):
-        self.header = header
+    def __init__(self, headers, body, transport):
+        self.headers = headers
         self.body = body
         self.transport = transport
 

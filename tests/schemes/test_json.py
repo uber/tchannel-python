@@ -22,14 +22,14 @@ def test_call_should_get_response():
     @tornado.gen.coroutine
     def endpoint(request, response, proxy):
 
-        header = yield request.get_header()
+        headers = yield request.get_header()
         body = yield request.get_body()
 
-        assert header == {'req': 'header'}
+        assert headers == {'req': 'headers'}
         assert body == {'req': 'body'}
 
         response.write_header({
-            'resp': 'header'
+            'resp': 'headers'
         })
         response.write_body({
             'resp': 'body'
@@ -44,13 +44,13 @@ def test_call_should_get_response():
     resp = yield tchannel.json(
         service=server.hostport,
         endpoint='endpoint',
-        header={'req': 'header'},
+        headers={'req': 'headers'},
         body={'req': 'body'},
     )
 
     # verify response
     assert isinstance(resp, response.Response)
-    assert resp.header == {'resp': 'header'}
+    assert resp.headers == {'resp': 'headers'}
     assert resp.body == {'resp': 'body'}
 
     # verify response transport headers

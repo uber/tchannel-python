@@ -19,29 +19,29 @@ class JsonArgScheme(object):
 
     @gen.coroutine
     def __call__(self, service, endpoint, body=None,
-                 header=None, timeout=None):
+                 headers=None, timeout=None):
 
-        if header is None:
-            header = {}
+        if headers is None:
+            headers = {}
 
         if body is None:
             body = {}
 
         # serialize
-        header = json.dumps(header)
+        headers = json.dumps(headers)
         body = json.dumps(body)
 
         response = yield self._tchannel.call(
             scheme=self.NAME,
             service=service,
             arg1=endpoint,
-            arg2=header,
+            arg2=headers,
             arg3=body,
             timeout=timeout,
         )
 
         # deserialize
-        response.header = json.loads(response.header)
+        response.headers = json.loads(response.headers)
         response.body = json.loads(response.body)
 
         raise gen.Return(response)

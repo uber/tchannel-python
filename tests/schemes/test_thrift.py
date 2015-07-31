@@ -23,11 +23,11 @@ def test_call_should_get_response():
     @server.register(ThriftTest)
     def testStruct(request, response, proxy):
 
-        # assert request.header == {'req': 'header'}
+        # assert request.headers == {'req': 'headers'}
         assert request.args.thing.string_thing == 'req string'
 
         # response.write_header({
-        #    'resp': 'header'
+        #    'resp': 'headers'
         # })
 
         return ThriftTest.Xtruct(
@@ -47,13 +47,13 @@ def test_call_should_get_response():
 
     resp = yield tchannel.thrift(
         request=service.testStruct(ThriftTest.Xtruct("req string")),
-        header={'req': 'header'},
+        headers={'req': 'headers'},
         hostport=server.hostport,  # TODO this shouldn't be necessary?
     )
 
     # verify response
     assert isinstance(resp, response.Response)
-    # assert resp.header == {'resp': 'header'}
+    # assert resp.headers == {'resp': 'headers'}
     assert resp.body == ThriftTest.Xtruct("resp string")
 
     # verify response transport headers

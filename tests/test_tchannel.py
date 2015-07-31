@@ -33,13 +33,13 @@ def test_call_should_get_response():
     @tornado.gen.coroutine
     def endpoint(request, response, proxy):
 
-        header = yield request.get_header()
+        headers = yield request.get_header()
         body = yield request.get_body()
 
-        assert header == 'raw req header'
+        assert headers == 'raw req headers'
         assert body == 'raw req body'
 
-        response.write_header('raw resp header')
+        response.write_header('raw resp headers')
         response.write_body('raw resp body')
 
     server.listen()
@@ -52,13 +52,13 @@ def test_call_should_get_response():
         scheme=schemes.RAW,
         service=server.hostport,
         arg1='endpoint',
-        arg2='raw req header',
+        arg2='raw req headers',
         arg3='raw req body'
     )
 
     # verify response
     assert isinstance(resp, response.Response)
-    assert resp.header == 'raw resp header'
+    assert resp.headers == 'raw resp headers'
     assert resp.body == 'raw resp body'
 
     # verify response transport headers
