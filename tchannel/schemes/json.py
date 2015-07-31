@@ -18,8 +18,8 @@ class JsonArgScheme(object):
         self._tchannel = tchannel
 
     @gen.coroutine
-    def __call__(self, service, endpoint, body=None,
-                 headers=None, timeout=None):
+    def __call__(self, service, endpoint, body=None, headers=None,
+                 timeout=None, retry_on=None, retry_limit=None):
 
         if headers is None:
             headers = {}
@@ -38,6 +38,8 @@ class JsonArgScheme(object):
             arg2=headers,
             arg3=body,
             timeout=timeout,
+            retry_on=retry_on,
+            retry_limit=retry_limit
         )
 
         # deserialize

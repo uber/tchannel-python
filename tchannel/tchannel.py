@@ -4,7 +4,7 @@ from __future__ import (
 
 from tornado import gen
 
-from . import schemes, transport
+from . import schemes, transport, retry
 from .glossary import DEFAULT_TIMEOUT
 from .response import Response, ResponseTransportHeaders
 from .tornado import TChannel as DeprecatedTChannel
@@ -23,13 +23,16 @@ class TChannel(object):
             name, hostport, process_name, known_peers, trace
         )
 
+        self.name = name
+
         # set arg schemes
         self.raw = schemes.RawArgScheme(self)
         self.json = schemes.JsonArgScheme(self)
         self.thrift = schemes.ThriftArgScheme(self)
 
     @gen.coroutine
-    def call(self, scheme, service, arg1, arg2=None, arg3=None, timeout=None):
+    def call(self, scheme, service, arg1, arg2=None, arg3=None,
+             timeout=None, retry_on=None, retry_limit=None):
 
         # TODO - dont use asserts for public API
         assert format, "format is required"
@@ -43,26 +46,39 @@ class TChannel(object):
             arg3 = ""
         if timeout is None:
             timeout = DEFAULT_TIMEOUT
+        if retry_on is None:
+            retry_on = retry.DEFAULT
+        if retry_limit is None:
+            retry_limit = retry.DEFAULT_RETRY_LIMIT
 
-        # build request
-        request_args = {
-            'arg_scheme': scheme
+        # build operation
+        operation_args = {
+            'service': None,
+            'arg_scheme': scheme,
+            'retry': retry_on,
         }
         if _is_hostport(service):
-            request_args['hostport'] = service
+            operation_args['hostport'] = service
         else:
-            request_args['service'] = service
+            operation_args['service'] = service
 
-        # get operation
-        operation = self._dep_tchannel.request(**request_args)
+        # calls tchannel.tornado.peer.PeerClientOperation.__init__
+        operation = self._dep_tchannel.request(**operation_args)
 
         # fire operation
+
+        transport_headers = {
+            transport.SCHEME: scheme,
+            transport.CALLER_NAME: self.name,
+        }
+
         response = yield operation.send(
             arg1=arg1,
             arg2=arg2,
             arg3=arg3,
-            headers={'as': scheme}  # TODO this is nasty...
-            # TODO what about other transport headers?
+            headers=transport_headers,
+            attempt_times=retry_limit,
+            ttl=timeout
         )
 
         # unwrap response

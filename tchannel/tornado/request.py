@@ -25,11 +25,11 @@ from collections import namedtuple
 import tornado
 import tornado.gen
 
-from ..glossary import DEFAULT_TTL
+from tchannel import retry
+from ..glossary import DEFAULT_TIMEOUT
 from ..messages import ErrorCode
 from ..messages.common import FlagsType
 from ..messages.common import StreamState
-from ..transport_header import RetryType
 from ..zipkin.trace import Trace
 from .stream import InMemStream
 from .util import get_arg
@@ -47,7 +47,7 @@ class Request(object):
         self,
         id=None,
         flags=FlagsType.none,
-        ttl=DEFAULT_TTL,
+        ttl=DEFAULT_TIMEOUT,
         tracing=None,
         service=None,
         headers=None,
@@ -167,9 +167,9 @@ class Request(object):
             # not retry for streaming request
             return False
 
-        retry_flag = self.headers.get('re', RetryType.DEFAULT)
+        retry_flag = self.headers.get('re', retry.DEFAULT)
 
-        if retry_flag == RetryType.NEVER:
+        if retry_flag == retry.NEVER:
             return False
 
         if error.code in [ErrorCode.bad_request, ErrorCode.cancelled,
@@ -178,11 +178,11 @@ class Request(object):
         elif error.code in [ErrorCode.busy, ErrorCode.declined]:
             return True
         elif error.code is ErrorCode.timeout:
-            return retry_flag is not RetryType.CONNECTION_ERROR
+            return retry_flag is not retry.CONNECTION_ERROR
         elif error.code in [ErrorCode.network_error,
                             ErrorCode.fatal,
                             ErrorCode.unexpected]:
-            return retry_flag is not RetryType.TIMEOUT
+            return retry_flag is not retry.TIMEOUT
         else:
             return False
 

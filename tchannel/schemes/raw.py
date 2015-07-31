@@ -13,8 +13,8 @@ class RawArgScheme(object):
     def __init__(self, tchannel):
         self._tchannel = tchannel
 
-    def __call__(self, service, endpoint, body=None,
-                 headers=None, timeout=None):
+    def __call__(self, service, endpoint, body=None, headers=None,
+                 timeout=None, retry_on=None, retry_limit=None):
 
         return self._tchannel.call(
             scheme=self.NAME,
@@ -23,6 +23,8 @@ class RawArgScheme(object):
             arg2=headers,
             arg3=body,
             timeout=timeout,
+            retry_on=retry_on,
+            retry_limit=retry_limit
         )
 
     def stream(self):
