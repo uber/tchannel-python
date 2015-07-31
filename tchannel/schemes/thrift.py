@@ -5,7 +5,7 @@ from __future__ import (
 from tornado import gen
 
 from . import THRIFT
-from tchannel.thrift.scheme import ThriftArgScheme as DepThriftSerializer
+from tchannel.thrift import serializer
 
 
 class ThriftArgScheme(object):
@@ -19,7 +19,6 @@ class ThriftArgScheme(object):
     def __call__(self, request=None, header=None, timeout=None, hostport=None):
 
         # serialize
-        serializer = DepThriftSerializer(request.result_type)
         header = serializer.serialize_header(header)
         body = serializer.serialize_body(request.call_args)
 
@@ -34,7 +33,8 @@ class ThriftArgScheme(object):
 
         # deserialize
         response.header = serializer.deserialize_header(response.header)
-        response.body = serializer.deserialize_body(response.body).success
+        body = serializer.deserialize_body(response.body, request.result_type)
+        response.body = body.success
 
         raise gen.Return(response)
 
