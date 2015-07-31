@@ -48,16 +48,15 @@ def test_call_should_get_response():
     resp = yield tchannel.thrift(
         request=service.testStruct(ThriftTest.Xtruct("req string")),
         header={'req': 'header'},
-        hostport=server.hostport,
+        hostport=server.hostport,  # TODO this shouldn't be necessary?
     )
 
     # verify response
     assert isinstance(resp, response.Response)
-    #assert resp.header == {'resp': 'header'}
+    # assert resp.header == {'resp': 'header'}
     assert resp.body == ThriftTest.Xtruct("resp string")
 
     # verify response transport headers
     assert isinstance(resp.transport, response.ResponseTransportHeaders)
     assert resp.transport.scheme == schemes.THRIFT
     assert resp.transport.failure_domain is None
-

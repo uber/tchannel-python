@@ -65,7 +65,7 @@ class ArgSchemeBroker(object):
 
     @tornado.gen.coroutine
     def send(self,
-             client, # operation?
+             client,  # operation?
              endpoint,
              header,
              body,  # NOTE body==call_args

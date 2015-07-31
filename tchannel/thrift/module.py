@@ -33,14 +33,41 @@ class ThriftRequestMaker(object):
 
     def _make_request(self, method_name, args, kwargs):
 
-        # TODO what to do w args and kwargs?
+        endpoint = self._get_endpoint(method_name)
+        result_type = self._get_result_type(method_name)
+        call_args = self._get_call_args(method_name, args, kwargs)
+
+        request = ThriftRequest(
+            service=self.service,
+            endpoint=endpoint,
+            result_type=result_type,
+            call_args=call_args
+        )
+
+        return request
+
+    def _get_endpoint(self, method_name):
 
         endpoint = '%s::%s' % (self.service, method_name)
+
+        return endpoint
+
+    def _get_args_type(self, method_name):
+
         args_type = getattr(self.thrift_module, method_name + '_args')
+
+        return args_type
+
+    def _get_result_type(self, method_name):
+
         result_type = getattr(self.thrift_module, method_name + '_result')
 
-        # create call_args from args & kwargs
-        call_args = args_type()
+        return result_type
+
+    def _get_call_args(self, method_name, args, kwargs):
+
+        args_type = self._get_args_type(method_name)
+
         params = inspect.getcallargs(
             getattr(self.thrift_module.Iface, method_name),
             self,
@@ -48,27 +75,19 @@ class ThriftRequestMaker(object):
             **kwargs
         )
         params.pop('self')  # self is already known
+
         call_args = args_type()
         for name, value in params.items():
             setattr(call_args, name, value)
 
-        request = ThriftRequest(
-            service=self.service,
-            endpoint=endpoint,
-            args_type=args_type,
-            result_type=result_type,
-            call_args=call_args
-        )
-
-        return request
+        return call_args
 
 
 class ThriftRequest(object):
 
-    def __init__(self, service, endpoint, args_type, result_type, call_args):
+    def __init__(self, service, endpoint, result_type, call_args):
         self.service = service
         self.endpoint = endpoint
-        self.args_type = args_type
         self.result_type = result_type
         self.call_args = call_args
 
