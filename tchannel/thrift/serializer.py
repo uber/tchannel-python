@@ -25,7 +25,12 @@ def serialize_headers(headers):
 def deserialize_headers(headers):
 
     headers = io.BytesIO(headers)
-    result = _headers_rw.read(headers)
+    headers = _headers_rw.read(headers)
+
+    result = {}
+
+    for h in headers:
+        result[h[0]] = h[1]
 
     return result
 

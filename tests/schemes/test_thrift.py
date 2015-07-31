@@ -23,12 +23,18 @@ def test_call_should_get_response():
     @server.register(ThriftTest)
     def testStruct(request, response, proxy):
 
+        # TODO server getting headers in non-friendly format,
+        # create a top-level request that has friendly headers :)
         # assert request.headers == {'req': 'headers'}
+        assert request.headers == [['req', 'header']]
         assert request.args.thing.string_thing == 'req string'
 
+        # TODO should this response object be shared w client case?
+        # TODO are we ok with the approach here? it's diff than client...
         # response.write_header({
-        #    'resp': 'headers'
+        #    'resp': 'header'
         # })
+        response.write_header('resp', 'header')
 
         return ThriftTest.Xtruct(
             string_thing="resp string"
@@ -47,12 +53,12 @@ def test_call_should_get_response():
 
     resp = yield tchannel.thrift(
         request=service.testStruct(ThriftTest.Xtruct("req string")),
-        headers={'req': 'headers'},
+        headers={'req': 'header'},
     )
 
     # verify response
     assert isinstance(resp, response.Response)
-    # assert resp.headers == {'resp': 'headers'}
+    assert resp.headers == {'resp': 'header'}
     assert resp.body == ThriftTest.Xtruct("resp string")
 
     # verify response transport headers
