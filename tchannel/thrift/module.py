@@ -5,7 +5,7 @@ from __future__ import (
 import inspect
 import types
 
-from .util import get_service_methods
+from .reflection import get_service_methods
 
 
 def from_thrift_module(service, thrift_module):

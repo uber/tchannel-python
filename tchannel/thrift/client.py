@@ -28,7 +28,7 @@ from tornado import gen
 
 from tchannel.tornado.broker import ArgSchemeBroker
 from tchannel.dep.thrift_arg_scheme import DeprecatedThriftArgScheme
-from .util import get_service_methods
+from .reflection import get_service_methods
 
 # Generated clients will use this base class.
 _ClientBase = namedtuple(
