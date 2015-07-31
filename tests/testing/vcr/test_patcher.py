@@ -41,7 +41,7 @@ def test_patching_as_context_manager(vcr_client):
         assert ops.vcr_client is vcr_client
 
 
-def test_patching_as_decorator():
+def test_patching_as_decorator(vcr_client):
     chan = TChannel('client')
 
     @Patcher(vcr_client)
