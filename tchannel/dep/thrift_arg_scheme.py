@@ -23,12 +23,12 @@ from __future__ import absolute_import
 from thrift.protocol import TBinaryProtocol
 from thrift.transport import TTransport
 
-from .. import io
-from .. import rw
-from .. import scheme
+from tchannel import io
+from tchannel import rw
+from tchannel import scheme
 
 
-class ThriftArgScheme(scheme.ArgScheme):
+class DeprecatedThriftArgScheme(scheme.ArgScheme):
     """Represents the ``thrift`` arg scheme.
 
     It requires a reference to the result type for deserialized objects.
@@ -42,12 +42,6 @@ class ThriftArgScheme(scheme.ArgScheme):
     )
 
     def __init__(self, deserialize_type):
-        """Initialize a new ThriftArgScheme.
-
-        :param deserialize_type:
-            Type of Thrift object contained in the body. This object will be
-            deserialized from the stream.
-        """
         self.deserialize_type = deserialize_type
 
     def type(self):

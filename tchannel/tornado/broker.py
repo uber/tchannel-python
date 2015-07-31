@@ -64,7 +64,11 @@ class ArgSchemeBroker(object):
         return handler(req, resp, proxy)
 
     @tornado.gen.coroutine
-    def send(self, client, endpoint, header, body,
+    def send(self,
+             client,  # operation?
+             endpoint,
+             header,
+             body,  # NOTE body==call_args
              protocol_headers=None,
              traceflag=None,
              attempt_times=None,
