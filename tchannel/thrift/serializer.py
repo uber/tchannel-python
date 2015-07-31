@@ -24,14 +24,17 @@ def deserialize_header(s):
 
 
 def serialize_body(call_args):
+
     trans = TTransport.TMemoryBuffer()
     proto = TBinaryProtocol.TBinaryProtocolAccelerated(trans)
     call_args.write(proto)
+    result = trans.getvalue()
 
-    return trans.getvalue()
+    return result
 
 
 def deserialize_body(s, result_type):
+
     trans = TTransport.TMemoryBuffer(s)
     proto = TBinaryProtocol.TBinaryProtocolAccelerated(trans)
 
