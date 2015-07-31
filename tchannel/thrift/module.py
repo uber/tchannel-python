@@ -5,19 +5,19 @@ from __future__ import (
 import inspect
 import types
 
-from .reflection import get_service_methods
+from .reflection import get_service_methods, get_module_name
 
 
-def from_thrift_module(service, thrift_module):
+def from_thrift_module(service, thrift_module, thrift_class_name=None):
 
-    # start building requests instance
-    maker = ThriftRequestMaker(service, thrift_module)
+    # start with a request maker instance
+    maker = ThriftRequestMaker(service, thrift_module, thrift_class_name)
 
     # create methods that mirror thrift client
     # and each return ThriftRequest
     methods = _create_methods(thrift_module)
 
-    # attach to maker
+    # then attach to instane
     for name, method in methods.iteritems():
         method = types.MethodType(method, maker, ThriftRequestMaker)
         setattr(maker, name, method)
@@ -27,9 +27,14 @@ def from_thrift_module(service, thrift_module):
 
 class ThriftRequestMaker(object):
 
-    def __init__(self, service, thrift_module):
+    def __init__(self, service, thrift_module, thrift_class_name=None):
         self.service = service
         self.thrift_module = thrift_module
+
+        if thrift_class_name is not None:
+            self.thrift_class_name = thrift_class_name
+        else:
+            self.thrift_class_name = get_module_name(self.thrift_module)
 
     def _make_request(self, method_name, args, kwargs):
 
@@ -48,7 +53,7 @@ class ThriftRequestMaker(object):
 
     def _get_endpoint(self, method_name):
 
-        endpoint = '%s::%s' % (self.service, method_name)
+        endpoint = '%s::%s' % (self.thrift_class_name, method_name)
 
         return endpoint
 

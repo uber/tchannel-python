@@ -38,3 +38,10 @@ def get_service_methods(iface):
     return set(
         name for (name, method) in methods if not name.startswith('__')
     )
+
+
+def get_module_name(module):
+
+    name = module.__name__.rsplit('.', 1)[-1]
+
+    return name

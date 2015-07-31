@@ -16,7 +16,7 @@ class ThriftArgScheme(object):
         self._tchannel = tchannel
 
     @gen.coroutine
-    def __call__(self, request=None, headers=None, timeout=None, hostport=None):  # TODO remove hostport here...
+    def __call__(self, request=None, headers=None, timeout=None):
 
         # serialize
         headers = serializer.serialize_headers(headers=headers)
@@ -28,7 +28,6 @@ class ThriftArgScheme(object):
             arg1=request.endpoint,
             arg2=headers,
             arg3=body,
-            hostport=hostport
         )
 
         # deserialize

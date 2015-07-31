@@ -41,14 +41,13 @@ def test_call_should_get_response():
     tchannel = TChannel(name='client')
 
     service = from_thrift_module(
-        service='ThriftTest',  # TODO service name ThriftTest is so confusing
+        service=server.hostport,
         thrift_module=ThriftTest
     )
 
     resp = yield tchannel.thrift(
         request=service.testStruct(ThriftTest.Xtruct("req string")),
         headers={'req': 'headers'},
-        hostport=server.hostport,  # TODO this shouldn't be necessary?
     )
 
     # verify response

@@ -22,7 +22,6 @@ def test_from_thrift_class_should_return_request_maker():
 @pytest.mark.call
 def test_maker_should_have_thrift_iface_methods():
 
-    # TODO rename ThriftTest to less confusing module name, all lowercase
     maker = from_thrift_module('thrift_test', ThriftTest)
 
     # extract list of maker methods
@@ -50,6 +49,6 @@ def test_request_maker_should_return_request():
 
     assert isinstance(request, ThriftRequest)
     assert request.service == 'thrift_test'
-    assert request.endpoint == 'thrift_test::testString'
+    assert request.endpoint == 'ThriftTest::testString'
     assert request.result_type == ThriftTest.testString_result
     assert request.call_args == ThriftTest.testString_args(thing='hi')
