@@ -2,10 +2,16 @@ Changelog
 =========
 
 
-0.13.1 (unreleased)
+0.14.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Implement VCR functionality for outgoing requests. Check the documentation
+  for ``tchannel.testing.vcr`` for details.
+- Add support for specifying fallback handlers via ``TChannel.register`` by
+  specifying ``TChannel.fallback`` as the endpoint.
+- Fix bug in ``Response`` where ``code`` expected an object instead of an
+  integer.
+- Fix bug in ``Peer.close`` where a future was expected instead of ``None``.
 
 
 0.13.0 (2015-07-23)
