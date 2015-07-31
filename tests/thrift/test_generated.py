@@ -4,12 +4,24 @@ from __future__ import (
 
 import pytest
 
-from tchannel import from_thrift_class
+from tchannel import from_thrift_module
+from tchannel.thrift.generated import ThriftRequest
+from tests.data.generated.ThriftTest import ThriftTest
 
 
 @pytest.mark.call
-def test_from_thrift_class_should_return_request_set():
+@pytest.mark.generated
+def test_from_thrift_class_should_return_request_maker():
 
-    request_set = from_thrift_class('some_generated_thrift_class')
+    maker = from_thrift_module("thrift_test", ThriftTest)
 
-    assert request_set
+    import ipdb
+    ipdb.set_trace()
+
+    request = maker.testString("hi")
+
+    assert isinstance(request, ThriftRequest)
+    assert request.endpoint == 'thrift_test::testString'
+    assert request.body == 'hi'
+
+    assert maker
