@@ -39,7 +39,7 @@ def test_call_should_get_response():
 
     service = from_thrift_module(
         service=server.hostport,
-        thrift_class=ThriftTest
+        thrift_module=ThriftTest
     )
 
     resp = yield tchannel.thrift(

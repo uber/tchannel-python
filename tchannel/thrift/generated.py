@@ -34,16 +34,11 @@ class ThriftRequestMaker(object):
 
     def _make_request(self, method_name, args, kwargs):
 
-        print(method_name)
-        print(args)
-        print(kwargs)
+        # TODO what to do w args and kwargs?
 
         endpoint = '%s::%s' % (self.service, method_name)
         args_type = getattr(self.thrift_module, method_name + '_args')
         result_type = getattr(self.thrift_module, method_name + '_result')
-
-        # TODO just pass to self._get_request()
-        # instead and keep this fn thin? get working first...
 
         request = ThriftRequest(
             service=self.service,
@@ -73,7 +68,6 @@ def _create_methods(thrift_module):
 
         method = _create_method(method_name)
         methods[method_name] = method
-        print(method_name)
 
     return methods
 
