@@ -14,7 +14,7 @@ TEST_LOG_FILE=test-server.log
 
 .DEFAULT_GOAL := test-lint
 
-.PHONY: install test test_ci test-lint testhtml clean lint release docs
+.PHONY: install test test_ci test-lint testhtml clean lint release docs gen_thrift
 
 env/bin/activate:
 	virtualenv env
@@ -58,3 +58,6 @@ test-lint: test lint
 
 docs:
 	make -C docs html
+
+gen_thrift:
+    thrift --gen py:new_style,slots,dynamic -out tests/data/generated tests/data/idls/ThriftTest.thrift
