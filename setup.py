@@ -19,7 +19,7 @@ setup(
         'futures',
     ],
     extras_require={
-        'vcr': ['PyYAML', 'mock'],
+        'vcr': ['PyYAML', 'mock', 'wrapt'],
     },
     entry_points={
         'console_scripts': [
