@@ -115,7 +115,19 @@ class EventHook(object):
         pass
 
     def on_application_error(self, request, err):
-        """Called on uncaught exceptions from request handlers."""
+        """Called on uncaught exceptions from request handlers.
+
+        :param request:
+            The :py:class:`tchannel.tornado.request.Request` object associated
+            with this uncaught exception.
+
+        :param err:
+            An instance of the unhandled exception.
+
+            As long as this method is not a :py:func:`coroutine`, it will be
+            run in the same exception context as the original error. The
+            ``traceback`` module may be useful here.
+        """
         pass
 
 
