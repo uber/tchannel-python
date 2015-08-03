@@ -24,6 +24,7 @@ import mock
 import pytest
 import tornado.concurrent
 
+from tchannel.event import EventType
 from tchannel.messages.error import ErrorCode
 from tchannel.tornado.dispatch import RequestDispatcher
 
@@ -79,3 +80,20 @@ def test_custom_fallback_behavior(dispatcher, req, connection):
     response = yield dispatcher.handle_call(req, connection)
     body = yield response.get_body()
     assert body == 'bar'
+
+
+@pytest.mark.gen_test
+def test_uncaught_exceptions_fire_event_hook(dispatcher, req, connection):
+
+    def handler(req, response, proxy):
+        raise Exception()
+
+    dispatcher.register('foo', handler)
+
+    yield dispatcher.handle_call(req, connection)
+
+    connection.tchannel.event_emitter.fire.assert_called_with(
+        EventType.on_application_error,
+        req,
+        mock.ANY,
+    )

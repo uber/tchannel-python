@@ -122,6 +122,11 @@ class RequestDispatcher(BaseRequestHandler):
                 "An unexpected error has occurred from the handler",
                 response.id,
             )
+            connection.tchannel.event_emitter.fire(
+                EventType.on_application_error,
+                request,
+                e,
+            )
 
         raise gen.Return(response)
 
