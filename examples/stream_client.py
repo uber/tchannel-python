@@ -26,7 +26,6 @@ import tornado.ioloop
 
 from options import get_parser
 from tchannel.tornado import TChannel
-from tchannel.tornado.stream import InMemStream
 from tchannel.tornado.stream import PipeStream
 
 
@@ -36,11 +35,16 @@ def send_stream(arg1, arg2, arg3, host):
         name='stream-client',
     )
 
-    yield tchannel.request(host).send(
+    response = yield tchannel.request(host).send(
         arg1,
         arg2,
         arg3,
     )
+
+    # Call get_body() to wait for the call to conclude; use
+    # get_body_s to read the stream as it comes.
+    body = yield response.get_body()
+    print body
 
 
 def main():
@@ -51,22 +55,25 @@ def main():
     )
     args = parser.parse_args()
 
-    arg1 = InMemStream("echo")
-    arg2 = InMemStream()
-    arg3 = InMemStream()
+    hostport = "%s:%s" % (args.host, args.port)
+
+    arg1 = 'hi-stream'
+    arg2 = None
+    arg3 = None
 
     ioloop = tornado.ioloop.IOLoop.current()
 
     if args.filename == "stdin":
         arg3 = PipeStream(sys.stdin.fileno())
-        send_stream(arg1, arg2, arg3, args.host)
-        ioloop.start()
+        send_stream(arg1, arg2, arg3, hostport)
+        return ioloop.start()
     elif args.filename:
         f = os.open(args.filename, os.O_RDONLY)
         arg3 = PipeStream(f)
-        ioloop.run_sync(lambda: send_stream(arg1, arg2, arg3, args.host))
     else:
-        raise NotImplementedError()
+        arg3 = 'foo'
+
+    ioloop.run_sync(lambda: send_stream(arg1, arg2, arg3, hostport))
 
 
 if __name__ == '__main__':  # pragma: no cover
