@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.14.0 (unreleased)
+0.14.0 (2015-08-03)
 -------------------
 
 - Implement VCR functionality for outgoing requests. Check the documentation
