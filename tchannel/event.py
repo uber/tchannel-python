@@ -45,6 +45,7 @@ EventType = enum(
     after_send_system_error=0x42,
     on_operational_error=0x50,
     on_operational_error_per_attempt=0x51,
+    on_application_error=0x52,
 )
 
 
@@ -111,6 +112,22 @@ class EventHook(object):
 
     def on_operational_error_per_attempt(self, request, err):
         """Called after an operational error happens for each attempt."""
+        pass
+
+    def on_application_error(self, request, err):
+        """Called on uncaught exceptions from request handlers.
+
+        :param request:
+            The :py:class:`tchannel.tornado.request.Request` object associated
+            with this uncaught exception.
+
+        :param err:
+            An instance of the unhandled exception.
+
+            As long as this method is not a :py:func:`coroutine`, it will be
+            run in the same exception context as the original error. The
+            ``traceback`` module may be useful here.
+        """
         pass
 
 
