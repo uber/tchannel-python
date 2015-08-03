@@ -7,7 +7,10 @@ exclude_lines =
   raise NotImplementedError
   def __repr__
   def __str__
-omit = tchannel/zipkin/thrift/*
+omit =
+    tchannel/zipkin/thrift/*
+    tchannel/testing/vcr/proxy/*
+    tests/data/generated/ThriftTest/*
 
 [xml]
 output = coverage.xml

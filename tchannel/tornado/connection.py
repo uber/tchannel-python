@@ -320,7 +320,7 @@ class TornadoConnection(object):
         return self.connection.write(body)
 
     def close(self):
-        return self.connection.close()
+        self.connection.close()
 
     @tornado.gen.coroutine
     def initiate_handshake(self, headers):

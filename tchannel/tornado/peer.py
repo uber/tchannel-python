@@ -43,8 +43,8 @@ from ..zipkin.trace import Trace
 from .connection import StreamConnection
 from .request import Request
 from .stream import InMemStream
-from .stream import Stream
 from .stream import read_full
+from .stream import maybe_stream
 from .timeout import timeout
 
 try:
@@ -107,7 +107,8 @@ class PeerGroup(object):
 
         self._resetting = True
         try:
-            yield [peer.close() for peer in self._peers.values()]
+            for peer in self._peers.values():
+                peer.close()
         finally:
             self._peers = {}
             self._resetting = False
@@ -377,10 +378,10 @@ class Peer(object):
                 return True
         return False
 
-    @gen.coroutine
     def close(self):
         # TODO: Debounce like PeerGroup?
-        yield [connection.close() for connection in self.connections]
+        for connection in self.connections:
+            connection.close()
 
 
 class PeerState(object):
@@ -493,8 +494,7 @@ class PeerClientOperation(object):
         :param retry_delay:
             Delay between each retry (ms).
         :return:
-            Future that contains the response from the peer. If None, an empty
-            stream is used.
+            Future that contains the response from the peer.
         """
 
         arg1, arg2, arg3 = (
@@ -693,27 +693,3 @@ class PeerClientOperation(object):
         request.set_exception(error)
         # remove from pending request list
         connection.remove_outstanding_request(request)
-
-
-def maybe_stream(s):
-    """Ensure that the given argument is a stream."""
-    if isinstance(s, Stream):
-        return s
-
-    if s is None:
-        stream = InMemStream()
-        stream.close()  # we don't intend to write anything
-        return stream
-
-    if isinstance(s, unicode):
-        s = s.encode('utf-8')
-    if isinstance(s, bytearray):
-        s = bytes(s)
-
-    if isinstance(s, bytes):
-        stream = InMemStream(s)
-        stream.close()  # we don't intend to write anything
-        return stream
-
-    # s may still conform to the Stream interface. Yay duck typing.
-    return s

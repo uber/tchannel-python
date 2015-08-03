@@ -23,10 +23,9 @@
 #
 # DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
 #
-#  options string: py:new_style,slots,dynamic
+#  options string: py:tornado,dynamic,slots,dynexc=VCRThriftError,dynbase=VCRThriftBase,dynimport=from tchannel.testing.vcr.thrift import *
 #
 
 from thrift.Thrift import TType, TMessageType, TException, TApplicationException
 from ttypes import *
 
-myNumberz = 1

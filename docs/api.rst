@@ -40,3 +40,14 @@ Synchronous Client
 
 .. automodule:: tchannel.sync.thrift
     :members:
+
+
+Testing
+-------
+
+.. automodule:: tchannel.testing.vcr
+
+..
+    This automodule directive intentionally doesn't include :members: because
+    the module documentation for it explicitly calls out members that should be
+    documented.

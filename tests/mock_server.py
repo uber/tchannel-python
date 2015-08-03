@@ -62,6 +62,7 @@ class Expectation(object):
             response.write_body(body)
 
         self.execute = execute
+        return self
 
     def and_result(self, result):
 
@@ -69,6 +70,7 @@ class Expectation(object):
             response.write_result(result)
 
         self.execute = execute
+        return self
 
     def and_raise(self, exc):
 
@@ -76,6 +78,7 @@ class Expectation(object):
             raise exc
 
         self.execute = execute
+        return self
 
     def and_error(self, protocoal_error):
 
@@ -89,6 +92,9 @@ class Expectation(object):
             )
             # stop normal response streams
             response.set_exception(TChannelError("stop stream"))
+
+        self.execute = execute
+        return self
 
     def times(self, count):
         self.execute = _LimitCount(self.execute, count)
