@@ -7,32 +7,32 @@ from tests.data.generated.ThriftTest import ThriftTest
 
 tchannel = TChannel('thrift-client')
 
-service = '10.32.160.131:52294'
-thrift_client = from_thrift_module(service, ThriftTest)
+service = from_thrift_module(
+    service='thrift-server',
+    thrift_module=ThriftTest,
+    hostport='127.0.0.1:54497'
+)
 
 
 @gen.coroutine
 def make_request():
 
     resp = yield tchannel.thrift(
-        request=thrift_client.testString(thing="holler"),
-
-        # TODO bug, you have to have headers :P
-        headers={'wtf': 'dude'}
+        request=service.testString(thing="req"),
+        headers={
+            'req': 'header',
+        },
     )
 
     raise gen.Return(resp)
 
 
-io_loop = ioloop.IOLoop.current()
+resp = ioloop.IOLoop.current().run_sync(make_request)
 
-resp = io_loop.run_sync(make_request)
+assert resp.headers == {
+    'resp': 'header',
+}
+assert resp.body == 'resp'
 
-
-# TODO impl __repr__
 print resp.body
-
-# TODO wtf tests have headers...
 print resp.headers
-
-print resp.transport

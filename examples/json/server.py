@@ -9,7 +9,7 @@ app = TChannel('json-server', hostport='127.0.0.1:54496')
 
 @app.register('endpoint', schemes.JSON)
 @gen.coroutine
-def health(request, response, proxy):
+def endpoint(request, response, proxy):
 
     header = yield request.get_header()
     body = yield request.get_body()
