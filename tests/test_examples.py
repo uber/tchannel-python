@@ -35,9 +35,10 @@ def popen(path, wait_for_listen=False):
     )
 
     if wait_for_listen:
-        conns = None
-        while process.is_running() and not conns:
-            conns = [x for x in process.connections() if x.status == psutil.CONN_LISTEN]
+        # It would be more correct to check ``conn.status ==
+        # psutil.CONN_LISTEN`` but this works
+        while process.is_running() and not process.connections():
+            pass
 
     try:
         yield process
