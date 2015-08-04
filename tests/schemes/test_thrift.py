@@ -47,6 +47,7 @@ def test_call_should_get_response():
 
     # verify response
     assert isinstance(resp, response.Response)
+    assert resp.headers == {}
     assert resp.body == ThriftTest.Xtruct("resp string")
 
     # verify response transport headers
