@@ -1,21 +1,27 @@
-from tornado.ioloop import IOLoop
+from tornado import ioloop, gen
 
 from tchannel.tornado import TChannel
 
 
-app = TChannel('raw-server')
+app = TChannel('raw-server', hostport='127.0.0.1:54495')
 
 
-@app.register('health')
-def health(request, response, tchannel):
+@app.register('endpoint')
+@gen.coroutine
+def endpoint(request, response, proxy):
 
-    # TODO should be able to return body no matter the scheme
-    response.write_body('OK')
+    header = yield request.get_header()
+    body = yield request.get_body()
+
+    assert header == 'req headers'
+    assert body == 'req body'
+
+    response.write_header('resp header')
+    response.write_body('resp body')
 
 
 app.listen()
 
 print app.hostport
 
-io_loop = IOLoop.current()
-io_loop.start()
+ioloop.IOLoop.current().start()

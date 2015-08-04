@@ -3,26 +3,27 @@ from tornado import gen, ioloop
 from tchannel import TChannel
 
 
-client = TChannel('raw-client')
+tchannel = TChannel('raw-client')
 
 
 @gen.coroutine
 def make_request():
 
-    resp = yield client.raw(
-        service='10.32.160.131:52250',
-        endpoint='health'
+    resp = yield tchannel.raw(
+        service='raw-server',
+        endpoint='endpoint',
+        body='req body',
+        headers='req headers',
+        hostport='127.0.0.1:54495',
     )
 
     raise gen.Return(resp)
 
 
-io_loop = ioloop.IOLoop.current()
+resp = ioloop.IOLoop.current().run_sync(make_request)
 
-resp = io_loop.run_sync(make_request)
+assert resp.headers == 'resp header'
+assert resp.body == 'resp body'
 
-
-# TODO impl __repr__
 print resp.body
 print resp.headers
-print resp.transport
