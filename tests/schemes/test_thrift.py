@@ -23,6 +23,49 @@ def test_call_should_get_response():
     @server.register(ThriftTest)
     def testStruct(request, response, proxy):
 
+        assert request.args.thing.string_thing == 'req string'
+
+        return ThriftTest.Xtruct(
+            string_thing="resp string"
+        )
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='service',
+        thrift_module=ThriftTest,
+        hostport=server.hostport
+    )
+
+    resp = yield tchannel.thrift(
+        request=service.testStruct(ThriftTest.Xtruct("req string")),
+    )
+
+    # verify response
+    assert isinstance(resp, response.Response)
+    assert resp.body == ThriftTest.Xtruct("resp string")
+
+    # verify response transport headers
+    assert isinstance(resp.transport, response.ResponseTransportHeaders)
+    assert resp.transport.scheme == schemes.THRIFT
+    assert resp.transport.failure_domain is None
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_call_should_get_response_with_application_headers():
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testStruct(request, response, proxy):
+
         # TODO server getting headers in non-friendly format,
         # create a top-level request that has friendly headers :)
         # assert request.headers == {'req': 'headers'}
@@ -66,3 +109,46 @@ def test_call_should_get_response():
     assert isinstance(resp.transport, response.ResponseTransportHeaders)
     assert resp.transport.scheme == schemes.THRIFT
     assert resp.transport.failure_domain is None
+
+
+@pytest.mark.gen_test
+@pytest.mark.callz
+def test_call_should_get_application_exception():
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testMultiException(request, response, proxy):
+
+        if request.args.arg0 == 'Xception':
+            raise ThriftTest.Xception(
+                errorCode=1001,
+                message='This is an Xception',
+            )
+        elif request.args.arg0 == 'Xception2':
+            raise ThriftTest.Xception2(
+                errorCode=2002,
+                message='This is an Xception2',
+            )
+
+        return ThriftTest.Xtruct(string_thing=request.args.arg1)
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='service',
+        thrift_module=ThriftTest,
+        hostport=server.hostport
+    )
+
+    with pytest.raises(ThriftTest.Xception):
+        yield tchannel.thrift(
+            request=service.testMultiException(arg0='Xception', arg1='thingy')
+        )
+
+    with pytest.raises(ThriftTest.Xception2):
+        yield tchannel.thrift(
+            request=service.testMultiException(arg0='Xception2', arg1='thingy')
+        )

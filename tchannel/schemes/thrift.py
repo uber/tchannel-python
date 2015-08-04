@@ -19,6 +19,9 @@ class ThriftArgScheme(object):
     def __call__(self, request=None, headers=None, timeout=None,
                  retry_on=None, retry_limit=None):
 
+        if headers is None:
+            headers = {}
+
         # serialize
         headers = serializer.serialize_headers(headers=headers)
         body = serializer.serialize_body(call_args=request.call_args)
