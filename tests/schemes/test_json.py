@@ -42,10 +42,11 @@ def test_call_should_get_response():
     tchannel = TChannel(name='client')
 
     resp = yield tchannel.json(
-        service=server.hostport,
+        service='server',
         endpoint='endpoint',
         headers={'req': 'headers'},
         body={'req': 'body'},
+        hostport=server.hostport,
     )
 
     # verify response

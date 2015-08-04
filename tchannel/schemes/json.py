@@ -19,11 +19,13 @@ class JsonArgScheme(object):
 
     @gen.coroutine
     def __call__(self, service, endpoint, body=None, headers=None,
-                 timeout=None, retry_on=None, retry_limit=None):
+                 timeout=None, retry_on=None, retry_limit=None, hostport=None):
 
+        # TODO should we not default these?
         if headers is None:
             headers = {}
 
+        # TODO dont default?
         if body is None:
             body = {}
 
@@ -39,7 +41,8 @@ class JsonArgScheme(object):
             arg3=body,
             timeout=timeout,
             retry_on=retry_on,
-            retry_limit=retry_limit
+            retry_limit=retry_limit,
+            hostport=hostport,
         )
 
         # deserialize

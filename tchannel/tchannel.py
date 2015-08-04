@@ -32,7 +32,7 @@ class TChannel(object):
 
     @gen.coroutine
     def call(self, scheme, service, arg1, arg2=None, arg3=None,
-             timeout=None, retry_on=None, retry_limit=None):
+             timeout=None, retry_on=None, retry_limit=None, hostport=None):
 
         # TODO - dont use asserts for public API
         assert format, "format is required"
@@ -51,34 +51,26 @@ class TChannel(object):
         if retry_limit is None:
             retry_limit = retry.DEFAULT_RETRY_LIMIT
 
-        # build operation
-        operation_args = {
-            'service': None,
-            'arg_scheme': scheme,
-            'retry': retry_on,
-        }
-        if _is_hostport(service):
-            operation_args['hostport'] = service
-        else:
-            operation_args['service'] = service
-
         # calls tchannel.tornado.peer.PeerClientOperation.__init__
-        operation = self._dep_tchannel.request(**operation_args)
+        operation = self._dep_tchannel.request(
+            service=service,
+            hostport=hostport,
+            arg_scheme=scheme,
+            retry=retry_on,
+        )
 
         # fire operation
-
         transport_headers = {
             transport.SCHEME: scheme,
             transport.CALLER_NAME: self.name,
         }
-
         response = yield operation.send(
             arg1=arg1,
             arg2=arg2,
             arg3=arg3,
             headers=transport_headers,
             attempt_times=retry_limit,
-            ttl=timeout
+            ttl=timeout,
         )
 
         # unwrap response

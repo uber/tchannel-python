@@ -14,7 +14,7 @@ class RawArgScheme(object):
         self._tchannel = tchannel
 
     def __call__(self, service, endpoint, body=None, headers=None,
-                 timeout=None, retry_on=None, retry_limit=None):
+                 timeout=None, retry_on=None, retry_limit=None, hostport=None):
 
         return self._tchannel.call(
             scheme=self.NAME,
@@ -24,7 +24,8 @@ class RawArgScheme(object):
             arg3=body,
             timeout=timeout,
             retry_on=retry_on,
-            retry_limit=retry_limit
+            retry_limit=retry_limit,
+            hostport=hostport,
         )
 
     def stream(self):

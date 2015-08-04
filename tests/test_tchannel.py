@@ -50,10 +50,11 @@ def test_call_should_get_response():
 
     resp = yield tchannel.call(
         scheme=schemes.RAW,
-        service=server.hostport,
+        service='server',
         arg1='endpoint',
         arg2='raw req headers',
-        arg3='raw req body'
+        arg3='raw req body',
+        hostport=server.hostport,
     )
 
     # verify response

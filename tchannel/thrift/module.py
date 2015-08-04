@@ -8,10 +8,16 @@ import types
 from .reflection import get_service_methods, get_module_name
 
 
-def from_thrift_module(service, thrift_module, thrift_class_name=None):
+def from_thrift_module(service, thrift_module, hostport=None,
+                       thrift_class_name=None):
 
     # start with a request maker instance
-    maker = ThriftRequestMaker(service, thrift_module, thrift_class_name)
+    maker = ThriftRequestMaker(
+        service=service,
+        thrift_module=thrift_module,
+        hostport=hostport,
+        thrift_class_name=thrift_class_name
+    )
 
     # create methods that mirror thrift client
     # and each return ThriftRequest
@@ -27,9 +33,12 @@ def from_thrift_module(service, thrift_module, thrift_class_name=None):
 
 class ThriftRequestMaker(object):
 
-    def __init__(self, service, thrift_module, thrift_class_name=None):
+    def __init__(self, service, thrift_module,
+                 hostport=None, thrift_class_name=None):
+
         self.service = service
         self.thrift_module = thrift_module
+        self.hostport = hostport
 
         if thrift_class_name is not None:
             self.thrift_class_name = thrift_class_name
@@ -46,7 +55,8 @@ class ThriftRequestMaker(object):
             service=self.service,
             endpoint=endpoint,
             result_type=result_type,
-            call_args=call_args
+            call_args=call_args,
+            hostport=self.hostport
         )
 
         return request
@@ -90,11 +100,14 @@ class ThriftRequestMaker(object):
 
 class ThriftRequest(object):
 
-    def __init__(self, service, endpoint, result_type, call_args):
+    def __init__(self, service, endpoint, result_type,
+                 call_args, hostport=None):
+
         self.service = service
         self.endpoint = endpoint
         self.result_type = result_type
         self.call_args = call_args
+        self.hostport = hostport
 
 
 def _create_methods(thrift_module):

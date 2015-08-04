@@ -38,10 +38,11 @@ def test_call_should_get_response():
     tchannel = TChannel(name='client')
 
     resp = yield tchannel.raw(
-        service=server.hostport,
+        service='server',
         endpoint='endpoint',
         headers='raw req headers',
-        body='raw req body'
+        body='raw req body',
+        hostport=server.hostport,
     )
 
     # verify response

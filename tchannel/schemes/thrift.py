@@ -31,7 +31,8 @@ class ThriftArgScheme(object):
             arg3=body,
             timeout=timeout,
             retry_on=retry_on,
-            retry_limit=retry_limit
+            retry_limit=retry_limit,
+            hostport=request.hostport
         )
 
         # deserialize
