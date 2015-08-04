@@ -1,4 +1,4 @@
-from tornado import ioloop, gen
+from tornado import gen, ioloop
 
 from tchannel.tornado import TChannel
 

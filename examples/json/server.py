@@ -1,30 +1,31 @@
-from tornado import gen
-from tornado.ioloop import IOLoop
+from tornado import gen, ioloop
 
-from tchannel.tornado import TChannel
 from tchannel import schemes
+from tchannel.tornado import TChannel
 
 
-app = TChannel('json-server')
+app = TChannel('json-server', hostport='127.0.0.1:54496')
 
 
-@app.register('health', schemes.JSON)
+@app.register('endpoint', schemes.JSON)
 @gen.coroutine
-def health(request, response, tchannel):
+def health(request, response, proxy):
 
-    # TODO in thrift you dont have to yield...
+    header = yield request.get_header()
     body = yield request.get_body()
 
-    # TODO should be get_headers()
-    headers = yield request.get_header()
+    assert header == {
+        'req': 'header',
+    }
+    assert body == {
+        'req': 'body',
+    }
 
-    # TODO should be write_headers()
-    response.write_header(headers)
-
-    # TODO should be able to return body no matter the scheme
+    response.write_header({
+        'resp': 'header',
+    })
     response.write_body({
-        'health': 'OK',
-        'body': body,
+        'resp': 'body',
     })
 
 
@@ -32,5 +33,4 @@ app.listen()
 
 print app.hostport
 
-io_loop = IOLoop.current()
-io_loop.start()
+ioloop.IOLoop.current().start()
