@@ -10,6 +10,7 @@ from tchannel import (
 )
 from tchannel.tornado import TChannel as DeprecatedTChannel
 from tests.data.generated.ThriftTest import ThriftTest
+from tchannel.errors import ProtocolError
 
 
 @pytest.mark.gen_test
@@ -137,6 +138,8 @@ def test_call_should_get_application_exception():
 
     server.listen()
 
+    # Make a call:
+
     tchannel = TChannel(name='client')
 
     service = from_thrift_module(
@@ -153,4 +156,34 @@ def test_call_should_get_application_exception():
     with pytest.raises(ThriftTest.Xception2):
         yield tchannel.thrift(
             service.testMultiException(arg0='Xception2', arg1='thingy')
+        )
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_call_unexpected_error_should_result_in_protocol_error():
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testMultiException(request, response, proxy):
+        raise Exception('well, this is unfortunate')
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='service',
+        thrift_module=ThriftTest,
+        hostport=server.hostport
+    )
+
+    with pytest.raises(ProtocolError):
+        yield tchannel.thrift(
+            service.testMultiException(arg0='Xception', arg1='thingy')
         )
