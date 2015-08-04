@@ -38,7 +38,8 @@ class ThriftArgScheme(object):
             hostport=request.hostport
         )
 
-        # deserialize
+        # deserialize...
+
         response.headers = serializer.deserialize_headers(
             headers=response.headers
         )
@@ -46,6 +47,13 @@ class ThriftArgScheme(object):
             body=response.body,
             result_type=request.result_type
         )
-        response.body = body.success
 
+        # raise application exception, if present
+        for exc_spec in request.result_type.thrift_spec[1:]:
+            exc = getattr(body, exc_spec[2])
+            if exc is not None:
+                raise exc
+
+        # success
+        response.body = body.success
         raise gen.Return(response)

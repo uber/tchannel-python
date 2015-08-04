@@ -113,7 +113,7 @@ def test_call_should_get_response_with_application_headers():
 
 
 @pytest.mark.gen_test
-@pytest.mark.callz
+@pytest.mark.call
 def test_call_should_get_application_exception():
 
     # Given this test server:
@@ -130,11 +130,12 @@ def test_call_should_get_application_exception():
             )
         elif request.args.arg0 == 'Xception2':
             raise ThriftTest.Xception2(
-                errorCode=2002,
-                message='This is an Xception2',
+                errorCode=2002
             )
 
         return ThriftTest.Xtruct(string_thing=request.args.arg1)
+
+    server.listen()
 
     tchannel = TChannel(name='client')
 
