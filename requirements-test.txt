@@ -9,6 +9,7 @@ hypothesis-pytest==0.12.0
 
 # Integration test utilities
 sh
+psutil
 
 # Test all the pythons
 tox

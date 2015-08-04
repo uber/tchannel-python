@@ -23,23 +23,22 @@ import os
 import subprocess
 
 import pytest
-
-try:
-    import __pypy__  # noqa
-except ImportError:
-    PYPY = False
-else:
-    PYPY = True
+import psutil
 
 
 @contextlib.contextmanager
-def popen(path):
-    process = subprocess.Popen(
+def popen(path, wait_for_listen=False):
+    process = psutil.Popen(
         ['python', path],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    process.poll()
+
+    if wait_for_listen:
+        # It would be more correct to check ``conn.status ==
+        # psutil.CONN_LISTEN`` but this works
+        while process.is_running() and not process.connections():
+            pass
 
     try:
         yield process
@@ -62,7 +61,6 @@ def examples_dir():
         os.chdir(cwd)
 
 
-@pytest.mark.skipif(PYPY, reason='flaky in pypy')
 @pytest.mark.parametrize(
     'example_type',
     [
@@ -86,10 +84,7 @@ def test_example(examples_dir, example_type):
         example_type + 'client.py',
     )
 
-    with popen(server_path):
-        # :(
-        import time
-        time.sleep(0.05)
+    with popen(server_path, wait_for_listen=True):
         with popen(client_path) as client:
             assert (
                 client.stdout.read() == 'Hello, world!\n'
