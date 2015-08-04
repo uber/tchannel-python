@@ -49,9 +49,3 @@ class ThriftArgScheme(object):
         response.body = body.success
 
         raise gen.Return(response)
-
-    def stream(self):
-        pass
-
-    def register(self):
-        pass

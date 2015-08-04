@@ -27,9 +27,3 @@ class RawArgScheme(object):
             retry_limit=retry_limit,
             hostport=hostport,
         )
-
-    def stream(self):
-        pass
-
-    def register(self):
-        pass

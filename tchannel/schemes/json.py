@@ -50,9 +50,3 @@ class JsonArgScheme(object):
         response.body = json.loads(response.body)
 
         raise gen.Return(response)
-
-    def stream(self):
-        pass
-
-    def register(self):
-        pass
