@@ -42,7 +42,7 @@ def test_call_should_get_response():
     )
 
     resp = yield tchannel.thrift(
-        request=service.testStruct(ThriftTest.Xtruct("req string")),
+        service.testStruct(ThriftTest.Xtruct("req string"))
     )
 
     # verify response
@@ -97,7 +97,7 @@ def test_call_should_get_response_with_application_headers():
     )
 
     resp = yield tchannel.thrift(
-        request=service.testStruct(ThriftTest.Xtruct("req string")),
+        service.testStruct(ThriftTest.Xtruct("req string")),
         headers={'req': 'header'},
     )
 
@@ -146,10 +146,10 @@ def test_call_should_get_application_exception():
 
     with pytest.raises(ThriftTest.Xception):
         yield tchannel.thrift(
-            request=service.testMultiException(arg0='Xception', arg1='thingy')
+            service.testMultiException(arg0='Xception', arg1='thingy')
         )
 
     with pytest.raises(ThriftTest.Xception2):
         yield tchannel.thrift(
-            request=service.testMultiException(arg0='Xception2', arg1='thingy')
+            service.testMultiException(arg0='Xception2', arg1='thingy')
         )
