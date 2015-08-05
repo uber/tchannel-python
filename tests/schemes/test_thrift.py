@@ -3,13 +3,15 @@ from __future__ import (
 )
 
 import pytest
+from tornado import gen
 
 from tchannel import (
     TChannel, from_thrift_module,
     schemes, response
 )
 from tchannel.tornado import TChannel as DeprecatedTChannel
-from tests.data.generated.ThriftTest import ThriftTest
+from tchannel.thrift import client_for
+from tests.data.generated.ThriftTest import ThriftTest, SecondService
 from tchannel.errors import ProtocolError
 
 
@@ -412,13 +414,111 @@ def test_oneway():
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_second_service_blah_blah():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testString(request, response, proxy):
+        return request.args.thing
+
+    @server.register(SecondService)
+    def blahBlah(request, response, proxy):
+        pass
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport
+    )
+
+    second_service = from_thrift_module(
+        service='server',
+        thrift_module=SecondService,
+        hostport=server.hostport,
+    )
+
+    resp = yield tchannel.thrift(service.testString('thing'))
+
+    assert isinstance(resp, response.Response)
+    assert resp.headers == {}
+    assert resp.body == 'thing'
+
+    resp = yield tchannel.thrift(second_service.blahBlah())
+
+    assert isinstance(resp, response.Response)
+    assert resp.headers == {}
+    assert resp.body is None
 
 
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_second_service_second_test_string():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testString(request, response, proxy):
+        return request.args.thing
+
+    @server.register(SecondService)
+    @gen.coroutine
+    def secondtestString(request, response, proxy):
+
+        # TODO - is this really how our server thrift story looks?
+        ThriftTestService = client_for(
+            service='server',
+            service_module=ThriftTest
+        )
+        service = ThriftTestService(
+            tchannel=proxy,
+            hostport=server.hostport,
+        )
+
+        resp = yield service.testString(request.args.thing)
+
+        response.write_result(resp)
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport
+    )
+
+    second_service = from_thrift_module(
+        service='server',
+        thrift_module=SecondService,
+        hostport=server.hostport,
+    )
+
+    resp = yield tchannel.thrift(service.testString('thing'))
+
+    assert isinstance(resp, response.Response)
+    assert resp.headers == {}
+    assert resp.body == 'thing'
+
+    resp = yield tchannel.thrift(
+        second_service.secondtestString('second_string')
+    )
+
+    assert isinstance(resp, response.Response)
+    assert resp.headers == {}
+    assert resp.body == 'second_string'
 
 
 @pytest.mark.gen_test

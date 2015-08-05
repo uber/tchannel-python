@@ -26,6 +26,7 @@ from collections import namedtuple
 from thrift import Thrift
 from tornado import gen
 
+from tchannel.errors import OneWayNotSupporedError
 from tchannel.tornado.broker import ArgSchemeBroker
 from tchannel.dep.thrift_arg_scheme import DeprecatedThriftArgScheme
 from .reflection import get_service_methods
@@ -119,9 +120,16 @@ def generate_method(service_module, service_name, method_name):
     assert method_name
 
     args_type = getattr(service_module, method_name + '_args')
-    result_type = getattr(service_module, method_name + '_result')
-    # TODO result_type is None when the method is oneway.
-    # We don't support oneway yet.
+    result_type = getattr(service_module, method_name + '_result', None)
+
+    # oneway not currently supported
+    # TODO - write test for this
+    if result_type is None:
+        def not_supported(self, *args, **kwags):
+            raise OneWayNotSupporedError(
+                'TChannel+Thrift does not currently support oneway procedues'
+            )
+        return not_supported
 
     arg_scheme = DeprecatedThriftArgScheme(result_type)
     result_spec = result_type.thrift_spec
