@@ -232,7 +232,57 @@ def test_multi():
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_exception():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testException(request, response, proxy):
+
+        if request.args.arg == 'Xception':
+            raise ThriftTest.Xception(
+                errorCode=1001,
+                message=request.args.arg
+            )
+        elif request.args.arg == 'TException':
+            # TODO - what to raise here? We dont want dep on Thrift
+            # so we don't have thrift.TException available to us...
+            raise Exception()
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='service',
+        thrift_module=ThriftTest,
+        hostport=server.hostport
+    )
+
+    # case #1
+    with pytest.raises(ThriftTest.Xception) as e:
+        yield tchannel.thrift(
+            service.testException(arg='Xception')
+        )
+        assert e.value.errorCode == 1001
+        assert e.value.message == 'Xception'
+
+    # case #2
+    with pytest.raises(ProtocolError):
+        yield tchannel.thrift(
+            service.testException(arg='TException')
+        )
+
+    # case #3
+    resp = yield tchannel.thrift(
+        service.testException(arg='something else')
+    )
+    assert isinstance(resp, response.Response)
+    assert resp.headers == {}
+    assert resp.body is None
 
 
 @pytest.mark.gen_test
@@ -270,6 +320,7 @@ def test_multi_exception():
         hostport=server.hostport
     )
 
+    # case #1
     with pytest.raises(ThriftTest.Xception) as e:
         yield tchannel.thrift(
             service.testMultiException(arg0='Xception', arg1='thingy')
@@ -277,11 +328,20 @@ def test_multi_exception():
         assert e.value.errorCode == 1001
         assert e.value.message == 'This is an Xception'
 
+    # case #2
     with pytest.raises(ThriftTest.Xception2) as e:
         yield tchannel.thrift(
             service.testMultiException(arg0='Xception2', arg1='thingy')
         )
         assert e.value.errorCode == 2002
+
+    # case #3
+    resp = yield tchannel.thrift(
+        service.testMultiException(arg0='something else', arg1='thingy')
+    )
+    assert isinstance(resp, response.Response)
+    assert resp.headers == {}
+    assert resp.body == ThriftTest.Xtruct('thingy')
 
 
 @pytest.mark.gen_test

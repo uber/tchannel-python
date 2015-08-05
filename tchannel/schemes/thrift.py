@@ -56,7 +56,7 @@ class ThriftArgScheme(object):
                 raise exc
 
         # success - non-void
-        if len(result_spec) >= 1:
+        if len(result_spec) >= 1 and result_spec[0] is not None:
             response.body = body.success
             raise gen.Return(response)
 
