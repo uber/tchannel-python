@@ -260,7 +260,7 @@ instance:
 
     def run():
         app.listen()
-        app.advertise(['localhost:23000'], 'keyvalue-server')
+        app.advertise(routers=['127.0.0.1:21300'], 'keyvalue-server')
         ioloop.IOLoop.current().start()
 
 The `advertise` method takes a seed list of Hyperbahn routers and the name of
@@ -283,9 +283,9 @@ version <https://github.com/uber/tcurl>`_ for now since it has Thrift support.
 .. code-block:: bash
 
     $ python keyvalue/server.py &
-    $ node tcurl -p localhost:23000 -t ~/keyvalue/thrift service KeyValue::Set -3 '{"key": "hello", "value": "world"}'
-    $ node tcurl -p localhost:23000 -t ~/keyvalue/thrift service KeyValue::Get -3 '{"key": "hello"}'
-    $ node tcurl -p localhost:23000 -t ~/keyvalue/thrift service KeyValue::Get -3 '{"key": "hi"}'
+    $ node tcurl -p localhost:21300 -t ~/keyvalue/thrift service KeyValue::Set -3 '{"key": "hello", "value": "world"}'
+    $ node tcurl -p localhost:21300 -t ~/keyvalue/thrift service KeyValue::Get -3 '{"key": "hello"}'
+    $ node tcurl -p localhost:21300 -t ~/keyvalue/thrift service KeyValue::Get -3 '{"key": "hi"}'
 
 Your service can now be accessed from any language over Hyperbahn + TChannel!
 
@@ -311,7 +311,7 @@ Let's make a client call from Python in ``keyvalue/client.py``:
         app_name = 'keyvalue-client'
 
         app = TChannel(app_name)
-        app.advertise(['localhost:23000'], app_name)
+        app.advertise(routers=['127.0.0.1:21300'], app_name)
 
         client = KeyValueClient(app)
 
