@@ -16,7 +16,7 @@ def endpoint(request, response, proxy):
     assert header == 'req headers'
     assert body == 'req body'
 
-    response.write_header('resp header')
+    response.write_header('resp headers')
     response.write_body('resp body')
 
 

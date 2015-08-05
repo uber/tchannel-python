@@ -22,7 +22,7 @@ def make_request():
 
 resp = ioloop.IOLoop.current().run_sync(make_request)
 
-assert resp.headers == 'resp header'
+assert resp.headers == 'resp headers'
 assert resp.body == 'resp body'
 
 print resp.body
