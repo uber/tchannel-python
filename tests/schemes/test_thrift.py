@@ -78,7 +78,33 @@ def test_void_with_headers():
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_string():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testString(request, response, proxy):
+        return request.args.thing
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+
+    resp = yield tchannel.thrift(
+        service.testString('howdy')
+    )
+
+    assert resp.headers == {}
+    assert resp.body == 'howdy'
 
 
 @pytest.mark.gen_test
@@ -380,6 +406,18 @@ def test_multi_exception():
 @pytest.mark.call
 def test_oneway():
     # this is currently unsupported
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_second_service_blah_blah():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_second_service_second_test_string():
     pass
 
 
