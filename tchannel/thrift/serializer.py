@@ -26,11 +26,7 @@ def deserialize_headers(headers):
 
     headers = io.BytesIO(headers)
     headers = _headers_rw.read(headers)
-
-    result = {}
-
-    for h in headers:
-        result[h[0]] = h[1]
+    result = dict(headers)
 
     return result
 

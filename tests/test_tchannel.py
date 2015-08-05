@@ -9,6 +9,8 @@ from tchannel import TChannel, schemes
 from tchannel import response
 from tchannel.tornado import TChannel as DeprecatedTChannel
 
+# TODO - need integration tests for timeout and retries, use testing.vcr
+
 
 @pytest.mark.call
 def test_should_have_default_schemes():
