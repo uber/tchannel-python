@@ -39,7 +39,8 @@ def test_void():
 
     resp = yield tchannel.thrift(service.testVoid())
 
-    assert resp is None
+    assert resp.headers == {}
+    assert resp.body is None
 
 
 @pytest.mark.gen_test

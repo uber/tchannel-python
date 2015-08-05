@@ -47,13 +47,20 @@ class ThriftArgScheme(object):
             body=response.body,
             result_type=request.result_type
         )
+        result_spec = request.result_type.thrift_spec
 
         # raise application exception, if present
-        for exc_spec in request.result_type.thrift_spec[1:]:
+        for exc_spec in result_spec[1:]:
             exc = getattr(body, exc_spec[2])
             if exc is not None:
                 raise exc
 
-        # success
-        response.body = body.success
-        raise gen.Return(response)
+        # success - non-void
+        if len(result_spec) >= 1:
+            response.body = body.success
+            raise gen.Return(response)
+
+        # success - void
+        else:
+            response.body = None
+            raise gen.Return(response)
