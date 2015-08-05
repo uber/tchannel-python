@@ -55,6 +55,8 @@ class TChannel(object):
         if retry_limit is None:
             retry_limit = retry.DEFAULT_RETRY_LIMIT
 
+        # TODO - allow filters/steps for serialization, tracing, etc...
+
         # calls tchannel.tornado.peer.PeerClientOperation.__init__
         operation = self._dep_tchannel.request(
             service=service,

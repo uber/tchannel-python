@@ -100,6 +100,9 @@ class ThriftRequestMaker(object):
 
 class ThriftRequest(object):
 
+    # TODO - add __slots__
+    # TODO - implement __repr__
+
     def __init__(self, service, endpoint, result_type,
                  call_args, hostport=None):
 
@@ -111,6 +114,13 @@ class ThriftRequest(object):
 
 
 def _create_methods(thrift_module):
+
+    # TODO - this method isn't needed, instead, do:
+    #
+    # for name in get_service_methods(...):
+    #   method = _create_method(...)
+    #     # ...
+    #
 
     methods = {}
     method_names = get_service_methods(thrift_module.Iface)
@@ -124,6 +134,9 @@ def _create_methods(thrift_module):
 
 
 def _create_method(method_name):
+
+    # TODO - copy over entire signature using @functools.wraps(that_function)
+    # or wrapt on Iface.<method>
 
     def method(self, *args, **kwargs):
         # TODO switch to __make_request

@@ -37,6 +37,16 @@ def deserialize_headers(headers):
 
 def serialize_body(call_args):
 
+    # TODO - use fastbinary directly
+    #
+    # fastbinary.encode_binary(
+    #     call_args, (call_args.__class__, call_args.thrift_spec)
+    # )
+    # fastbinary.decode_binary(
+    #     result, TMemoryBuffer(body), (result_type, result_type.thrift_spec)
+    # )
+    #
+
     trans = TTransport.TMemoryBuffer()
     proto = TBinaryProtocol.TBinaryProtocolAccelerated(trans)
     call_args.write(proto)

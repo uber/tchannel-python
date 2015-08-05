@@ -8,6 +8,10 @@ __all__ = ['Response']
 
 
 class Response(object):
+
+    # TODO add __slots__
+    # TODO implement __repr__
+
     def __init__(self, headers, body, transport):
         self.headers = headers
         self.body = body
@@ -15,5 +19,9 @@ class Response(object):
 
 
 class ResponseTransportHeaders(transport.TransportHeaders):
+
+    # TODO add __slots__
+    # TODO implement __repr__
+
     """Response-specific Transport Headers"""
     pass

@@ -22,3 +22,5 @@ DEFAULT_SCHEMES = (
     JsonArgScheme,
     ThriftArgScheme
 )
+
+# TODO move constants to schemes/glossary and import here
