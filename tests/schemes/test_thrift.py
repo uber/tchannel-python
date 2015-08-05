@@ -15,7 +15,72 @@ from tchannel.errors import ProtocolError
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_call_should_get_response():
+def test_void():
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testVoid(request, response, proxy):
+        pass
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+
+    resp = yield tchannel.thrift(service.testVoid())
+
+    assert resp is None
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_string():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_byte():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_i32():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_i64():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_double():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_binary():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_struct():
 
     # Given this test server:
 
@@ -59,7 +124,7 @@ def test_call_should_get_response():
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_call_should_get_response_with_application_headers():
+def test_struct_with_headers():
 
     # Given this test server:
 
@@ -115,7 +180,73 @@ def test_call_should_get_response_with_application_headers():
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_call_should_get_application_exception():
+def test_nest():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_map():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_string_map():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_set():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_list():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_enum():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_type_def():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_map_map():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_insanity():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_multi():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_exception():
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_multi_exception():
 
     # Given this test server:
 
@@ -164,6 +295,13 @@ def test_call_should_get_application_exception():
 
 @pytest.mark.gen_test
 @pytest.mark.call
+def test_oneway():
+    # this is currently unsupported
+    pass
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
 def test_call_unexpected_error_should_result_in_protocol_error():
 
     # Given this test server:
@@ -181,7 +319,7 @@ def test_call_unexpected_error_should_result_in_protocol_error():
     tchannel = TChannel(name='client')
 
     service = from_thrift_module(
-        service='service',
+        service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport
     )
