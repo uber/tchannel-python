@@ -9,6 +9,7 @@ from tchannel import (
     TChannel, from_thrift_module,
     schemes, response
 )
+from tchannel.errors import OneWayNotSupportedError
 from tchannel.tornado import TChannel as DeprecatedTChannel
 from tchannel.thrift import client_for
 from tests.data.generated.ThriftTest import ThriftTest, SecondService
@@ -407,8 +408,31 @@ def test_multi_exception():
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_oneway():
-    # this is currently unsupported
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    # TODO - server should raise same exception as client
+    with pytest.raises(AssertionError):
+        @server.register(ThriftTest)
+        def testOneway(request, response, proxy):
+            pass
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+
+    with pytest.raises(OneWayNotSupportedError):
+        yield tchannel.thrift(service.testOneway(1))
 
 
 @pytest.mark.gen_test

@@ -5,6 +5,7 @@ from __future__ import (
 import inspect
 import types
 
+from tchannel.errors import OneWayNotSupportedError
 from .reflection import get_service_methods, get_module_name
 
 
@@ -47,8 +48,14 @@ class ThriftRequestMaker(object):
 
     def _make_request(self, method_name, args, kwargs):
 
-        endpoint = self._get_endpoint(method_name)
         result_type = self._get_result_type(method_name)
+
+        if result_type is None:
+            raise OneWayNotSupportedError(
+                'TChannel+Thrift does not currently support oneway procedues'
+            )
+
+        endpoint = self._get_endpoint(method_name)
         call_args = self._get_call_args(method_name, args, kwargs)
 
         request = ThriftRequest(
@@ -75,7 +82,10 @@ class ThriftRequestMaker(object):
 
     def _get_result_type(self, method_name):
 
-        result_type = getattr(self.thrift_module, method_name + '_result')
+        # if None then result_type is oneway
+        result_type = getattr(
+            self.thrift_module, method_name + '_result', None
+        )
 
         return result_type
 

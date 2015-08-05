@@ -121,6 +121,6 @@ class TChannelApplicationError(TChannelError):
         self.args = args
 
 
-class OneWayNotSupporedError(TChannelError):
+class OneWayNotSupportedError(TChannelError):
     """Raised when oneway Thrift procedure is called."""
     pass
