@@ -5,7 +5,7 @@ from tchannel.tornado import TChannel
 from tests.data.generated.ThriftTest import ThriftTest
 
 
-app = TChannel('thrift-server', hostport='127.0.0.1:54497')
+app = TChannel('thrift-server', hostport='localhost:54497')
 
 
 @app.register(ThriftTest)

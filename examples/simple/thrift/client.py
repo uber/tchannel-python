@@ -12,7 +12,7 @@ tchannel = TChannel('thrift-client')
 service = from_thrift_module(
     service='thrift-server',
     thrift_module=ThriftTest,
-    hostport='127.0.0.1:54497'
+    hostport='localhost:54497'
 )
 
 

@@ -14,7 +14,7 @@ def make_request():
         endpoint='endpoint',
         body='req body',
         headers='req headers',
-        hostport='127.0.0.1:54495',
+        hostport='localhost:54495',
     )
 
     raise gen.Return(resp)

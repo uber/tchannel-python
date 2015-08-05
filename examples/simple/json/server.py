@@ -4,7 +4,7 @@ from tchannel import schemes
 from tchannel.tornado import TChannel
 
 
-app = TChannel('json-server', hostport='127.0.0.1:54496')
+app = TChannel('json-server', hostport='localhost:54496')
 
 
 @app.register('endpoint', schemes.JSON)

@@ -20,7 +20,7 @@ def make_request():
         headers={
             'req': 'header'
         },
-        hostport='127.0.0.1:54496',
+        hostport='localhost:54496',
     )
 
     raise gen.Return(resp)

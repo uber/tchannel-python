@@ -3,7 +3,7 @@ from tornado import gen, ioloop
 from tchannel.tornado import TChannel
 
 
-app = TChannel('raw-server', hostport='127.0.0.1:54495')
+app = TChannel('raw-server', hostport='localhost:54495')
 
 
 @app.register('endpoint')
