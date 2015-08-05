@@ -148,15 +148,17 @@ def test_call_should_get_application_exception():
         hostport=server.hostport
     )
 
-    with pytest.raises(ThriftTest.Xception):
+    with pytest.raises(ThriftTest.Xception) as e:
         yield tchannel.thrift(
             service.testMultiException(arg0='Xception', arg1='thingy')
         )
+        assert e.value.errorCode == 1001
 
-    with pytest.raises(ThriftTest.Xception2):
+    with pytest.raises(ThriftTest.Xception2) as e:
         yield tchannel.thrift(
             service.testMultiException(arg0='Xception2', arg1='thingy')
         )
+        assert e.value.errorCode == 2002
 
 
 @pytest.mark.gen_test
