@@ -65,10 +65,10 @@ def examples_dir():
 @pytest.mark.parametrize(
     'scheme, path',
     (
-        ('raw', 'raw/'),
-        ('json', 'json/'),
-        ('thrift', 'thrift/'),
-        ('thrift', 'keyvalue/keyvalue'),
+        ('raw', 'simple/raw/'),
+        ('json', 'simple/json/'),
+        ('thrift', 'simple/thrift/'),
+        ('thrift', 'guide/keyvalue/keyvalue'),
     )
 )
 def test_example(examples_dir, scheme, path):
