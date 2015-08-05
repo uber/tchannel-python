@@ -26,12 +26,12 @@ import mock
 import contextlib2
 from tornado import gen
 
+from tchannel import schemes
 from tchannel.errors import ProtocolError
 from tchannel.tornado import TChannel
 from tchannel.tornado.response import Response
 from tchannel.tornado.stream import maybe_stream
 from tchannel.tornado.stream import read_full
-from tchannel.transport_header import ArgSchemeType
 
 from .proxy import VCRProxy
 
@@ -63,7 +63,7 @@ class PatchedClientOperation(object):
         self.vcr_client = vcr_client
         self.hostport = hostport
         self.service = service or ''
-        self.arg_scheme = arg_scheme or ArgSchemeType.DEFAULT
+        self.arg_scheme = arg_scheme or schemes.DEFAULT
 
         # TODO what to do with retry, parent_tracing and score_threshold
 
