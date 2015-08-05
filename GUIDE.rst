@@ -32,7 +32,7 @@ service and install the tornado and tchannel:
 
     $ virtualenv env
     $ source env/bin/activate
-    $ pip install tchannel
+    $ pip install tchannel thrift tornado
 
 
 ---------------------------
@@ -44,6 +44,8 @@ Create a `Thrift <https://thrift.apache.org/>`_ file under
 
 .. code-block:: bash
 
+    $ mkdir thrift
+    $ vim thrift/service.thrift
     $ cat thrift/service.thrift
 
 
@@ -104,6 +106,7 @@ something like this:
     from __future__ import absolute_import
 
     from tornado import ioloop
+    from tornado import gen
 
     from service import KeyValue
     from tchannel.tornado import TChannel
@@ -207,13 +210,13 @@ define our handlers as coroutines and yield to IO operations:
 .. code-block:: python
 
     @app.register(KeyValue)
-    @tornado.gen.coroutine
+    @gen.coroutine
     def setValue(request, response, tchannel):
         key = request.args.key
         value = request.args.value
 
         # Simulate some non-blocking IO work.
-        yield tornado.gen.sleep(1.0)
+        yield gen.sleep(1.0)
 
         values[key] = value
 
@@ -260,7 +263,7 @@ instance:
 
     def run():
         app.listen()
-        app.advertise(routers=['127.0.0.1:21300'], 'keyvalue-server')
+        app.advertise(routers=['127.0.0.1:21300'])
         ioloop.IOLoop.current().start()
 
 The `advertise` method takes a seed list of Hyperbahn routers and the name of
@@ -283,9 +286,9 @@ version <https://github.com/uber/tcurl>`_ for now since it has Thrift support.
 .. code-block:: bash
 
     $ python keyvalue/server.py &
-    $ node tcurl -p localhost:21300 -t ~/keyvalue/thrift service KeyValue::Set -3 '{"key": "hello", "value": "world"}'
-    $ node tcurl -p localhost:21300 -t ~/keyvalue/thrift service KeyValue::Get -3 '{"key": "hello"}'
-    $ node tcurl -p localhost:21300 -t ~/keyvalue/thrift service KeyValue::Get -3 '{"key": "hi"}'
+    $ tcurl -p localhost:21300 -t ~/keyvalue/thrift service KeyValue::setValue -3 '{"key": "hello", "value": "world"}'
+    $ tcurl -p localhost:21300 -t ~/keyvalue/thrift service KeyValue::getValue -3 '{"key": "hello"}'
+    $ tcurl -p localhost:21300 -t ~/keyvalue/thrift service KeyValue::getValue -3 '{"key": "hi"}'
 
 Your service can now be accessed from any language over Hyperbahn + TChannel!
 
@@ -311,13 +314,13 @@ Let's make a client call from Python in ``keyvalue/client.py``:
         app_name = 'keyvalue-client'
 
         app = TChannel(app_name)
-        app.advertise(routers=['127.0.0.1:21300'], app_name)
+        app.advertise(routers=['127.0.0.1:21300'])
 
         client = KeyValueClient(app)
 
-        yield client.Set("foo", "bar")
+        yield client.setValue("foo", "bar")
 
-        response = yield client.Get("foo")
+        response = yield client.getValue("foo")
 
         print response
 
