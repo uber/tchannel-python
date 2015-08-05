@@ -14,13 +14,17 @@ __all__ = ['TChannel']
 
 class TChannel(object):
 
-    def __init__(self, name, hostport=None, process_name=None,
+    def __init__(self, name, listen_on=None, process_name=None,
                  known_peers=None, trace=False):
 
         # until we move everything here,
         # lets compose the old tchannel
         self._dep_tchannel = DeprecatedTChannel(
-            name, hostport, process_name, known_peers, trace
+            name=name,
+            hostport=listen_on,
+            process_name=process_name,
+            known_peers=known_peers,
+            trace=trace
         )
 
         self.name = name
@@ -82,7 +86,3 @@ class TChannel(object):
         result = Response(header, body, t)
 
         raise gen.Return(result)
-
-
-def _is_hostport(service):
-    return ':' in service
