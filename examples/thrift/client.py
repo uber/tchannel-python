@@ -1,3 +1,5 @@
+import json
+
 from tornado import gen, ioloop
 
 from tchannel import TChannel, from_thrift_module
@@ -35,4 +37,4 @@ assert resp.headers == {
 assert resp.body == 'resp'
 
 print resp.body
-print resp.headers
+print json.dumps(resp.headers)

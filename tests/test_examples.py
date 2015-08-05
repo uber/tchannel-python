@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import contextlib
+import json
 import os
 import subprocess
 
@@ -62,30 +63,56 @@ def examples_dir():
 
 
 @pytest.mark.parametrize(
-    'example_type',
-    [
-        'raw_',
-        'json_',
-        'thrift_examples/',
-        'keyvalue/keyvalue/',
-        'stream_',
-    ]
+    'scheme, path',
+    (
+        ('raw', 'raw/'),
+        ('json', 'json/'),
+        ('thrift', 'thrift/'),
+        ('thrift', 'keyvalue/keyvalue'),
+    )
 )
-def test_example(examples_dir, example_type):
+def test_example(examples_dir, scheme, path):
     """Smoke test example code to ensure it still runs."""
 
     server_path = os.path.join(
         examples_dir,
-        example_type + 'server.py',
+        path + 'server.py',
     )
 
     client_path = os.path.join(
         examples_dir,
-        example_type + 'client.py',
+        path + 'client.py',
     )
 
     with popen(server_path, wait_for_listen=True):
         with popen(client_path) as client:
-            assert (
-                client.stdout.read() == 'Hello, world!\n'
-            ), client.stderr.read()
+
+            out = client.stdout.read()
+
+            body, headers = out.split(os.linesep)[:-1]
+
+            if scheme == 'raw':
+
+                assert body == 'resp body'
+                assert headers == 'resp header'
+
+            elif scheme == 'json':
+
+                body = json.loads(body)
+                headers = json.loads(headers)
+
+                assert body == {
+                    'resp': 'body'
+                }
+                assert headers == {
+                    'resp': 'header'
+                }
+
+            elif scheme == 'thrift':
+
+                headers = json.loads(headers)
+
+                assert body == 'resp'
+                assert headers == {
+                    'resp': 'header',
+                }
