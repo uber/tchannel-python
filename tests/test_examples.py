@@ -68,7 +68,7 @@ def examples_dir():
         ('raw', 'simple/raw/'),
         ('json', 'simple/json/'),
         ('thrift', 'simple/thrift/'),
-        ('thrift', 'guide/keyvalue/keyvalue'),
+        ('guide', 'guide/keyvalue/keyvalue/'),
     )
 )
 def test_example(examples_dir, scheme, path):
@@ -88,6 +88,11 @@ def test_example(examples_dir, scheme, path):
         with popen(client_path) as client:
 
             out = client.stdout.read()
+
+            # TODO the guide test should be the same as others
+            if scheme == 'guide':
+                assert out == 'Hello, world!\n'
+                return
 
             body, headers = out.split(os.linesep)[:-1]
 
