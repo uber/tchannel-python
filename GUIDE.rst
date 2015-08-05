@@ -304,6 +304,7 @@ Let's make a client call from Python in ``keyvalue/client.py``:
     from tornado import gen
     from tornado import ioloop
     from tchannel.thrift import client_for
+    from tchannel.tornado import TChannel
 
     from service import KeyValue
 
