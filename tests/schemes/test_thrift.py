@@ -153,6 +153,7 @@ def test_call_should_get_application_exception():
             service.testMultiException(arg0='Xception', arg1='thingy')
         )
         assert e.value.errorCode == 1001
+        assert e.value.message == 'This is an Xception'
 
     with pytest.raises(ThriftTest.Xception2) as e:
         yield tchannel.thrift(
