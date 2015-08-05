@@ -117,11 +117,6 @@ def test_struct():
     assert resp.headers == {}
     assert resp.body == ThriftTest.Xtruct("resp string")
 
-    # verify response transport headers
-    assert isinstance(resp.transport, response.ResponseTransportHeaders)
-    assert resp.transport.scheme == schemes.THRIFT
-    assert resp.transport.failure_domain is None
-
 
 @pytest.mark.gen_test
 @pytest.mark.call
@@ -172,11 +167,6 @@ def test_struct_with_headers():
     assert isinstance(resp, response.Response)
     assert resp.headers == {'resp': 'header'}
     assert resp.body == ThriftTest.Xtruct("resp string")
-
-    # verify response transport headers
-    assert isinstance(resp.transport, response.ResponseTransportHeaders)
-    assert resp.transport.scheme == schemes.THRIFT
-    assert resp.transport.failure_domain is None
 
 
 @pytest.mark.gen_test
@@ -303,6 +293,43 @@ def test_oneway():
 
 @pytest.mark.gen_test
 @pytest.mark.call
+def test_call_response_should_contain_transport_headers():
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testString(request, response, proxy):
+        return request.args.thing
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+
+    resp = yield tchannel.thrift(service.testString('hi'))
+
+    # verify response
+    assert isinstance(resp, response.Response)
+    assert resp.headers == {}
+    assert resp.body == 'hi'
+
+    # verify response transport headers
+    assert isinstance(resp.transport, response.ResponseTransportHeaders)
+    assert resp.transport.scheme == schemes.THRIFT
+    assert resp.transport.failure_domain is None
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
 def test_call_unexpected_error_should_result_in_protocol_error():
 
     # Given this test server:
@@ -322,7 +349,7 @@ def test_call_unexpected_error_should_result_in_protocol_error():
     service = from_thrift_module(
         service='server',
         thrift_module=ThriftTest,
-        hostport=server.hostport
+        hostport=server.hostport,
     )
 
     with pytest.raises(ProtocolError):
