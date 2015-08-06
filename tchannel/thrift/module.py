@@ -10,7 +10,7 @@ from .reflection import get_service_methods, get_module_name
 
 
 def thrift_request_builder(service, thrift_module, hostport=None,
-                       thrift_class_name=None):
+                           thrift_class_name=None):
     """Create a ThriftRequestMaker from a Thrift generated module.
 
     The service this creates is meant to be used with TChannel like so:
