@@ -1,13 +1,13 @@
 import json
 
 from tornado import gen, ioloop
-from tchannel import TChannel, from_thrift_module
+from tchannel import TChannel, thrift_request_builder
 from tchannel.testing.data.generated.ThriftTest import ThriftTest
 
 
 tchannel = TChannel('thrift-client')
 
-service = from_thrift_module(
+service = thrift_request_builder(
     service='thrift-server',
     thrift_module=ThriftTest,
     hostport='localhost:54497'

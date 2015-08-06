@@ -8,8 +8,8 @@ Changelog
 - Introduced new top level ``tchannel.TChannel`` object, with new request methods
   ``call``, ``raw``, ``json``, and ``thrift``. This will eventually replace the
   akward ``request`` / ``send`` calling pattern.
-- Introduced ``tchannel.from_thrift_module`` function for creating a request builder
-  to be used with the ``tchannel.TChannel.thrift`` function.
+- Introduced ``tchannel.thrift_request_builder`` function for creating a
+  request builder to be used with the ``tchannel.TChannel.thrift`` function.
 - Introduced new simplified examples under the ``examples/simple`` directory, moved
   the Guide's examples to ``examples/guide``, and deleted the remaining examples.
 - Added ThriftTest.thrift and generated Thrift code to ``tchannel.testing.data`` for

@@ -9,20 +9,20 @@ from tchannel.errors import OneWayNotSupportedError
 from .reflection import get_service_methods, get_module_name
 
 
-def from_thrift_module(service, thrift_module, hostport=None,
-                       thrift_class_name=None):
+def thrift_request_builder(service, thrift_module, hostport=None,
+                           thrift_class_name=None):
     """Create a ThriftRequestMaker from a Thrift generated module.
 
     The service this creates is meant to be used with TChannel like so:
 
     .. code-block:: python
 
-        from tchannel import TChannel, from_thrift_module
+        from tchannel import TChannel, thrift_request_builder
         from some_other_service_thrift import some_other_service
 
         tchannel = TChannel('my-service')
 
-        some_service = from_thrift_module(
+        some_service = thrift_request_builder(
             service='some-other-service',
             thrift_module=some_other_service
         )

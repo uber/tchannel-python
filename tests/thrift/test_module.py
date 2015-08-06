@@ -6,7 +6,7 @@ import inspect
 
 import pytest
 
-from tchannel import from_thrift_module
+from tchannel import thrift_request_builder
 from tchannel.thrift.module import ThriftRequestMaker, ThriftRequest
 from tchannel.testing.data.generated.ThriftTest import ThriftTest
 
@@ -14,7 +14,7 @@ from tchannel.testing.data.generated.ThriftTest import ThriftTest
 @pytest.mark.call
 def test_from_thrift_class_should_return_request_maker():
 
-    maker = from_thrift_module('thrift_test', ThriftTest)
+    maker = thrift_request_builder('thrift_test', ThriftTest)
 
     assert isinstance(maker, ThriftRequestMaker)
 
@@ -22,7 +22,7 @@ def test_from_thrift_class_should_return_request_maker():
 @pytest.mark.call
 def test_maker_should_have_thrift_iface_methods():
 
-    maker = from_thrift_module('thrift_test', ThriftTest)
+    maker = thrift_request_builder('thrift_test', ThriftTest)
 
     # extract list of maker methods
     maker_methods = [
@@ -43,7 +43,7 @@ def test_maker_should_have_thrift_iface_methods():
 @pytest.mark.call
 def test_request_maker_should_return_request():
 
-    maker = from_thrift_module('thrift_test', ThriftTest)
+    maker = thrift_request_builder('thrift_test', ThriftTest)
 
     request = maker.testString('hi')
 
