@@ -425,7 +425,40 @@ def test_nest():
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_map():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testMap(request, response, proxy):
+        return request.args.thing
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+    x = {
+        0: 1,
+        1: 2,
+        2: 3,
+        3: 4,
+        -1: -2,
+    }
+
+    resp = yield tchannel.thrift(
+        service.testMap(thing=x)
+    )
+
+    assert resp.headers == {}
+    assert resp.body == x
 
 
 @pytest.mark.gen_test
