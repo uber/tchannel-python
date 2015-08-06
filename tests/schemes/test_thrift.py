@@ -686,7 +686,52 @@ def test_insanity():
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_multi():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testMulti(request, response, proxy):
+        return ThriftTest.Xtruct(
+            string_thing='Hello2',
+            byte_thing=request.args.arg0,
+            i32_thing=request.args.arg1,
+            i64_thing=request.args.arg2,
+        )
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+
+    x = ThriftTest.Xtruct(
+        string_thing='Hello2',
+        byte_thing=74,
+        i32_thing=0xff00ff,
+        i64_thing=0xffffffffd0d0
+    )
+
+    resp = yield tchannel.thrift(
+        service.testMulti(
+            arg0=x.byte_thing,
+            arg1=x.i32_thing,
+            arg2=x.i64_thing,
+            arg3={0: 'abc'},
+            arg4=ThriftTest.Numberz.FIVE,
+            arg5=0xf0f0f0,
+        )
+    )
+
+    assert resp.headers == {}
+    assert resp.body == x
 
 
 @pytest.mark.gen_test
