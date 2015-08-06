@@ -567,7 +567,34 @@ def test_list():
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_enum():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testEnum(request, response, proxy):
+        return request.args.thing
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+    x = ThriftTest.Numberz.FIVE
+
+    resp = yield tchannel.thrift(
+        service.testEnum(thing=x)
+    )
+
+    assert resp.headers == {}
+    assert resp.body == x
 
 
 @pytest.mark.gen_test
