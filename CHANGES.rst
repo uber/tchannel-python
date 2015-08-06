@@ -2,10 +2,17 @@ Changelog
 =========
 
 
-0.14.1 (unreleased)
+0.15.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Introduced ``TChannel.call`` to replace the awkward ``request`` / ``send``
+  calling pattern.
+- Refactored arg schemes to no longer require an explicit use of
+  ``ArgSchemeBroker``. Use ``tchannel.json.call`` or ``tchanne.thrift.call`` to
+  send requests for a particular scheme.
+- Fixed a bug where JSON arg2 (headers) was being returned a string instead of
+  a dictionary.
+- Re-organized the examples directory.
 
 
 0.14.0 (2015-08-03)

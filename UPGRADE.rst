@@ -4,6 +4,13 @@ Version Upgrade Guide
 Migrating to a version of TChannel with breaking changes? This guide documents
 what broke and how to safely migrate to newer versions.
 
+From 0.12 to 0.14
+-----------------
+
+- ``ArgSchemeBroker`` has been deprecated.
+- ```` has been deprecated.
+
+
 From 0.11 to 0.12
 -----------------
 

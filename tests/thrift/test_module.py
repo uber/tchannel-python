@@ -8,7 +8,7 @@ import pytest
 
 from tchannel import from_thrift_module
 from tchannel.thrift.module import ThriftRequestMaker, ThriftRequest
-from tests.data.generated.ThriftTest import ThriftTest
+from tchannel.testing.data.generated.ThriftTest import ThriftTest
 
 
 @pytest.mark.call

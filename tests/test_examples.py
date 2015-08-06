@@ -38,8 +38,11 @@ def popen(path, wait_for_listen=False):
     if wait_for_listen:
         # It would be more correct to check ``conn.status ==
         # psutil.CONN_LISTEN`` but this works
-        while process.is_running() and not process.connections():
-            pass
+        try:
+            while process.is_running() and not process.connections():
+                pass
+        except psutil.Error:
+            raise AssertionError(process.stderr.read())
 
     try:
         yield process
@@ -94,7 +97,10 @@ def test_example(examples_dir, scheme, path):
                 assert out == 'Hello, world!\n'
                 return
 
-            body, headers = out.split(os.linesep)[:-1]
+            try:
+                body, headers = out.split(os.linesep)[:-1]
+            except ValueError:
+                raise AssertionError(out + client.stderr.read())
 
             if scheme == 'raw':
 

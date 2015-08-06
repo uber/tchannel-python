@@ -12,7 +12,8 @@ from tchannel import (
 from tchannel.errors import OneWayNotSupportedError
 from tchannel.tornado import TChannel as DeprecatedTChannel
 from tchannel.thrift import client_for
-from tests.data.generated.ThriftTest import ThriftTest, SecondService
+from tchannel.testing.data.generated.ThriftTest import SecondService
+from tchannel.testing.data.generated.ThriftTest import ThriftTest
 from tchannel.errors import ProtocolError
 
 

@@ -1,8 +1,8 @@
+from __future__ import absolute_import
+
 from tornado import gen, ioloop
-
 from tchannel.tornado import TChannel
-
-from tests.data.generated.ThriftTest import ThriftTest
+from tchannel.testing.data.generated.ThriftTest import ThriftTest
 
 
 app = TChannel('thrift-server', hostport='localhost:54497')
