@@ -9,6 +9,7 @@ from tchannel.thrift import serializer
 
 
 class ThriftArgScheme(object):
+    """Semantic params and serialization for Thrift."""
 
     NAME = THRIFT
 

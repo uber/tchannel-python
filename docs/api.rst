@@ -5,7 +5,16 @@ API Documentation
 TChannel
 --------
 
-.. autoclass:: tchannel.tornado.TChannel
+.. autoclass:: tchannel.TChannel
+    :members:
+
+.. autoclass:: tchannel.schemes.RawArgScheme
+    :members:
+
+.. autoclass:: tchannel.schemes.JsonArgScheme
+    :members:
+
+.. autoclass:: tchannel.schemes.ThriftArgScheme
     :members:
 
 .. autoclass:: tchannel.tornado.RequestDispatcher
