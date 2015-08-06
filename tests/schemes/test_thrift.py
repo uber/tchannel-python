@@ -633,7 +633,48 @@ def test_type_def():
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_map_map():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    map_map = {
+        -4: {
+            -4: -4,
+            -3: -3,
+            -2: -2,
+            -1: -1,
+        },
+        4: {
+            1: 1,
+            2: 2,
+            3: 3,
+            4: 4,
+        },
+    }
+
+    @server.register(ThriftTest)
+    def testMapMap(request, response, proxy):
+        return map_map
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+
+    resp = yield tchannel.thrift(
+        service.testMapMap(1)
+    )
+
+    assert resp.headers == {}
+    assert resp.body == map_map
 
 
 @pytest.mark.gen_test
