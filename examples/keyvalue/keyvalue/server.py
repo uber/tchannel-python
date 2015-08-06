@@ -51,8 +51,8 @@ def setValue(request, response, tchannel):
 
 def run():
     app.listen()
-    ioloop.IOLoop.current().start()
 
 
 if __name__ == '__main__':
     run()
+    ioloop.IOLoop.current().start()
