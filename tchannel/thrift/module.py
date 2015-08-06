@@ -11,6 +11,39 @@ from .reflection import get_service_methods, get_module_name
 
 def from_thrift_module(service, thrift_module, hostport=None,
                        thrift_class_name=None):
+    """Create a ThriftRequestMaker from a Thrift generated module.
+
+    The service this creates is meant to be used with TChannel like so:
+
+    .. code-block:: python
+
+        from tchannel import TChannel, from_thrift_module
+        from some_other_service_thrift import some_other_service
+
+        tchannel = TChannel('my-service')
+
+        some_service = from_thrift_module(
+            service='some-other-service',
+            thrift_module=some_other_service
+        )
+
+        resp = tchannel.thrift(
+            some_service.fetchPotatoes()
+        )
+
+    :param string service:
+        Name of Thrift service to call. This is used internally for
+        grouping and stats, but also to route requests over Hyperbahn.
+    :param thrift_module:
+        The top-level module of the Apache Thrift generated code for
+        the service that will be called.
+    :param string hostport:
+        When calling the Thrift service directly, and not over Hyperbahn,
+        this 'host:port' value should be provided.
+    :param string thrift_class_name:
+        When the Apache Thrift generated Iface class name does not match
+        thrift_module, then this should be provided.
+    """
 
     # start with a request maker instance
     maker = ThriftRequestMaker(

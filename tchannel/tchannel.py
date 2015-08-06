@@ -13,15 +13,16 @@ __all__ = ['TChannel']
 
 
 class TChannel(object):
+    """Make requests to TChannel services."""
 
-    def __init__(self, name, listen_on=None, process_name=None,
+    def __init__(self, name, hostport=None, process_name=None,
                  known_peers=None, trace=False):
 
         # until we move everything here,
         # lets compose the old tchannel
         self._dep_tchannel = DeprecatedTChannel(
             name=name,
-            hostport=listen_on,
+            hostport=hostport,
             process_name=process_name,
             known_peers=known_peers,
             trace=trace
@@ -37,6 +38,42 @@ class TChannel(object):
     @gen.coroutine
     def call(self, scheme, service, arg1, arg2=None, arg3=None,
              timeout=None, retry_on=None, retry_limit=None, hostport=None):
+        """Make low-level requests to TChannel services.
+
+        This method uses TChannel's protocol terminology for param naming.
+
+        For high level requests with automatic serialization and semantic
+        param names, use ``raw``, ``json``, and ``thrift`` methods instead.
+
+        :param string scheme:
+            Name of the Arg Scheme to be sent as the Transport Header ``as``;
+            eg. 'raw', 'json', 'thrift' are all valid values.
+        :param string service:
+            Name of the service that is being called. This is used
+            internally to route requests through Hyperbahn, and for grouping
+            of connection, and labelling stats. Note that when hostport is
+            provided, requests are not routed through Hyperbahn.
+        :param string arg1:
+            Value for ``arg1`` as specified by the TChannel protocol - this
+            varies by Arg Scheme, but is typically used for endpoint name.
+        :param string arg2:
+            Value for ``arg2`` as specified by the TChannel protocol - this
+            varies by Arg Scheme, but is typically used for app-level headers.
+        :param string arg3:
+            Value for ``arg3`` as specified by the TChannel protocol - this
+            varies by Arg Scheme, but is typically used for the request body.
+        :param int timeout:
+            How long to wait before raising a ``TimeoutError`` - this
+            defaults to ``tchannel.glossary.DEFAULT_TIMEOUT``.
+        :param string retry_on:
+            What events to retry on - valid values can be found in
+            ``tchannel.retry``.
+        :param string retry_limit:
+            How many times to retry before
+        :param string hostport:
+            A 'host:port' value to use when making a request directly to a
+            TChannel service, bypassing Hyperbahn.
+        """
 
         # TODO - dont use asserts for public API
         assert format, "format is required"
@@ -88,3 +125,18 @@ class TChannel(object):
         result = Response(header, body, t)
 
         raise gen.Return(result)
+
+    def register(self, endpoint, scheme=None, handler=None, **kwargs):
+        return self._dep_tchannel.register(
+            endpoint=endpoint,
+            scheme=scheme,
+            handler=handler,
+            **kwargs
+        )
+
+    def advertise(self, routers, name=None, timeout=None):
+        return self._dep_tchannel.advertise(
+            routers=routers,
+            name=name,
+            timeout=timeout
+        )
