@@ -464,7 +464,38 @@ def test_map():
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_string_map():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testStringMap(request, response, proxy):
+        return request.args.thing
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+    x = {
+        'hello': 'there',
+        'my': 'name',
+        'is': 'shirly',
+    }
+
+    resp = yield tchannel.thrift(
+        service.testStringMap(thing=x)
+    )
+
+    assert resp.headers == {}
+    assert resp.body == x
 
 
 @pytest.mark.gen_test
