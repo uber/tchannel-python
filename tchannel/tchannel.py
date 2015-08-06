@@ -129,6 +129,10 @@ class TChannel(object):
     def listen(self, port=None):
         return self._dep_tchannel.listen(port)
 
+    @property
+    def hostport(self):
+        return self._dep_tchannel.hostport
+
     def register(self, endpoint, scheme=None, handler=None, **kwargs):
         return self._dep_tchannel.register(
             endpoint=endpoint,

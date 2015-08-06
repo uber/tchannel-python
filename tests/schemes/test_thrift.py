@@ -10,7 +10,6 @@ from tchannel import (
     schemes, response
 )
 from tchannel.errors import OneWayNotSupportedError
-from tchannel.tornado import TChannel as DeprecatedTChannel
 from tchannel.thrift import client_for
 from tchannel.testing.data.generated.ThriftTest import SecondService
 from tchannel.testing.data.generated.ThriftTest import ThriftTest
@@ -28,7 +27,7 @@ def test_void():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testVoid(request, response, proxy):
@@ -58,7 +57,7 @@ def test_void_with_headers():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testVoid(request, response, proxy):
@@ -90,7 +89,7 @@ def test_string():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testString(request, response, proxy):
@@ -122,7 +121,7 @@ def test_byte():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testByte(request, response, proxy):
@@ -154,7 +153,7 @@ def test_i32():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testI32(request, response, proxy):
@@ -193,7 +192,7 @@ def test_i64():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testI64(request, response, proxy):
@@ -225,7 +224,7 @@ def test_double():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testDouble(request, response, proxy):
@@ -257,7 +256,7 @@ def test_binary():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testBinary(request, response, proxy):
@@ -295,7 +294,7 @@ def test_struct():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testStruct(request, response, proxy):
@@ -334,7 +333,7 @@ def test_struct_with_headers():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testStruct(request, response, proxy):
@@ -385,7 +384,7 @@ def test_nest():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testNest(request, response, proxy):
@@ -429,7 +428,7 @@ def test_map():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testMap(request, response, proxy):
@@ -468,7 +467,7 @@ def test_string_map():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testStringMap(request, response, proxy):
@@ -505,7 +504,7 @@ def test_set():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testSet(request, response, proxy):
@@ -538,7 +537,7 @@ def test_list():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testList(request, response, proxy):
@@ -571,7 +570,7 @@ def test_enum():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testEnum(request, response, proxy):
@@ -604,7 +603,7 @@ def test_type_def():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testTypedef(request, response, proxy):
@@ -637,7 +636,7 @@ def test_map_map():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     map_map = {
         -4: {
@@ -684,7 +683,7 @@ def test_insanity():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testInsanity(request, response, proxy):
@@ -747,7 +746,7 @@ def test_multi():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testMulti(request, response, proxy):
@@ -798,7 +797,7 @@ def test_exception():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testException(request, response, proxy):
@@ -854,7 +853,7 @@ def test_multi_exception():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testMultiException(request, response, proxy):
@@ -913,7 +912,7 @@ def test_oneway():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     # TODO - server should raise same exception as client
     with pytest.raises(AssertionError):
@@ -943,7 +942,7 @@ def test_second_service_blah_blah():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testString(request, response, proxy):
@@ -990,7 +989,7 @@ def test_second_service_second_test_string():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testString(request, response, proxy):
@@ -1053,7 +1052,7 @@ def test_call_response_should_contain_transport_headers():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testString(request, response, proxy):
@@ -1090,7 +1089,7 @@ def test_call_unexpected_error_should_result_in_protocol_error():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register(ThriftTest)
     def testMultiException(request, response, proxy):

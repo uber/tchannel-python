@@ -7,7 +7,6 @@ import tornado
 
 from tchannel import TChannel, schemes
 from tchannel import response
-from tchannel.tornado import TChannel as DeprecatedTChannel
 
 
 @pytest.mark.gen_test
@@ -16,7 +15,7 @@ def test_call_should_get_response():
 
     # Given this test server:
 
-    server = DeprecatedTChannel(name='server')
+    server = TChannel(name='server')
 
     @server.register('endpoint', schemes.RAW)
     @tornado.gen.coroutine
