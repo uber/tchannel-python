@@ -600,7 +600,34 @@ def test_enum():
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_type_def():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testTypedef(request, response, proxy):
+        return request.args.thing
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+    x = 0xffffffffffffff  # 7 bytes of 0xff
+
+    resp = yield tchannel.thrift(
+        service.testTypedef(thing=x)
+    )
+
+    assert resp.headers == {}
+    assert resp.body == x
 
 
 @pytest.mark.gen_test
