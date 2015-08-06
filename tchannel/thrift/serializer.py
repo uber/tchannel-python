@@ -42,7 +42,6 @@ def serialize_body(call_args):
     #     result, TMemoryBuffer(body), (result_type, result_type.thrift_spec)
     # )
     #
-
     trans = TTransport.TMemoryBuffer()
     proto = TBinaryProtocol.TBinaryProtocolAccelerated(trans)
     call_args.write(proto)

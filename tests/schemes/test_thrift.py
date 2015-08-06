@@ -113,31 +113,173 @@ def test_string():
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_byte():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testByte(request, response, proxy):
+        return request.args.thing
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+
+    resp = yield tchannel.thrift(
+        service.testByte(63)
+    )
+
+    assert resp.headers == {}
+    assert resp.body == 63
 
 
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_i32():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testI32(request, response, proxy):
+        return request.args.thing
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+
+    # case #1
+    resp = yield tchannel.thrift(
+        service.testI32(-1)
+    )
+    assert resp.headers == {}
+    assert resp.body == -1
+
+    # case #2
+    resp = yield tchannel.thrift(
+        service.testI32(1)
+    )
+    assert resp.headers == {}
+    assert resp.body == 1
 
 
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_i64():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testI64(request, response, proxy):
+        return request.args.thing
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+
+    resp = yield tchannel.thrift(
+        service.testI64(-34359738368)
+    )
+
+    assert resp.headers == {}
+    assert resp.body == -34359738368
 
 
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_double():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testDouble(request, response, proxy):
+        return request.args.thing
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+
+    resp = yield tchannel.thrift(
+        service.testDouble(-5.235098235)
+    )
+
+    assert resp.headers == {}
+    assert resp.body == -5.235098235
 
 
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_binary():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testBinary(request, response, proxy):
+        return request.args.thing
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+
+    resp = yield tchannel.thrift(
+        service.testBinary(
+            '\x0c\x00\x00\x0b\x00\x01\x00\x00\x00\x0bresp string\x00\x00'
+        )
+    )
+
+    assert resp.headers == {}
+    assert (
+        resp.body ==
+        '\x0c\x00\x00\x0b\x00\x01\x00\x00\x00\x0bresp string\x00\x00'
+    )
 
 
 @pytest.mark.gen_test
