@@ -25,15 +25,14 @@ import tornado
 import tornado.gen
 from mock import patch
 
+from tchannel import retry
 from tchannel.errors import ProtocolError
 from tchannel.errors import TChannelError
 from tchannel.errors import TimeoutError
-from tchannel.glossary import MAX_ATTEMPT_TIMES
 from tchannel.messages import ErrorCode
 from tchannel.tornado import Request
 from tchannel.tornado import TChannel
 from tchannel.tornado.stream import InMemStream
-from tchannel.transport_header import RetryType
 
 
 @tornado.gen.coroutine
@@ -86,7 +85,7 @@ def test_retry_timeout():
                 "test",
                 "test",
                 headers={
-                    're': RetryType.CONNECTION_ERROR_AND_TIMEOUT
+                    're': retry.CONNECTION_ERROR_AND_TIMEOUT
                 },
                 ttl=0.005,
                 attempt_times=3,
@@ -113,7 +112,7 @@ def test_retry_on_error_fail():
                 "test",
                 "test",
                 headers={
-                    're': RetryType.CONNECTION_ERROR_AND_TIMEOUT
+                    're': retry.CONNECTION_ERROR_AND_TIMEOUT
                 },
                 ttl=0.02,
                 attempt_times=3,
@@ -122,7 +121,7 @@ def test_retry_on_error_fail():
 
         assert mock_should_retry_on_error.called
         assert mock_should_retry_on_error.call_count == (
-            MAX_ATTEMPT_TIMES)
+            retry.DEFAULT_RETRY_LIMIT)
         assert e.value.code == ErrorCode.busy
 
 
@@ -150,7 +149,7 @@ def test_retry_on_error_success():
             "test",
             "test",
             headers={
-                're': RetryType.CONNECTION_ERROR_AND_TIMEOUT,
+                're': retry.CONNECTION_ERROR_AND_TIMEOUT,
             },
             ttl=0.01,
             attempt_times=3,
@@ -165,20 +164,20 @@ def test_retry_on_error_success():
 
 @pytest.mark.gen_test
 @pytest.mark.parametrize('retry_flag, error_code, result', [
-    (RetryType.CONNECTION_ERROR, ErrorCode.busy, True),
-    (RetryType.CONNECTION_ERROR, ErrorCode.declined, True),
-    (RetryType.CONNECTION_ERROR, ErrorCode.timeout, False),
-    (RetryType.CONNECTION_ERROR_AND_TIMEOUT, ErrorCode.timeout, True),
-    (RetryType.TIMEOUT, ErrorCode.unexpected, False),
-    (RetryType.TIMEOUT, ErrorCode.network_error, False),
-    (RetryType.CONNECTION_ERROR, ErrorCode.network_error, True),
-    (RetryType.NEVER, ErrorCode.network_error, False),
-    (RetryType.CONNECTION_ERROR_AND_TIMEOUT, ErrorCode.cancelled, False),
-    (RetryType.CONNECTION_ERROR_AND_TIMEOUT, ErrorCode.bad_request, False),
-    (RetryType.CONNECTION_ERROR, ErrorCode.fatal, True),
-    (RetryType.TIMEOUT, ErrorCode.fatal, False),
-    (RetryType.TIMEOUT, ErrorCode.unhealthy, False),
-    (RetryType.CONNECTION_ERROR_AND_TIMEOUT, ErrorCode.unhealthy, False),
+    (retry.CONNECTION_ERROR, ErrorCode.busy, True),
+    (retry.CONNECTION_ERROR, ErrorCode.declined, True),
+    (retry.CONNECTION_ERROR, ErrorCode.timeout, False),
+    (retry.CONNECTION_ERROR_AND_TIMEOUT, ErrorCode.timeout, True),
+    (retry.TIMEOUT, ErrorCode.unexpected, False),
+    (retry.TIMEOUT, ErrorCode.network_error, False),
+    (retry.CONNECTION_ERROR, ErrorCode.network_error, True),
+    (retry.NEVER, ErrorCode.network_error, False),
+    (retry.CONNECTION_ERROR_AND_TIMEOUT, ErrorCode.cancelled, False),
+    (retry.CONNECTION_ERROR_AND_TIMEOUT, ErrorCode.bad_request, False),
+    (retry.CONNECTION_ERROR, ErrorCode.fatal, True),
+    (retry.TIMEOUT, ErrorCode.fatal, False),
+    (retry.TIMEOUT, ErrorCode.unhealthy, False),
+    (retry.CONNECTION_ERROR_AND_TIMEOUT, ErrorCode.unhealthy, False),
 ],
     ids=lambda arg: str(arg)
 )

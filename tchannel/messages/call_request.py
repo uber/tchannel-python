@@ -22,7 +22,7 @@ from __future__ import absolute_import
 
 from . import common
 from .. import rw
-from ..glossary import DEFAULT_TTL
+from ..glossary import DEFAULT_TIMEOUT
 from .call_request_continue import CallRequestContinueMessage
 from .types import Types
 
@@ -41,7 +41,7 @@ class CallRequestMessage(CallRequestContinueMessage):
     def __init__(
         self,
         flags=0,
-        ttl=DEFAULT_TTL,
+        ttl=DEFAULT_TIMEOUT,
         tracing=None,
         service=None,
         headers=None,

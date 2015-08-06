@@ -26,10 +26,10 @@ from collections import namedtuple
 from thrift import Thrift
 from tornado import gen
 
+from tchannel.errors import OneWayNotSupportedError
 from tchannel.tornado.broker import ArgSchemeBroker
-
-from .scheme import ThriftArgScheme
-from .util import get_service_methods
+from tchannel.dep.thrift_arg_scheme import DeprecatedThriftArgScheme
+from .reflection import get_service_methods
 
 # Generated clients will use this base class.
 _ClientBase = namedtuple(
@@ -120,11 +120,18 @@ def generate_method(service_module, service_name, method_name):
     assert method_name
 
     args_type = getattr(service_module, method_name + '_args')
-    result_type = getattr(service_module, method_name + '_result')
-    # TODO result_type is None when the method is oneway.
-    # We don't support oneway yet.
+    result_type = getattr(service_module, method_name + '_result', None)
 
-    arg_scheme = ThriftArgScheme(result_type)
+    # oneway not currently supported
+    # TODO - write test for this
+    if result_type is None:
+        def not_supported(self, *args, **kwags):
+            raise OneWayNotSupportedError(
+                'TChannel+Thrift does not currently support oneway procedues'
+            )
+        return not_supported
+
+    arg_scheme = DeprecatedThriftArgScheme(result_type)
     result_spec = result_type.thrift_spec
     # result_spec is a tuple of tuples in the form:
     #
@@ -162,7 +169,7 @@ def generate_method(service_module, service_name, method_name):
             ),
             endpoint,
             {},
-            call_args,
+            call_args,  # body
             protocol_headers=self.protocol_headers,
             traceflag=self.trace
         )

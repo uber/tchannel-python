@@ -2,7 +2,7 @@ node_modules/
 env/
 *.xml
 *.egg-info
-.coverage
+*.coverage*
 *.pyc
 .phutil_module_cache
 build/

@@ -24,7 +24,7 @@ import mock
 import pytest
 from thrift.Thrift import TType
 
-from tchannel.thrift.scheme import ThriftArgScheme
+from tchannel.dep.thrift_arg_scheme import DeprecatedThriftArgScheme
 from tchannel.thrift.server import build_handler
 from tchannel.tornado.request import Request
 from tchannel.tornado.response import Response
@@ -108,7 +108,7 @@ def test_build_handler():
             InMemStream('\00\00'),  # no headers
             InMemStream('\00'),  # empty struct
         ],
-        scheme=ThriftArgScheme(FakeResult),
+        scheme=DeprecatedThriftArgScheme(FakeResult),
         headers={'cn': 'test_caller', 'as': 'thrift'},
     )
     req.close_argstreams()
@@ -119,7 +119,7 @@ def test_build_handler():
             response_header,
             response_body,
         ],
-        scheme=ThriftArgScheme(FakeResult),
+        scheme=DeprecatedThriftArgScheme(FakeResult),
     )
     tchannel = mock.Mock()
 
@@ -161,7 +161,7 @@ def test_build_handler_exception():
             InMemStream('\00\00'),  # no headers
             InMemStream('\00'),  # empty struct
         ],
-        scheme=ThriftArgScheme(FakeResult),
+        scheme=DeprecatedThriftArgScheme(FakeResult),
     )
     req.close_argstreams()
 
@@ -171,7 +171,7 @@ def test_build_handler_exception():
             InMemStream(),
             response_body,
         ],
-        scheme=ThriftArgScheme(FakeResult),
+        scheme=DeprecatedThriftArgScheme(FakeResult),
     )
     tchannel = mock.Mock()
 
