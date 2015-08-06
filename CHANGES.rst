@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.15.0 (unreleased)
+0.15.0 (2015-08-06)
 -------------------
 
 - Introduced new top level ``tchannel.TChannel`` object, with new request methods
