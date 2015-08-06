@@ -16,6 +16,11 @@ from tests.data.generated.ThriftTest import ThriftTest, SecondService
 from tchannel.errors import ProtocolError
 
 
+# TODO - where possible, in req/res style test, create parameterized tests,
+#        each test should test w headers and wout
+#        and potentially w retry and timeout as well.
+#        note this wont work with complex scenarios
+
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_void():
@@ -271,14 +276,15 @@ def test_binary():
 
     resp = yield tchannel.thrift(
         service.testBinary(
-            '\x0c\x00\x00\x0b\x00\x01\x00\x00\x00\x0bresp string\x00\x00'
+            # this is ThriftTest.Xtruct(string_thing='hi')
+            '\x0c\x00\x00\x0b\x00\x01\x00\x00\x00\x0bhi\x00\x00'
         )
     )
 
     assert resp.headers == {}
     assert (
         resp.body ==
-        '\x0c\x00\x00\x0b\x00\x01\x00\x00\x00\x0bresp string\x00\x00'
+        '\x0c\x00\x00\x0b\x00\x01\x00\x00\x00\x0bhi\x00\x00'
     )
 
 
@@ -375,7 +381,45 @@ def test_struct_with_headers():
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_nest():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testNest(request, response, proxy):
+        return request.args.thing
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+
+    xstruct = ThriftTest.Xtruct(
+        string_thing='hi',
+        byte_thing=1,
+        i32_thing=-1,
+        i64_thing=-34359738368,
+    )
+    xstruct2 = ThriftTest.Xtruct2(
+        byte_thing=1,
+        struct_thing=xstruct,
+        i32_thing=1,
+    )
+
+    resp = yield tchannel.thrift(
+        service.testNest(thing=xstruct2)
+    )
+
+    assert resp.headers == {}
+    assert resp.body == xstruct2
 
 
 @pytest.mark.gen_test
