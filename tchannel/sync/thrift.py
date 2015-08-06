@@ -20,7 +20,7 @@
 
 from __future__ import absolute_import
 
-from tchannel.thrift.util import get_service_methods
+from tchannel.thrift.reflection import get_service_methods
 from tchannel.thrift.client import client_for as async_client_for
 
 

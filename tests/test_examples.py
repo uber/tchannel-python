@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import contextlib
+import json
 import os
 import subprocess
 
@@ -37,8 +38,11 @@ def popen(path, wait_for_listen=False):
     if wait_for_listen:
         # It would be more correct to check ``conn.status ==
         # psutil.CONN_LISTEN`` but this works
-        while process.is_running() and not process.connections():
-            pass
+        try:
+            while process.is_running() and not process.connections():
+                pass
+        except psutil.Error:
+            raise AssertionError(process.stderr.read())
 
     try:
         yield process
@@ -62,30 +66,64 @@ def examples_dir():
 
 
 @pytest.mark.parametrize(
-    'example_type',
-    [
-        'raw_',
-        'json_',
-        'thrift_examples/',
-        'keyvalue/keyvalue/',
-        'stream_',
-    ]
+    'scheme, path',
+    (
+        ('raw', 'simple/raw/'),
+        ('json', 'simple/json/'),
+        ('thrift', 'simple/thrift/'),
+        ('guide', 'guide/keyvalue/keyvalue/'),
+    )
 )
-def test_example(examples_dir, example_type):
+def test_example(examples_dir, scheme, path):
     """Smoke test example code to ensure it still runs."""
 
     server_path = os.path.join(
         examples_dir,
-        example_type + 'server.py',
+        path + 'server.py',
     )
 
     client_path = os.path.join(
         examples_dir,
-        example_type + 'client.py',
+        path + 'client.py',
     )
 
     with popen(server_path, wait_for_listen=True):
         with popen(client_path) as client:
-            assert (
-                client.stdout.read() == 'Hello, world!\n'
-            ), client.stderr.read()
+
+            out = client.stdout.read()
+
+            # TODO the guide test should be the same as others
+            if scheme == 'guide':
+                assert out == 'Hello, world!\n'
+                return
+
+            try:
+                body, headers = out.split(os.linesep)[:-1]
+            except ValueError:
+                raise AssertionError(out + client.stderr.read())
+
+            if scheme == 'raw':
+
+                assert body == 'resp body'
+                assert headers == 'resp headers'
+
+            elif scheme == 'json':
+
+                body = json.loads(body)
+                headers = json.loads(headers)
+
+                assert body == {
+                    'resp': 'body'
+                }
+                assert headers == {
+                    'resp': 'header'
+                }
+
+            elif scheme == 'thrift':
+
+                headers = json.loads(headers)
+
+                assert body == 'resp'
+                assert headers == {
+                    'resp': 'header',
+                }

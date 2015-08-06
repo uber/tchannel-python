@@ -18,7 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from __future__ import absolute_import
+from __future__ import (
+    absolute_import, division, print_function, unicode_literals
+)
 
 import logging
 from collections import deque
@@ -27,17 +29,16 @@ from random import random
 
 from tornado import gen
 
+from ..schemes import DEFAULT as DEFAULT_SCHEME
+from ..retry import (
+    DEFAULT as DEFAULT_RETRY, DEFAULT_RETRY_LIMIT, DEFAULT_RETRY_DELAY
+)
 from tchannel.event import EventType
-from tchannel.glossary import DEFAULT_TTL
-from tchannel.glossary import MAX_ATTEMPT_TIMES
-from tchannel.glossary import RETRY_DELAY
-
+from tchannel.glossary import DEFAULT_TIMEOUT
 from ..errors import NoAvailablePeerError
 from ..errors import ProtocolError
 from ..errors import TimeoutError
 from ..handler import CallableRequestHandler
-from ..transport_header import ArgSchemeType
-from ..transport_header import RetryType
 from ..zipkin.annotation import Endpoint
 from ..zipkin.trace import Trace
 from .connection import StreamConnection
@@ -451,9 +452,12 @@ class PeerClientOperation(object):
         self.peer = peer
         self.service = service
         self.parent_tracing = parent_tracing
+
+        # TODO the term headers are reserved for application headers,
+        # these are transport headers,
         self.headers = {
-            'as': arg_scheme or ArgSchemeType.DEFAULT,
-            're': retry or RetryType.DEFAULT,
+            'as': arg_scheme or DEFAULT_SCHEME,
+            're': retry or DEFAULT_RETRY,
             'cn': self.peer.tchannel.name,
         }
 
@@ -501,9 +505,9 @@ class PeerClientOperation(object):
             maybe_stream(arg1), maybe_stream(arg2), maybe_stream(arg3)
         )
 
-        attempt_times = attempt_times or MAX_ATTEMPT_TIMES
-        ttl = ttl or DEFAULT_TTL
-        retry_delay = retry_delay or RETRY_DELAY
+        attempt_times = attempt_times or DEFAULT_RETRY_LIMIT
+        ttl = ttl or DEFAULT_TIMEOUT
+        retry_delay = retry_delay or DEFAULT_RETRY_DELAY
         # hack to get endpoint from arg_1 for trace name
         arg1.close()
         endpoint = yield read_full(arg1)
@@ -600,6 +604,7 @@ class PeerClientOperation(object):
 
     @gen.coroutine
     def send_with_retry(self, request, peer, attempt_times, retry_delay):
+
         # black list to record all used peers, so they aren't chosen again.
         blacklist = set()
         response = None

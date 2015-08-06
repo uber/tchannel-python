@@ -2,10 +2,19 @@ Changelog
 =========
 
 
-0.14.1 (unreleased)
+0.15.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Introduced new top level ``tchannel.TChannel`` object, with new request methods
+  ``call``, ``raw``, ``json``, and ``thrift``. This will eventually replace the
+  akward ``request`` / ``send`` calling pattern.
+- Introduced ``tchannel.from_thrift_module`` function for creating a request builder
+  to be used with the ``tchannel.TChannel.thrift`` function.
+- Introduced new simplified examples under the ``examples/simple`` directory, moved
+  the Guide's examples to ``examples/guide``, and deleted the remaining examples.
+- Added ThriftTest.thrift and generated Thrift code to ``tchannel.testing.data`` for
+  use with examples and playing around with TChannel.
+- Fix JSON arg2 (headers) being returned a string instead of a dict.
 
 
 0.14.0 (2015-08-03)

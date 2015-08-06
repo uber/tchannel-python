@@ -20,32 +20,28 @@
 
 from __future__ import absolute_import
 
-import tornado.ioloop
 
-from handlers import register_example_endpoints
-from options import get_args
-from tchannel.tornado import TChannel
+import inspect
 
 
-def main():
-    args = get_args()
+def get_service_methods(iface):
+    """Get a list of methods defined in the interface for a Thrift service.
 
-    app = TChannel(
-        name='json-server',
-        hostport='%s:%d' % (args.host, args.port),
+    :param iface:
+        The Thrift-generated Iface class defining the interface for the
+        service.
+    :returns:
+        A set containing names of the methods defined for the service.
+    """
+    methods = inspect.getmembers(iface, predicate=inspect.ismethod)
+
+    return set(
+        name for (name, method) in methods if not name.startswith('__')
     )
 
-    register_example_endpoints(app)
 
-    def say_hi_json(request, response, proxy):
-        response.write_body({'hi': 'Hello, world!'})
+def get_module_name(module):
 
-    app.register(endpoint="hi-json", scheme="json", handler=say_hi_json)
+    name = module.__name__.rsplit('.', 1)[-1]
 
-    app.listen()
-
-    tornado.ioloop.IOLoop.instance().start()
-
-
-if __name__ == '__main__':  # pragma: no cover
-    main()
+    return name

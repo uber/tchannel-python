@@ -22,7 +22,7 @@ from __future__ import absolute_import
 
 from . import common
 from .. import rw
-from ..glossary import DEFAULT_TTL
+from ..glossary import DEFAULT_TIMEOUT
 from .base import BaseMessage
 
 
@@ -33,7 +33,7 @@ class CancelMessage(BaseMessage):
         'why',
     )
 
-    def __init__(self, ttl=DEFAULT_TTL, tracing=None, why=None, id=0):
+    def __init__(self, ttl=DEFAULT_TIMEOUT, tracing=None, why=None, id=0):
         super(CancelMessage, self).__init__(id)
         self.ttl = ttl
         self.tracing = tracing or common.Tracing(0, 0, 0, 0)

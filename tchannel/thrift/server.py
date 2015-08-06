@@ -25,11 +25,10 @@ from collections import namedtuple
 
 from tornado import gen
 
+from tchannel.dep.thrift_arg_scheme import DeprecatedThriftArgScheme
 from tchannel.tornado.broker import ArgSchemeBroker
 from tchannel.tornado.request import TransportMetadata
 from tchannel.tornado.response import StatusCode
-
-from .scheme import ThriftArgScheme
 
 
 def register(dispatcher, service_module, handler, method=None, service=None):
@@ -83,7 +82,7 @@ def register(dispatcher, service_module, handler, method=None, service=None):
     endpoint = '%s::%s' % (service, method)
     args_type = getattr(service_module, method + '_args')
     result_type = getattr(service_module, method + '_result')
-    broker = ArgSchemeBroker(ThriftArgScheme(args_type))
+    broker = ArgSchemeBroker(DeprecatedThriftArgScheme(args_type))
 
     dispatcher.register(
         endpoint,
