@@ -680,7 +680,64 @@ def test_map_map():
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_insanity():
-    pass
+
+    # Given this test server:
+
+    server = DeprecatedTChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testInsanity(request, response, proxy):
+        result = {
+            1: {
+                2: request.args.argument,
+                3: request.args.argument,
+            },
+            2: {
+                6: ThriftTest.Insanity(),
+            },
+        }
+        return result
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = from_thrift_module(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+
+    x = ThriftTest.Insanity(
+        userMap={
+            ThriftTest.Numberz.EIGHT: 0xffffffffffffff,
+        },
+        xtructs=[
+            ThriftTest.Xtruct(
+                string_thing='Hello2',
+                byte_thing=74,
+                i32_thing=0xff00ff,
+                i64_thing=-34359738368,
+            ),
+        ],
+    )
+
+    resp = yield tchannel.thrift(
+        service.testInsanity(x)
+    )
+
+    assert resp.headers == {}
+    assert resp.body == {
+        1: {
+            2: x,
+            3: x,
+        },
+        2: {
+            6: ThriftTest.Insanity(),
+        },
+    }
 
 
 @pytest.mark.gen_test
@@ -716,7 +773,7 @@ def test_multi():
         string_thing='Hello2',
         byte_thing=74,
         i32_thing=0xff00ff,
-        i64_thing=0xffffffffd0d0
+        i64_thing=0xffffffffd0d0,
     )
 
     resp = yield tchannel.thrift(
