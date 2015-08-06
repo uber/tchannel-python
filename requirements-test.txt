@@ -30,7 +30,7 @@ pyfarmhash==0.2.0
 crcmod
 
 # Mocks
-mock
+mock==1.0.1
 doubles
 
 # for releases
