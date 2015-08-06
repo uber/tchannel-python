@@ -1,6 +1,6 @@
 from tornado import gen, ioloop
 
-from tchannel.tornado import TChannel
+from tchannel import TChannel
 
 
 app = TChannel('raw-server', hostport='localhost:54495')

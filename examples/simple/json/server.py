@@ -1,7 +1,6 @@
 from tornado import gen, ioloop
 
-from tchannel import schemes
-from tchannel.tornado import TChannel
+from tchannel import TChannel, schemes
 
 
 app = TChannel('json-server', hostport='localhost:54496')

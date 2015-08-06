@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from tornado import gen, ioloop
-from tchannel.tornado import TChannel
+from tchannel import TChannel
 from tchannel.testing.data.generated.ThriftTest import ThriftTest
 
 
