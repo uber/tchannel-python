@@ -3,4 +3,4 @@ from __future__ import (
 )
 
 from .tchannel import TChannel  # noqa
-from .thrift import from_thrift_module  # noqa
+from .thrift import thrift_request_builder  # noqa

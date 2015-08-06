@@ -6,7 +6,7 @@ import pytest
 from tornado import gen
 
 from tchannel import (
-    TChannel, from_thrift_module,
+    TChannel, thrift_request_builder,
     schemes, response
 )
 from tchannel.errors import OneWayNotSupportedError
@@ -39,7 +39,7 @@ def test_void():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -69,7 +69,7 @@ def test_void_with_headers():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -101,7 +101,7 @@ def test_string():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -133,7 +133,7 @@ def test_byte():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -165,7 +165,7 @@ def test_i32():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -204,7 +204,7 @@ def test_i64():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -236,7 +236,7 @@ def test_double():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -268,7 +268,7 @@ def test_binary():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -311,7 +311,7 @@ def test_struct():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='service',
         thrift_module=ThriftTest,
         hostport=server.hostport
@@ -361,7 +361,7 @@ def test_struct_with_headers():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='service',
         thrift_module=ThriftTest,
         hostport=server.hostport
@@ -396,7 +396,7 @@ def test_nest():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -440,7 +440,7 @@ def test_map():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -479,7 +479,7 @@ def test_string_map():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -516,7 +516,7 @@ def test_set():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -549,7 +549,7 @@ def test_list():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -582,7 +582,7 @@ def test_enum():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -615,7 +615,7 @@ def test_type_def():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -663,7 +663,7 @@ def test_map_map():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -704,7 +704,7 @@ def test_insanity():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -763,7 +763,7 @@ def test_multi():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -818,7 +818,7 @@ def test_exception():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='service',
         thrift_module=ThriftTest,
         hostport=server.hostport
@@ -876,7 +876,7 @@ def test_multi_exception():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='service',
         thrift_module=ThriftTest,
         hostport=server.hostport
@@ -926,7 +926,7 @@ def test_oneway():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -958,13 +958,13 @@ def test_second_service_blah_blah():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport
     )
 
-    second_service = from_thrift_module(
+    second_service = thrift_request_builder(
         service='server',
         thrift_module=SecondService,
         hostport=server.hostport,
@@ -1019,13 +1019,13 @@ def test_second_service_second_test_string():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport
     )
 
-    second_service = from_thrift_module(
+    second_service = thrift_request_builder(
         service='server',
         thrift_module=SecondService,
         hostport=server.hostport,
@@ -1064,7 +1064,7 @@ def test_call_response_should_contain_transport_headers():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
@@ -1101,7 +1101,7 @@ def test_call_unexpected_error_should_result_in_protocol_error():
 
     tchannel = TChannel(name='client')
 
-    service = from_thrift_module(
+    service = thrift_request_builder(
         service='server',
         thrift_module=ThriftTest,
         hostport=server.hostport,
