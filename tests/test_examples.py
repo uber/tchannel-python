@@ -67,7 +67,7 @@ def examples_dir():
     (
         ('raw', 'simple/raw/'),
         ('json', 'simple/json/'),
-        # ('thrift', 'simple/thrift/'),
+        ('thrift', 'simple/thrift/'),
         ('guide', 'guide/keyvalue/keyvalue/'),
     )
 )
