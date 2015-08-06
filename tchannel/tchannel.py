@@ -126,6 +126,9 @@ class TChannel(object):
 
         raise gen.Return(result)
 
+    def listen(self, port=None):
+        return self._dep_tchannel.listen(port)
+
     def register(self, endpoint, scheme=None, handler=None, **kwargs):
         return self._dep_tchannel.register(
             endpoint=endpoint,
