@@ -5,7 +5,7 @@ Changelog
 0.15.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- First param, request, in ``tchannel.thrift`` method is required.
 
 
 0.15.1 (2015-08-07)

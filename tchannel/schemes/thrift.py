@@ -18,8 +18,10 @@ class ThriftArgScheme(object):
         self._tchannel = tchannel
 
     @gen.coroutine
-    def __call__(self, request=None, headers=None, timeout=None,
+    def __call__(self, request, headers=None, timeout=None,
                  retry_on=None, retry_limit=None):
+
+        assert request, "a ThriftRequest is required"
 
         if headers is None:
             headers = {}

@@ -1141,3 +1141,13 @@ def test_value_expected_but_none_returned_should_error():
         yield tchannel.thrift(
             service.testString('no return!?')
         )
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_thrift_request_is_required():
+
+    tchannel = TChannel('hi')
+
+    with pytest.raises(AssertionError):
+        yield tchannel.thrift(request=None)
