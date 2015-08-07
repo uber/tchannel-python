@@ -5,6 +5,7 @@ from __future__ import (
 from tornado import gen
 
 from . import THRIFT
+from tchannel.errors import ValueExpectedError
 from tchannel.thrift import serializer
 
 
@@ -58,6 +59,15 @@ class ThriftArgScheme(object):
 
         # success - non-void
         if len(result_spec) >= 1 and result_spec[0] is not None:
+
+            # value expected, but got none
+            # TODO - server side should use this same logic
+            if body.success is None:
+                raise ValueExpectedError(
+                    'called a non-void procedure %s but received no value' %
+                    request.endpoint
+                )
+
             response.body = body.success
             raise gen.Return(response)
 
