@@ -124,3 +124,8 @@ class TChannelApplicationError(TChannelError):
 class OneWayNotSupportedError(TChannelError):
     """Raised when oneway Thrift procedure is called."""
     pass
+
+
+class ValueExpectedError(TChannelError):
+    """Raised when a non-void Thrift response contains no value."""
+    pass

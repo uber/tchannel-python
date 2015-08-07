@@ -9,7 +9,7 @@ from tchannel import (
     TChannel, thrift_request_builder,
     schemes, response
 )
-from tchannel.errors import OneWayNotSupportedError
+from tchannel.errors import OneWayNotSupportedError, ValueExpectedError
 from tchannel.thrift import client_for
 from tchannel.testing.data.generated.ThriftTest import SecondService
 from tchannel.testing.data.generated.ThriftTest import ThriftTest
@@ -1110,4 +1110,34 @@ def test_call_unexpected_error_should_result_in_protocol_error():
     with pytest.raises(ProtocolError):
         yield tchannel.thrift(
             service.testMultiException(arg0='Xception', arg1='thingy')
+        )
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_value_expected_but_none_returned_should_error():
+
+    # Given this test server:
+
+    server = TChannel(name='server')
+
+    @server.register(ThriftTest)
+    def testString(request, response, proxy):
+        pass
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    service = thrift_request_builder(
+        service='server',
+        thrift_module=ThriftTest,
+        hostport=server.hostport,
+    )
+
+    with pytest.raises(ValueExpectedError):
+        yield tchannel.thrift(
+            service.testString('no return!?')
         )

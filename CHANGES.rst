@@ -5,7 +5,8 @@ Changelog
 0.15.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Raise ``tchannel.errors.ValueExpectedError`` when calling a non-void Thrift procedure
+  that returns no value.
 
 
 0.15.0 (2015-08-06)
