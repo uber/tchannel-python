@@ -21,11 +21,18 @@ class ThriftArgScheme(object):
     def __call__(self, request=None, headers=None, timeout=None,
                  retry_on=None, retry_limit=None):
 
-        if headers is None:
+        if not headers:
             headers = {}
 
         # serialize
-        headers = serializer.serialize_headers(headers=headers)
+        try:
+            headers = serializer.serialize_headers(headers=headers)
+        except (AttributeError, TypeError):
+            raise ValueError(
+                'headers must be a map[string]string (a shallow dict'
+                ' where keys and values are strings)'
+            )
+
         body = serializer.serialize_body(call_args=request.call_args)
 
         response = yield self._tchannel.call(

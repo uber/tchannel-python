@@ -5,7 +5,8 @@ Changelog
 0.15.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Raise informative and obvious ``ValueError`` when anything
+  but a map[string]string is passed as headers to the ``TChannel.thrift`` method.
 
 
 0.15.1 (2015-08-07)
