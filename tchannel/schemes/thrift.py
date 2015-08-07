@@ -21,8 +21,6 @@ class ThriftArgScheme(object):
     def __call__(self, request, headers=None, timeout=None,
                  retry_on=None, retry_limit=None):
 
-        assert request, "a ThriftRequest is required"
-
         if headers is None:
             headers = {}
 
