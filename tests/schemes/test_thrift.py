@@ -1114,7 +1114,7 @@ def test_call_unexpected_error_should_result_in_protocol_error():
 
 
 @pytest.mark.gen_test
-@pytest.mark.callz
+@pytest.mark.call
 def test_value_expected_but_none_returned_should_error():
 
     # Given this test server:

@@ -64,8 +64,9 @@ class ThriftArgScheme(object):
             # TODO - server side should use this same logic
             if body.success is None:
                 raise ValueExpectedError(
-                    'called a non-void procedure %s but received no value' %
-                    request.endpoint
+                    'Expected a value to be returned for %s, '
+                    'but recieved None - only void procedures can'
+                    'return None.' % request.endpoint
                 )
 
             response.body = body.success
