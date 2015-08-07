@@ -1141,3 +1141,44 @@ def test_value_expected_but_none_returned_should_error():
         yield tchannel.thrift(
             service.testString('no return!?')
         )
+
+
+@pytest.mark.gen_test
+@pytest.mark.callz
+def test_headers_should_be_a_map_of_strings():
+
+    tchannel = TChannel('client')
+
+    with pytest.raises(ValueError):
+        yield tchannel.thrift(
+            request=True,
+            headers={'key': 1},
+        )
+
+    with pytest.raises(ValueError):
+        yield tchannel.thrift(
+            request=True,
+            headers={1: 'value'},
+        )
+
+    with pytest.raises(ValueError):
+        yield tchannel.thrift(
+            request=True,
+            headers=100,
+        )
+
+    with pytest.raises(ValueError):
+        yield tchannel.thrift(
+            request=True,
+            headers={
+                'key': {
+                    'key': 'value',
+                },
+            },
+        )
+
+    with pytest.raises(ValueError):
+        yield tchannel.thrift(
+            request=True,
+            headers=Exception()
+        )
