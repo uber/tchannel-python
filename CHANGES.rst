@@ -5,6 +5,8 @@ Changelog
 0.15.2 (unreleased)
 -------------------
 
+- Raise informative and obvious ``ValueError`` when anything
+  but a map[string]string is passed as headers to the ``TChannel.thrift`` method.
 - First param, request, in ``tchannel.thrift`` method is required.
 
 
