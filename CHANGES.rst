@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.15.2 (unreleased)
+0.15.2 (2015-08-07)
 -------------------
 
 - Raise informative and obvious ``ValueError`` when anything
