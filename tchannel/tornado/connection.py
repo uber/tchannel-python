@@ -569,15 +569,17 @@ class StreamConnection(TornadoConnection):
         finally:
             response.close_argstreams(force=True)
 
-    @tornado.gen.coroutine
     def stream_request(self, request):
         """send the given request and response is not required"""
-        try:
-            request.close_argstreams()
-            yield self._stream(request, self.request_message_factory)
-            # TODO: add after_send_request callback
-        finally:
-            request.close_argstreams(force=True)
+        request.close_argstreams()
+
+        stream_future = self._stream(request, self.request_message_factory)
+
+        stream_future.add_done_callback(
+            lambda f: request.close_argstreams(force=True),
+        )
+
+        return stream_future
 
     def send_request(self, request):
         """Send the given request and response is required.
