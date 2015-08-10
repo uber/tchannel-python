@@ -1,35 +1,23 @@
 from tornado import gen, ioloop
 
-from tchannel import TChannel, schemes
+from tchannel import TChannel, Response
 
 
-app = TChannel('json-server', hostport='localhost:54496')
+tchannel = TChannel('json-server', hostport='localhost:54496')
 
 
-@app.register('endpoint', schemes.JSON)
+@tchannel.json.register
 @gen.coroutine
-def endpoint(request, response, proxy):
+def endpoint(request):
 
-    header = yield request.get_header()
-    body = yield request.get_body()
+    assert request.headers == {'req': 'header'}
+    assert request.body == {'req': 'body'}
 
-    assert header == {
-        'req': 'header',
-    }
-    assert body == {
-        'req': 'body',
-    }
-
-    response.write_header({
-        'resp': 'header',
-    })
-    response.write_body({
-        'resp': 'body',
-    })
+    return Response({'resp': 'body'}, headers={'resp': 'header'})
 
 
-app.listen()
+tchannel.listen()
 
-print app.hostport
+print tchannel.hostport
 
 ioloop.IOLoop.current().start()

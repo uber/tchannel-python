@@ -1,27 +1,23 @@
 from tornado import gen, ioloop
 
-from tchannel import TChannel
+from tchannel import TChannel, Response
 
 
-app = TChannel('raw-server', hostport='localhost:54495')
+tchannel = TChannel('raw-server', hostport='localhost:54495')
 
 
-@app.register('endpoint')
+@tchannel.raw.register
 @gen.coroutine
 def endpoint(request, response, proxy):
 
-    header = yield request.get_header()
-    body = yield request.get_body()
+    assert request.headers == 'req headers'
+    assert request.body == 'req body'
 
-    assert header == 'req headers'
-    assert body == 'req body'
-
-    response.write_header('resp headers')
-    response.write_body('resp body')
+    return Response('resp body', headers='resp headers')
 
 
-app.listen()
+tchannel.listen()
 
-print app.hostport
+print tchannel.hostport
 
 ioloop.IOLoop.current().start()
