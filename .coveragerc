@@ -10,7 +10,9 @@ exclude_lines =
 omit =
     tchannel/zipkin/thrift/*
     tchannel/testing/vcr/proxy/*
-    tchannel/testing/data/*    
+    tchannel/testing/data/*
+    examples/benchmark/thrift/service/*
+    examples/guide/keyvalue/keyvalue/service/*
 
 [xml]
 output = coverage.xml
