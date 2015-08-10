@@ -270,14 +270,13 @@ class TChannel(object):
 
         return False
 
-    @tornado.gen.coroutine
     def receive_call(self, message, connection):
         if not self._handler:
             log.warn(
                 "Received %s but a handler has not been defined.", str(message)
             )
             return
-        self._handler.handle(message, connection)
+        return self._handler.handle(message, connection)
 
     def _register_simple(self, endpoint, scheme, f):
         """Register a simple endpoint with this TChannel.
