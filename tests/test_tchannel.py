@@ -5,8 +5,8 @@ from __future__ import (
 import pytest
 import tornado
 
-from tchannel import TChannel, schemes
-from tchannel import response
+from tchannel import TChannel, Response, schemes
+from tchannel.response import ResponseTransportHeaders
 
 # TODO - need integration tests for timeout and retries, use testing.vcr
 
@@ -23,25 +23,21 @@ def test_should_have_default_schemes():
 
 
 @pytest.mark.gen_test
-@pytest.mark.call
+@pytest.mark.callz
 def test_call_should_get_response():
 
     # Given this test server:
 
     server = TChannel(name='server')
 
-    @server.register('endpoint', schemes.RAW)
+    @server.register(scheme=schemes.RAW)
     @tornado.gen.coroutine
-    def endpoint(request, response, proxy):
+    def endpoint(request):
 
-        headers = yield request.get_header()
-        body = yield request.get_body()
+        assert request.headers == 'raw req headers'
+        assert request.body == 'raw req body'
 
-        assert headers == 'raw req headers'
-        assert body == 'raw req body'
-
-        response.write_header('raw resp headers')
-        response.write_body('raw resp body')
+        return Response('resp body', 'resp headers')
 
     server.listen()
 
@@ -59,11 +55,11 @@ def test_call_should_get_response():
     )
 
     # verify response
-    assert isinstance(resp, response.Response)
+    assert isinstance(resp, Response)
     assert resp.headers == 'raw resp headers'
     assert resp.body == 'raw resp body'
 
     # verify response transport headers
-    assert isinstance(resp.transport, response.ResponseTransportHeaders)
+    assert isinstance(resp.transport, ResponseTransportHeaders)
     assert resp.transport.scheme == schemes.RAW
     assert resp.transport.failure_domain is None
