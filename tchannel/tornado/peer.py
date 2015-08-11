@@ -570,17 +570,17 @@ class PeerClientOperation(object):
         except ProtocolError as protocol_error:
             # event: after_receive_protocol_error
             self.peer.tchannel.event_emitter.fire(
-                EventType.after_receive_system_error,
+                EventType.after_receive_error,
                 request,
                 protocol_error,
             )
             raise
-        except TimeoutError as operational_error:
+        except Exception as e:
             # event: on_operational_error
             self.peer.tchannel.event_emitter.fire(
-                EventType.on_operational_error,
+                EventType.on_exception,
                 request,
-                operational_error,
+                e,
             )
             raise
 
@@ -614,38 +614,16 @@ class PeerClientOperation(object):
             try:
                 response = yield self._send(connection, request)
                 break
-            except ProtocolError as protocol_error:
-                # event: after_receive_protocol_error_per_attempt
-                self.peer.tchannel.event_emitter.fire(
-                    EventType.after_receive_system_error_per_attempt,
-                    request,
-                    protocol_error,
-                )
+            except (ProtocolError, TimeoutError) as error:
 
                 (peer, connection) = yield self.prepare_for_retry(
-                    request, connection, protocol_error,
+                    request, connection, error,
                     peer, blacklist, retry_delay,
                     num_of_attempt, attempt_times,
                 )
 
                 if not connection:
-                    raise protocol_error
-            except TimeoutError as operational_error:
-                # event: on_operational_error_per_attempt
-                self.peer.tchannel.event_emitter.fire(
-                    EventType.on_operational_error_per_attempt,
-                    request,
-                    operational_error,
-                )
-
-                (peer, connection) = yield self.prepare_for_retry(
-                    request, connection, operational_error,
-                    peer, blacklist, retry_delay,
-                    num_of_attempt, attempt_times,
-                )
-
-                if not connection:
-                    raise
+                    raise error
 
         raise gen.Return(response)
 
