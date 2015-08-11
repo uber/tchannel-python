@@ -175,6 +175,7 @@ class RequestDispatcher(BaseRequestHandler):
             Arg scheme serializer of this endpoint. It should be
             ``RawSerializer``, ``JsonSerializer``, and ``ThriftSerializer``.
         """
+
         assert handler, "handler must not be None"
         req_serializer = req_serializer or RawSerializer()
         resp_serializer = resp_serializer or RawSerializer()

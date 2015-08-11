@@ -169,9 +169,9 @@ def generate_method(service_module, service_name, method_name):
         response = yield self.tchannel.request(
             hostport=self.hostport, service=self.service
         ).send(
-            endpoint,
-            header,
-            body,  # body
+            arg1=endpoint,
+            arg2=header,
+            arg3=body,  # body
             headers=self.protocol_headers,
             traceflag=self.trace
         )
