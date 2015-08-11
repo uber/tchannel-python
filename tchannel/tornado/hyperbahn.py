@@ -20,7 +20,7 @@
 
 from __future__ import absolute_import
 
-import json
+import atexit
 import logging
 import random
 import time
@@ -52,24 +52,22 @@ def _prepare_next_ad(attempt_counter):
 def _advertise(tchannel, service):
     response = None
     try:
-        response = yield tchannel.request(service='hyperbahn').send(
-            arg1='ad',  # advertise
-            arg2='',
-            arg3=json.dumps({
+        response = yield tchannel.json(
+            service='hyperbahn',
+            endpoint='ad',  # advertise
+            body = {
                 'services': [
                     {
                         'serviceName': service,
                         'cost': 0,
                     }
                 ]
-            }),
-            headers={'as': 'json'},
-            attempt_times=1,
+            }
         )
     except Exception as e:  # Big scope to keep it alive.
         log.error('Failed to register with Hyperbahn: %s', e)
     else:
-        if response.code != StatusCode.ok:
+        if not response.ok:
             log.error('Failed to register with Hyperbahn: %s', response)
         else:
             log.info('Successfully register with Hyperbahn')
@@ -124,10 +122,14 @@ def advertise(tchannel, service, routers, timeout=None):
     for router in routers:
         # We use .get here instead of .add because we don't want to fail if a
         # TChannel already knows about some of the routers.
-        tchannel.peers.get(router)
+        tchannel._dep_tchannel.peers.get(router)
 
     result = yield _advertise_with_backoff(
         tchannel, service, timeout=timeout
+    )
+
+    atexit.register(
+        lambda: tornado.ioloop.IOLoop.current().run_sync(lambda: unadvertise(tchannel, service))
     )
 
     advertise_loop = tornado.ioloop.PeriodicCallback(
@@ -138,4 +140,16 @@ def advertise(tchannel, service, routers, timeout=None):
 
     raise tornado.gen.Return(result)
 
-advertize = advertise  # just in case
+
+def unadvertise(tchannel, service):
+    print 'unadvertising'
+
+    def done(f):
+        print 'done'
+
+    f = tchannel.json(
+        service='hyperbahn',
+        endpoint='unad',
+    )
+    f.add_done_callback(done)
+    return f

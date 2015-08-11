@@ -129,21 +129,45 @@ class TChannel(object):
     def listen(self, port=None):
         return self._dep_tchannel.listen(port)
 
+    def is_listening(self):
+        return self._dep_tchannel.is_listening()
+
     @property
     def hostport(self):
         return self._dep_tchannel.hostport
 
-    def register(self, endpoint, scheme=None, handler=None, **kwargs):
-        return self._dep_tchannel.register(
-            endpoint=endpoint,
-            scheme=scheme,
-            handler=handler,
-            **kwargs
-        )
-
     def advertise(self, routers, name=None, timeout=None):
-        return self._dep_tchannel.advertise(
-            routers=routers,
-            name=name,
-            timeout=timeout
-        )
+        """Make a service available on the Hyperbahn routing mesh.
+
+        This will make contact with a Hyperbahn host from a list of known
+        Hyperbahn routers. Additional Hyperbahn connections will be established
+        once contact has been made with the network.
+
+        :param router:
+            A seed list of addresses of Hyperbahn routers, e.g.,
+            ``["127.0.0.1:23000"]``.
+
+        :param name:
+            The identity of this service on the Hyperbahn.
+
+            This is usually unnecessary, as it defaults to the name given when
+            initializing the :py:class:`TChannel` (which is used as your
+            identity as a caller).
+
+        :returns:
+            A future that resolves to the remote server's response after
+            the first advertise finishes.
+
+            Advertisement will continue to happen periodically.
+        """
+        name = name or self.name
+
+        if not self.is_listening():
+            self.listen()
+
+        from tchannel.tornado import hyperbahn
+
+        return hyperbahn.advertise(self, name, routers, timeout)
+
+    def unadvertise(self):
+        pass
