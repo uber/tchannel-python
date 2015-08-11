@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
+from tchannel.serializer.raw import RawSerializer
 from tchannel.tornado.dispatch import RequestDispatcher
 
 
@@ -30,16 +30,10 @@ def test_dispatch():
 
     dispatcher.register(
         r"/hello",
-        dummy_endpoint
+        dummy_endpoint,
+        RawSerializer(),
+        RawSerializer(),
     )
 
-    @dispatcher.route(r"/")
-    def dummy_endpoint1(request, response, proxy):
-        pass
-
-    endpoint = dispatcher.endpoints.get("/hello")
-    assert endpoint == dispatcher.default_broker.handle_call
-    assert dispatcher.default_broker.endpoint.get('/hello') == dummy_endpoint
-    endpoint = dispatcher.endpoints.get("/")
-    assert endpoint == dispatcher.default_broker.handle_call
-    assert dispatcher.default_broker.endpoint.get('/') == dummy_endpoint1
+    endpoint = dispatcher.handlers.get("/hello")[0]
+    assert endpoint == dummy_endpoint

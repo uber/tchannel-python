@@ -1,19 +1,22 @@
-from __future__ import (
-    absolute_import, division, print_function, unicode_literals
-)
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+import mock
 import pytest
 from tornado import gen
 
-from tchannel import (
-    TChannel, thrift_request_builder,
-    schemes, response
-)
-from tchannel.errors import OneWayNotSupportedError, ValueExpectedError
-from tchannel.thrift import client_for
+from tchannel import TChannel
+from tchannel import response
+from tchannel import schemes
+from tchannel import thrift_request_builder
+from tchannel.errors import OneWayNotSupportedError
+from tchannel.errors import ProtocolError
+from tchannel.errors import ValueExpectedError
 from tchannel.testing.data.generated.ThriftTest import SecondService
 from tchannel.testing.data.generated.ThriftTest import ThriftTest
-from tchannel.errors import ProtocolError
+from tchannel.thrift import client_for
 
 
 # TODO - where possible, in req/res style test, create parameterized tests,
@@ -341,7 +344,7 @@ def test_struct_with_headers():
         # TODO server getting headers in non-friendly format,
         # create a top-level request that has friendly headers :)
         # assert request.headers == {'req': 'headers'}
-        assert request.headers == [['req', 'header']]
+        assert request.headers == {'req': 'header'}
         assert request.args.thing.string_thing == 'req string'
 
         # TODO should this response object be shared w client case?
@@ -1008,9 +1011,7 @@ def test_second_service_second_test_string():
             tchannel=proxy,
             hostport=server.hostport,
         )
-
         resp = yield service.testString(request.args.thing)
-
         response.write_result(resp)
 
     server.listen()
@@ -1162,6 +1163,6 @@ def test_headers_should_be_a_map_of_strings(headers):
 
     with pytest.raises(ValueError):
         yield tchannel.thrift(
-            request=True,
+            request=mock.MagicMock(),
             headers=headers,
         )

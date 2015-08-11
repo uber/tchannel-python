@@ -21,13 +21,14 @@
 from __future__ import absolute_import
 
 from collections import namedtuple
-from concurrent.futures import TimeoutError
 
-from threadloop import ThreadLoop
+from concurrent.futures import TimeoutError
 from tornado import gen
 
 from tchannel import tornado as async
-from tchannel.tornado.hyperbahn import FIRST_ADVERTISE_TIME, AdvertiseError
+from tchannel.tornado.hyperbahn import FIRST_ADVERTISE_TIME
+from tchannel.tornado.hyperbahn import AdvertiseError
+from threadloop import ThreadLoop
 
 
 class TChannelSyncClient(object):

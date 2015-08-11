@@ -27,6 +27,7 @@ from ..enum import enum
 from ..errors import TChannelError
 from ..messages.common import FlagsType
 from ..messages.common import StreamState
+from ..serializer.raw import RawSerializer
 from .stream import InMemStream
 from .util import get_arg
 
@@ -55,7 +56,7 @@ class Response(object):
         headers=None,
         checksum=None,
         argstreams=None,
-        scheme=None,
+        serializer=None,
     ):
 
         self.flags = flags or FlagsType.none
@@ -72,7 +73,7 @@ class Response(object):
         self.state = StreamState.init
         self.flushed = False
 
-        self.scheme = scheme
+        self.serializer = serializer or RawSerializer()
 
     @property
     def status_code(self):
@@ -110,10 +111,10 @@ class Response(object):
         :return: a future contains the deserialized value of header
         """
         raw_header = yield get_arg(self, 1)
-        if not self.scheme:
+        if not self.serializer:
             raise tornado.gen.Return(raw_header)
         else:
-            header = self.scheme.deserialize_header(raw_header)
+            header = self.serializer.deserialize_header(raw_header)
             raise tornado.gen.Return(header)
 
     @tornado.gen.coroutine
@@ -124,10 +125,10 @@ class Response(object):
         """
 
         raw_body = yield get_arg(self, 2)
-        if not self.scheme:
+        if not self.serializer:
             raise tornado.gen.Return(raw_body)
         else:
-            body = self.scheme.deserialize_body(raw_body)
+            body = self.serializer.deserialize_body(raw_body)
             raise tornado.gen.Return(body)
 
     def set_body_s(self, stream):
@@ -178,8 +179,8 @@ class Response(object):
             Raise TChannelError if the response's flush() has been called
         """
 
-        if self.scheme:
-            header = self.scheme.serialize_header(chunk)
+        if self.serializer:
+            header = self.serializer.serialize_header(chunk)
         else:
             header = chunk
 
@@ -204,8 +205,8 @@ class Response(object):
             Raise TChannelError if the response's flush() has been called
         """
 
-        if self.scheme:
-            body = self.scheme.serialize_body(chunk)
+        if self.serializer:
+            body = self.serializer.serialize_body(chunk)
         else:
             body = chunk
 

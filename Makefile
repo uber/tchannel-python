@@ -49,6 +49,7 @@ testhtml: clean
 
 clean:
 	rm -rf dist/
+	rm -rf build/
 	@find $(project) -name "*.pyc" -delete
 
 lint:

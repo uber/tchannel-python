@@ -23,8 +23,8 @@ import json
 import os
 import subprocess
 
-import pytest
 import psutil
+import pytest
 
 
 @contextlib.contextmanager

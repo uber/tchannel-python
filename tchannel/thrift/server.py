@@ -25,10 +25,10 @@ from collections import namedtuple
 
 from tornado import gen
 
-from tchannel.dep.thrift_arg_scheme import DeprecatedThriftArgScheme
-from tchannel.tornado.broker import ArgSchemeBroker
 from tchannel.tornado.request import TransportMetadata
 from tchannel.tornado.response import StatusCode
+
+from ..serializer.thrift import ThriftSerializer
 
 
 def register(dispatcher, service_module, handler, method=None, service=None):
@@ -82,12 +82,12 @@ def register(dispatcher, service_module, handler, method=None, service=None):
     endpoint = '%s::%s' % (service, method)
     args_type = getattr(service_module, method + '_args')
     result_type = getattr(service_module, method + '_result')
-    broker = ArgSchemeBroker(DeprecatedThriftArgScheme(args_type))
 
     dispatcher.register(
         endpoint,
         build_handler(result_type, handler),
-        broker
+        ThriftSerializer(args_type),
+        ThriftSerializer(result_type)
     )
     return handler
 
@@ -112,7 +112,6 @@ def build_handler(result_type, f):
                 # exception. The result was most likely returned by the
                 # function.
                 res.write_result(result)
-
         response.code = res.code
         response.write_header(res.headers)
         response.write_body(res.result)
@@ -150,7 +149,6 @@ class ThriftRequest(namedtuple('_Request', 'headers args transport')):
         call_headers = yield request.get_header()
         call_args = yield request.get_body()
         transport_metadata = TransportMetadata.from_request(request)
-
         raise gen.Return(
             cls(
                 headers=call_headers,

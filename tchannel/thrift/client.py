@@ -27,8 +27,8 @@ from thrift import Thrift
 from tornado import gen
 
 from tchannel.errors import OneWayNotSupportedError
-from tchannel.tornado.broker import ArgSchemeBroker
-from tchannel.dep.thrift_arg_scheme import DeprecatedThriftArgScheme
+
+from ..serializer.thrift import ThriftSerializer
 from .reflection import get_service_methods
 
 # Generated clients will use this base class.
@@ -90,6 +90,8 @@ def client_for(service, service_module, thrift_service_name=None):
         :param protocol_headers:
             Protocol-level headers to send with the request.
         """
+        protocol_headers = protocol_headers or {}
+        protocol_headers['as'] = 'thrift'
         return _ClientBase.__new__(
             cls, tchannel, hostport, service, trace, protocol_headers
         )
@@ -121,7 +123,7 @@ def generate_method(service_module, service_name, method_name):
 
     args_type = getattr(service_module, method_name + '_args')
     result_type = getattr(service_module, method_name + '_result', None)
-
+    serializer = ThriftSerializer(result_type)
     # oneway not currently supported
     # TODO - write test for this
     if result_type is None:
@@ -131,7 +133,6 @@ def generate_method(service_module, service_name, method_name):
             )
         return not_supported
 
-    arg_scheme = DeprecatedThriftArgScheme(result_type)
     result_spec = result_type.thrift_spec
     # result_spec is a tuple of tuples in the form:
     #
@@ -163,18 +164,19 @@ def generate_method(service_module, service_name, method_name):
         for name, value in params.items():
             setattr(call_args, name, value)
 
-        response = yield ArgSchemeBroker(arg_scheme).send(
-            self.tchannel.request(
-                hostport=self.hostport, service=self.service
-            ),
-            endpoint,
-            {},
-            call_args,  # body
-            protocol_headers=self.protocol_headers,
+        body = serializer.serialize_body(call_args)
+        header = serializer.serialize_header({})
+        response = yield self.tchannel.request(
+            hostport=self.hostport, service=self.service
+        ).send(
+            arg1=endpoint,
+            arg2=header,
+            arg3=body,  # body
+            headers=self.protocol_headers,
             traceflag=self.trace
         )
-
-        call_result = yield response.get_body()
+        body = yield response.get_body()
+        call_result = serializer.deserialize_body(body)
         if not result_spec:
             # void return type and no exceptions allowed
             raise gen.Return(None)
