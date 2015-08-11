@@ -5,7 +5,7 @@ Changelog
 0.15.3 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Remove ``broker.py`` and depreciated arg scheme related code.
 
 
 0.15.2 (2015-08-07)
