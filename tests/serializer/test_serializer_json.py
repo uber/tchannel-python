@@ -4,7 +4,6 @@ import pytest
 from tchannel.serializer.json import JsonSerializer
 
 
-@pytest.mark.gen_test
 @pytest.mark.parametrize('v1, v2', [
     (True, 'true'),
     (False, 'false'),
@@ -20,7 +19,6 @@ def test_header(v1, v2):
     assert v1 == serializer.deserialize_header(v2)
 
 
-@pytest.mark.gen_test
 @pytest.mark.parametrize('v1, v2', [
     (True, 'true'),
     (False, 'false'),
