@@ -14,6 +14,8 @@ from .. import rw
 
 class ThriftSerializer(object):
 
+    name = THRIFT
+
     _headers_rw = rw.headers(
         rw.number(2),
         rw.len_prefixed_string(rw.number(2)),
@@ -21,7 +23,6 @@ class ThriftSerializer(object):
     )
 
     def __init__(self, deserialize_type):
-        self.name = THRIFT
         self.deserialize_type = deserialize_type
 
     def serialize_header(self, headers):

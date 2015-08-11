@@ -94,7 +94,7 @@ class Request(object):
         self.tracing = Trace()
 
     @property
-    def arg_serializer(self):
+    def arg_scheme(self):
         return self.headers.get('as', None)
 
     def set_exception(self, exception):

@@ -4,8 +4,7 @@ from tchannel.schemes import RAW
 
 
 class RawSerializer(object):
-    def __init__(self):
-        self.name = RAW
+    name = RAW
 
     def deserialize_header(self, obj):
         return obj

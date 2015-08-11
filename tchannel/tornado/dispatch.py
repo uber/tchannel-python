@@ -72,7 +72,7 @@ class RequestDispatcher(BaseRequestHandler):
         # request.endpoint. The original argstream[0] is no longer valid. If
         # user still tries read from it, it will return empty.
         chunk = yield request.argstreams[0].read()
-
+        response = None
         while chunk:
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
@@ -86,12 +86,14 @@ class RequestDispatcher(BaseRequestHandler):
         )
 
         handler = self.handlers[request.endpoint]
-        if not request.headers.get('as', None) == handler.req_serializer.name:
-            raise gen.Return(connection.send_error(
+        if request.headers.get('as', None) != handler.req_serializer.name:
+            connection.send_error(
                 ErrorCode.bad_request,
                 "Invalid arg scheme in request header",
                 request.id,
-            ))
+            )
+            raise gen.Return(None)
+
         request.serializer = handler.req_serializer
         response = Response(
             id=request.id,
