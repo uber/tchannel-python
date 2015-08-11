@@ -21,19 +21,21 @@
 from __future__ import absolute_import
 
 from collections import defaultdict
+from collections import namedtuple
 
 import tornado
 import tornado.gen
 from tornado import gen
 
 from ..errors import InvalidEndpointError
-from ..errors import InvalidMessageError
 from ..errors import TChannelError
 from ..event import EventType
 from ..handler import BaseRequestHandler
 from ..messages.error import ErrorCode
-from .broker import ArgSchemeBroker
+from ..serializer.raw import RawSerializer
 from .response import Response
+
+Handler = namedtuple('Handler', 'endpoint req_serializer resp_serializer')
 
 
 class RequestDispatcher(BaseRequestHandler):
@@ -56,8 +58,9 @@ class RequestDispatcher(BaseRequestHandler):
 
     def __init__(self):
         super(RequestDispatcher, self).__init__()
-        self.default_broker = ArgSchemeBroker()
-        self.endpoints = defaultdict(lambda: self.not_found)
+        self.handlers = defaultdict(lambda: Handler(
+            self.not_found, RawSerializer(), RawSerializer())
+        )
 
     @tornado.gen.coroutine
     def handle_call(self, request, connection):
@@ -69,7 +72,7 @@ class RequestDispatcher(BaseRequestHandler):
         # request.endpoint. The original argstream[0] is no longer valid. If
         # user still tries read from it, it will return empty.
         chunk = yield request.argstreams[0].read()
-
+        response = None
         while chunk:
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
@@ -82,21 +85,30 @@ class RequestDispatcher(BaseRequestHandler):
             request,
         )
 
-        endpoint = self.endpoints[request.endpoint]
+        handler = self.handlers[request.endpoint]
+        if request.headers.get('as', None) != handler.req_serializer.name:
+            connection.send_error(
+                ErrorCode.bad_request,
+                "Invalid arg scheme in request header",
+                request.id,
+            )
+            raise gen.Return(None)
 
+        request.serializer = handler.req_serializer
         response = Response(
             id=request.id,
             checksum=request.checksum,
             tracing=request.tracing,
             connection=connection,
             headers={'as': request.headers.get('as', 'raw')},
+            serializer=handler.resp_serializer,
         )
 
         connection.post_response(response)
 
         try:
             yield gen.maybe_future(
-                endpoint(
+                handler.endpoint(
                     request,
                     response,
                     TChannelProxy(
@@ -106,13 +118,11 @@ class RequestDispatcher(BaseRequestHandler):
                 )
             )
             response.flush()
-        except (InvalidMessageError, InvalidEndpointError) as e:
-            response.set_exception(e)
-            connection.request_message_factory.remove_buffer(response.id)
+        except InvalidEndpointError as e:
             connection.send_error(
                 ErrorCode.bad_request,
                 e.message,
-                response.id,
+                request.id,
             )
         except Exception as e:
             response.set_exception(TChannelError(e.message))
@@ -130,16 +140,13 @@ class RequestDispatcher(BaseRequestHandler):
 
         raise gen.Return(response)
 
-    def route(self, rule, helper=None):
-        """See ``register`` for documentation."""
-
-        def decorator(handler):
-            self.register(rule, handler, helper)
-            return handler
-
-        return decorator
-
-    def register(self, rule, handler, broker=None):
+    def register(
+            self,
+            rule,
+            handler,
+            req_serializer=None,
+            resp_serializer=None
+    ):
         """Register a new endpoint with the given name.
 
         .. code-block:: python
@@ -160,27 +167,25 @@ class RequestDispatcher(BaseRequestHandler):
             A function that gets called with ``Request``, ``Response``, and
             the ``proxy``.
 
-        :param broker:
-            Broker injects customized serializer and deserializer into
-            request/response object.
+        :param req_serializer:
+            Arg scheme serializer of this endpoint. It should be
+            ``RawSerializer``, ``JsonSerializer``, and ``ThriftSerializer``.
 
-            broker==None means it registers as raw handle. It deals with raw
-            buffer in the request/response.
+        :param resp_serializer:
+            Arg scheme serializer of this endpoint. It should be
+            ``RawSerializer``, ``JsonSerializer``, and ``ThriftSerializer``.
         """
+
         assert handler, "handler must not be None"
-
-        # TODO: Get rid of this Broker thing!! It has the same interface as the
-        # Dispatcher but only handles serialization.
-        if not broker:
-            broker = self.default_broker
-
+        req_serializer = req_serializer or RawSerializer()
+        resp_serializer = resp_serializer or RawSerializer()
         if rule is self.FALLBACK:
-            self.endpoints.default_factory = lambda: handler
+            self.handlers.default_factory = lambda: Handler(
+                handler, RawSerializer(), RawSerializer()
+            )
             return
 
-        broker.register(rule, handler)
-
-        self.endpoints[rule] = broker.handle_call
+        self.handlers[rule] = Handler(handler, req_serializer, resp_serializer)
 
     @staticmethod
     def not_found(request, response, proxy):

@@ -33,14 +33,16 @@ import tornado.tcpserver
 from tornado.netutil import bind_sockets
 
 from . import hyperbahn
-from .. import scheme
 from ..enum import enum
+from ..errors import AlreadyListeningError
 from ..event import EventEmitter
 from ..event import EventRegistrar
-from ..errors import AlreadyListeningError
 from ..handler import CallableRequestHandler
 from ..net import local_ip
-from .broker import ArgSchemeBroker
+from ..schemes import DEFAULT_NAMES
+from ..schemes import JSON
+from ..serializer.json import JsonSerializer
+from ..serializer.raw import RawSerializer
 from .connection import StreamConnection
 from .dispatch import RequestDispatcher
 from .peer import PeerGroup
@@ -60,12 +62,6 @@ class TChannel(object):
     """Manages inbound and outbound connections to various hosts."""
 
     FALLBACK = RequestDispatcher.FALLBACK
-
-    _SCHEMES = {
-        'raw': scheme.RawArgScheme,
-        'json': scheme.JsonArgScheme,
-        # 'http': scheme.HttpArgScheme, TODO
-    }
 
     def __init__(self, name, hostport=None, process_name=None,
                  known_peers=None, trace=False):
@@ -270,14 +266,13 @@ class TChannel(object):
 
         return False
 
-    @tornado.gen.coroutine
     def receive_call(self, message, connection):
         if not self._handler:
             log.warn(
                 "Received %s but a handler has not been defined.", str(message)
             )
             return
-        self._handler.handle(message, connection)
+        return self._handler.handle(message, connection)
 
     def _register_simple(self, endpoint, scheme, f):
         """Register a simple endpoint with this TChannel.
@@ -290,9 +285,14 @@ class TChannel(object):
         :param f:
             Callable handler for the endpoint.
         """
-        assert scheme in self._SCHEMES, ("Unsupported arg scheme %s" % scheme)
-        scheme = self._SCHEMES[scheme]()
-        self._handler.register(endpoint, f, ArgSchemeBroker(scheme))
+        assert scheme in DEFAULT_NAMES, ("Unsupported arg scheme %s" % scheme)
+        if scheme == JSON:
+            req_serializer = JsonSerializer()
+            resp_serializer = JsonSerializer()
+        else:
+            req_serializer = RawSerializer()
+            resp_serializer = RawSerializer()
+        self._handler.register(endpoint, f, req_serializer, resp_serializer)
         return f
 
     def _register_thrift(self, service_module, handler, **kwargs):

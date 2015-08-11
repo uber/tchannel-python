@@ -23,8 +23,8 @@ import json
 import os
 import subprocess
 
-import pytest
 import psutil
+import pytest
 
 
 @contextlib.contextmanager
@@ -50,21 +50,6 @@ def popen(path, wait_for_listen=False):
         process.kill()
 
 
-@pytest.yield_fixture
-def examples_dir():
-    cwd = os.getcwd()
-
-    examples = os.path.join(cwd, 'examples')
-
-    assert os.path.exists(examples)
-
-    try:
-        os.chdir(examples)
-        yield examples
-    finally:
-        os.chdir(cwd)
-
-
 @pytest.mark.parametrize(
     'scheme, path',
     (
@@ -74,16 +59,16 @@ def examples_dir():
         ('guide', 'guide/keyvalue/keyvalue/'),
     )
 )
-def test_example(examples_dir, scheme, path):
+def test_example(scheme, path):
     """Smoke test example code to ensure it still runs."""
 
     server_path = os.path.join(
-        examples_dir,
+        'examples',
         path + 'server.py',
     )
 
     client_path = os.path.join(
-        examples_dir,
+        'examples',
         path + 'client.py',
     )
 

@@ -1,12 +1,12 @@
-from __future__ import (
-    absolute_import, division, print_function, unicode_literals
-)
-
-import json
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 from tornado import gen
 
 from . import JSON
+from ..serializer.json import JsonSerializer
 
 
 class JsonArgScheme(object):
@@ -58,17 +58,10 @@ class JsonArgScheme(object):
         :return Response:
         """
 
-        # TODO should we not default these?
-        if headers is None:
-            headers = {}
-
-        # TODO dont default?
-        if body is None:
-            body = {}
-
         # serialize
-        headers = json.dumps(headers)
-        body = json.dumps(body)
+        serializer = JsonSerializer()
+        headers = serializer.serialize_header(headers)
+        body = serializer.serialize_body(body)
 
         response = yield self._tchannel.call(
             scheme=self.NAME,
@@ -83,7 +76,7 @@ class JsonArgScheme(object):
         )
 
         # deserialize
-        response.headers = json.loads(response.headers)
-        response.body = json.loads(response.body)
+        response.headers = serializer.deserialize_header(response.headers)
+        response.body = serializer.deserialize_body(response.body)
 
         raise gen.Return(response)

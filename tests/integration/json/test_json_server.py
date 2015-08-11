@@ -24,9 +24,8 @@ import pytest
 import tornado
 import tornado.gen
 
-from tchannel.scheme import JsonArgScheme
-from tchannel.tornado import TChannel
-from tchannel.tornado.broker import ArgSchemeBroker
+from tchannel import TChannel
+from tchannel.schemes import JSON
 from tests.mock_server import MockServer
 
 
@@ -70,7 +69,6 @@ def sample_json():
 
 
 def register(tchannel):
-
     @tchannel.register("json_echo", "json")
     @tornado.gen.coroutine
     def json_echo(request, response, proxy):
@@ -92,22 +90,21 @@ def json_server():
 def test_json_server(json_server, sample_json):
     endpoint = "json_echo"
     tchannel = TChannel(name='test')
-    client = tchannel.request(json_server.hostport)
+
     header = sample_json
     body = sample_json
-    resp = yield ArgSchemeBroker(JsonArgScheme()).send(
-        client,
-        endpoint,
-        header,
-        body,
+    resp = yield tchannel.json(
+        service='endpoint1',
+        hostport=json_server.hostport,
+        endpoint=endpoint,
+        headers=header,
+        body=body,
     )
 
     # check protocol header
-    assert resp.headers['as'] == 'json'
+    assert resp.transport.scheme == JSON
     # compare header's json
-    rheader = yield resp.get_header()
-    assert rheader == header
+    assert resp.headers == header
 
     # compare body's json
-    rbody = yield resp.get_body()
-    assert rbody == body
+    assert resp.body == body

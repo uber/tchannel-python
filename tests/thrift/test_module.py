@@ -1,14 +1,16 @@
-from __future__ import (
-    absolute_import, division, print_function, unicode_literals
-)
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import inspect
 
 import pytest
 
 from tchannel import thrift_request_builder
-from tchannel.thrift.module import ThriftRequestMaker, ThriftRequest
 from tchannel.testing.data.generated.ThriftTest import ThriftTest
+from tchannel.thrift.module import ThriftRequest
+from tchannel.thrift.module import ThriftRequestMaker
 
 
 @pytest.mark.call
