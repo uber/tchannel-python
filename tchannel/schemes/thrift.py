@@ -1,12 +1,14 @@
-from __future__ import (
-    absolute_import, division, print_function, unicode_literals
-)
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 from tornado import gen
 
-from . import THRIFT
 from tchannel.errors import ValueExpectedError
-from tchannel.thrift import serializer
+from tchannel.serializer.thrift import ThriftSerializer
+
+from . import THRIFT
 
 
 class ThriftArgScheme(object):
@@ -24,9 +26,10 @@ class ThriftArgScheme(object):
         if not headers:
             headers = {}
 
+        serializer = ThriftSerializer(request.result_type)
         # serialize
         try:
-            headers = serializer.serialize_headers(headers=headers)
+            headers = serializer.serialize_header(headers=headers)
         except (AttributeError, TypeError):
             raise ValueError(
                 'headers must be a map[string]string (a shallow dict'
@@ -34,7 +37,6 @@ class ThriftArgScheme(object):
             )
 
         body = serializer.serialize_body(call_args=request.call_args)
-
         response = yield self._tchannel.call(
             scheme=self.NAME,
             service=request.service,
@@ -48,14 +50,10 @@ class ThriftArgScheme(object):
         )
 
         # deserialize...
-
-        response.headers = serializer.deserialize_headers(
+        response.headers = serializer.deserialize_header(
             headers=response.headers
         )
-        body = serializer.deserialize_body(
-            body=response.body,
-            result_type=request.result_type
-        )
+        body = serializer.deserialize_body(body=response.body)
         result_spec = request.result_type.thrift_spec
 
         # raise application exception, if present

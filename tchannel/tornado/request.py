@@ -26,10 +26,12 @@ import tornado
 import tornado.gen
 
 from tchannel import retry
+
 from ..glossary import DEFAULT_TIMEOUT
 from ..messages import ErrorCode
 from ..messages.common import FlagsType
 from ..messages.common import StreamState
+from ..serializer.raw import RawSerializer
 from ..zipkin.trace import Trace
 from .stream import InMemStream
 from .util import get_arg
@@ -53,7 +55,7 @@ class Request(object):
         headers=None,
         checksum=None,
         argstreams=None,
-        scheme=None,
+        serializer=None,
         endpoint=None,
     ):
         self.flags = flags
@@ -68,7 +70,7 @@ class Request(object):
         self.id = id
         self.headers = headers or {}
         self.state = StreamState.init
-        self.scheme = scheme
+        self.serializer = serializer or RawSerializer()
 
         self.is_streaming_request = self._is_streaming_request()
         if not self.is_streaming_request:
@@ -92,7 +94,7 @@ class Request(object):
         self.tracing = Trace()
 
     @property
-    def arg_scheme(self):
+    def arg_serializer(self):
         return self.headers.get('as', None)
 
     def set_exception(self, exception):
@@ -112,10 +114,10 @@ class Request(object):
         :return: a future contains the deserialized value of header
         """
         raw_header = yield get_arg(self, 1)
-        if not self.scheme:
+        if not self.serializer:
             raise tornado.gen.Return(raw_header)
         else:
-            header = self.scheme.deserialize_header(raw_header)
+            header = self.serializer.deserialize_header(raw_header)
             raise tornado.gen.Return(header)
 
     @tornado.gen.coroutine
@@ -126,10 +128,10 @@ class Request(object):
         """
 
         raw_body = yield get_arg(self, 2)
-        if not self.scheme:
+        if not self.serializer:
             raise tornado.gen.Return(raw_body)
         else:
-            body = self.scheme.deserialize_body(raw_body)
+            body = self.serializer.deserialize_body(raw_body)
             raise tornado.gen.Return(body)
 
     def get_header_s(self):

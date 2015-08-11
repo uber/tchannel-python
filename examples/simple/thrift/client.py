@@ -1,9 +1,11 @@
 import json
 
-from tornado import gen, ioloop
-from tchannel import TChannel, thrift_request_builder
-from tchannel.testing.data.generated.ThriftTest import ThriftTest
+from tornado import gen
+from tornado import ioloop
 
+from tchannel import TChannel
+from tchannel import thrift_request_builder
+from tchannel.testing.data.generated.ThriftTest import ThriftTest
 
 tchannel = TChannel('thrift-client')
 
