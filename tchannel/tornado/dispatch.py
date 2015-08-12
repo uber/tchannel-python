@@ -20,6 +20,7 @@
 
 from __future__ import absolute_import
 
+import logging
 from collections import defaultdict
 from collections import namedtuple
 
@@ -37,6 +38,8 @@ from .response import Response
 from ..errors import InvalidChecksumError
 from ..errors import StreamingError
 from ..messages import Types
+
+log = logging.getLogger('tchannel')
 
 
 Handler = namedtuple('Handler', 'endpoint req_serializer resp_serializer')
@@ -106,15 +109,11 @@ class RequestDispatcher(object):
                 self.handle_call(req, connection)
 
         except (InvalidChecksumError, StreamingError) as e:
+            log.warn('Received a bad request.')
+
             connection.send_error(
                 ErrorCode.bad_request,
                 e.message,
-                message.id,
-            )
-        except Exception:
-            connection.send_error(
-                ErrorCode.unexpected,
-                "An unexpected error has occurred.",
                 message.id,
             )
 
@@ -132,6 +131,8 @@ class RequestDispatcher(object):
         while chunk:
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
+
+        log.info('Received a call to %s.', request.endpoint)
 
         # event: receive_request
         request.tracing.name = request.endpoint
@@ -181,13 +182,13 @@ class RequestDispatcher(object):
                 request.id,
             )
         except Exception as e:
+            msg = "An unexpected error has occurred from the handler"
+            log.exception(msg)
+
             response.set_exception(TChannelError(e.message))
+
             connection.request_message_factory.remove_buffer(response.id)
-            connection.send_error(
-                ErrorCode.unexpected,
-                "An unexpected error has occurred from the handler",
-                response.id,
-            )
+            connection.send_error(ErrorCode.unexpected, msg, response.id)
             connection.tchannel.event_emitter.fire(
                 EventType.on_exception,
                 request,
