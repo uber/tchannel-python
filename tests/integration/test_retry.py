@@ -89,7 +89,6 @@ def test_retry_timeout():
                 },
                 ttl=0.005,
                 attempt_times=3,
-                retry_delay=0.01,
             )
 
 
@@ -116,7 +115,6 @@ def test_retry_on_error_fail():
                 },
                 ttl=0.02,
                 attempt_times=3,
-                retry_delay=0.01,
             )
 
         assert mock_should_retry_on_error.called
@@ -153,7 +151,6 @@ def test_retry_on_error_success():
             },
             ttl=0.01,
             attempt_times=3,
-            retry_delay=0.01,
         )
 
         header = yield response.get_header()

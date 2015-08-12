@@ -31,7 +31,7 @@ from tornado import gen
 
 from ..schemes import DEFAULT as DEFAULT_SCHEME
 from ..retry import (
-    DEFAULT as DEFAULT_RETRY, DEFAULT_RETRY_LIMIT, DEFAULT_RETRY_DELAY
+    DEFAULT as DEFAULT_RETRY, DEFAULT_RETRY_LIMIT
 )
 from tchannel.event import EventType
 from tchannel.glossary import DEFAULT_TIMEOUT
@@ -469,12 +469,13 @@ class PeerClientOperation(object):
         # forwarding
 
     @gen.coroutine
-    def send(self, arg1, arg2, arg3,
-             headers=None,
-             traceflag=None,
-             attempt_times=None,
-             ttl=None,
-             retry_delay=None):
+    def send(
+        self, arg1, arg2, arg3,
+        headers=None,
+        traceflag=None,
+        attempt_times=None,
+        ttl=None,
+    ):
         """Make a request to the Peer.
 
         :param arg1:
@@ -494,8 +495,6 @@ class PeerClientOperation(object):
            Maximum number of attempts to send the message.
         :param ttl:
             Timeout for each request (ms).
-        :param retry_delay:
-            Delay between each retry (ms).
         :return:
             Future that contains the response from the peer.
         """
@@ -506,7 +505,6 @@ class PeerClientOperation(object):
 
         attempt_times = attempt_times or DEFAULT_RETRY_LIMIT
         ttl = ttl or DEFAULT_TIMEOUT
-        retry_delay = retry_delay or DEFAULT_RETRY_DELAY
         # hack to get endpoint from arg_1 for trace name
         arg1.close()
         endpoint = yield read_full(arg1)
@@ -564,7 +562,7 @@ class PeerClientOperation(object):
 
         try:
             response = yield self.send_with_retry(
-                request, peer, attempt_times, retry_delay
+                request, peer, attempt_times
             )
         except ProtocolError as protocol_error:
             # event: after_receive_protocol_error
@@ -602,7 +600,7 @@ class PeerClientOperation(object):
         raise gen.Return(response)
 
     @gen.coroutine
-    def send_with_retry(self, request, peer, attempt_times, retry_delay):
+    def send_with_retry(self, request, peer, attempt_times):
 
         # black list to record all used peers, so they aren't chosen again.
         blacklist = set()
@@ -616,9 +614,11 @@ class PeerClientOperation(object):
             except (ProtocolError, TimeoutError) as error:
 
                 (peer, connection) = yield self.prepare_for_retry(
-                    request, connection, error,
-                    peer, blacklist, retry_delay,
-                    num_of_attempt, attempt_times,
+                    request, connection,
+                    error,
+                    peer, blacklist,
+                    num_of_attempt,
+                    attempt_times,
                 )
 
                 if not connection:
@@ -627,17 +627,21 @@ class PeerClientOperation(object):
         raise gen.Return(response)
 
     @gen.coroutine
-    def prepare_for_retry(self, request, connection, protocol_error,
-                          peer, blacklist, retry_delay,
-                          num_of_attempt, max_attempt_times):
+    def prepare_for_retry(
+            self,
+            request,
+            connection,
+            protocol_error,
+            peer,
+            blacklist,
+            num_of_attempt,
+            max_attempt_times,
+    ):
 
         self.clean_up_outgoing_request(request, connection, protocol_error)
         if not self.should_retry(request, protocol_error,
                                  num_of_attempt, max_attempt_times):
             raise gen.Return((None, None))
-
-        # delay further retry
-        yield gen.sleep(retry_delay / 1000.0)
 
         result = yield self.prepare_next_request(request, peer, blacklist)
         raise gen.Return(result)
