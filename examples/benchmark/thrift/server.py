@@ -57,4 +57,7 @@ def run():
 
 if __name__ == '__main__':
     run()
-    ioloop.IOLoop.current().start()
+    try:
+        ioloop.IOLoop.current().start()
+    except KeyboardInterrupt:
+        pass
