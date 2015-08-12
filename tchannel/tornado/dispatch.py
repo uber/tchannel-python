@@ -215,7 +215,8 @@ class RequestDispatcher(object):
             )
         except Exception as e:
 
-            import sys, traceback
+            import sys
+            import traceback
 
             exc_info = sys.exc_info()
             e = exc_info[1]
@@ -223,7 +224,6 @@ class RequestDispatcher(object):
 
             print e
             traceback.print_tb(tb)
-
 
             response.set_exception(TChannelError(e.message))
             connection.request_message_factory.remove_buffer(response.id)

@@ -80,3 +80,18 @@ class JsonArgScheme(object):
         response.body = serializer.deserialize_body(response.body)
 
         raise gen.Return(response)
+
+    def register(self, endpoint, **kwargs):
+
+        if callable(endpoint):
+            handler = endpoint
+            endpoint = None
+        else:
+            handler = None
+
+        return self._tchannel.register(
+            scheme=self.NAME,
+            endpoint=endpoint,
+            handler=handler,
+            **kwargs
+        )
