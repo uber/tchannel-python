@@ -32,7 +32,8 @@ from ..errors import TChannelError
 from ..event import EventType
 from ..messages.error import ErrorCode
 from ..serializer.raw import RawSerializer
-from .response import Response
+from ..response import Response
+from .response import Response as DeprecatedResponse
 
 from ..errors import InvalidChecksumError
 from ..errors import StreamingError
@@ -114,7 +115,7 @@ class RequestDispatcher(object):
         except Exception:
             connection.send_error(
                 ErrorCode.unexpected,
-                "An unexpected error has occurred.",
+                "An unexpected error has occurred HI MOM.",
                 message.id,
             )
 
@@ -151,7 +152,7 @@ class RequestDispatcher(object):
             raise gen.Return(None)
 
         request.serializer = handler.req_serializer
-        response = Response(
+        response = DeprecatedResponse(
             id=request.id,
             checksum=request.checksum,
             tracing=request.tracing,
@@ -161,9 +162,6 @@ class RequestDispatcher(object):
         )
 
         connection.post_response(response)
-
-        import ipdb
-        ipdb.set_trace()
 
         try:
 
@@ -176,11 +174,21 @@ class RequestDispatcher(object):
                 new_resp = yield gen.maybe_future(
                     handler.endpoint(request)
                 )
-                print(new_resp)
+
+                # if no return then use empty response
+                if new_resp is None:
+                    new_resp = Response()
+
+                # if not a response, then it's just the body, create resp
+                if not isinstance(new_resp, Response):
+                    new_resp = Response(new_resp)
 
                 # assign resp values to dep response
-                import ipdb
-                ipdb.set_trace()
+                if new_resp.headers is not None:
+                    response.write_header(new_resp.headers)
+
+                if new_resp.body is not None:
+                    response.write_body(new_resp.body)
 
             # Dep impl - the handler is provided with a req & resp writer
             else:
@@ -203,6 +211,17 @@ class RequestDispatcher(object):
                 request.id,
             )
         except Exception as e:
+
+            import sys, traceback
+
+            exc_info = sys.exc_info()
+            e = exc_info[1]
+            tb = exc_info[2]
+
+            print e
+            traceback.print_tb(tb)
+
+
             response.set_exception(TChannelError(e.message))
             connection.request_message_factory.remove_buffer(response.id)
             connection.send_error(

@@ -3,9 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import ipdb
 import pytest
-import tornado
 
 from tchannel import TChannel, Response, schemes
 from tchannel.response import ResponseTransportHeaders
@@ -33,12 +31,10 @@ def test_call_should_get_response():
     server = TChannel(name='server')
 
     @server.register(scheme=schemes.RAW)
-    @tornado.gen.coroutine
     def endpoint(request):
-        ipdb.set_trace()
 
-        assert request.headers == 'raw req headers'
-        assert request.body == 'raw req body'
+        # assert request.headers == 'raw req headers'
+        # assert request.body == 'raw req body'
 
         return Response('resp body', 'resp headers')
 
@@ -47,8 +43,6 @@ def test_call_should_get_response():
     # Make a call:
 
     tchannel = TChannel(name='client')
-
-    ipdb.set_trace()
 
     resp = yield tchannel.call(
         scheme=schemes.RAW,
@@ -61,10 +55,74 @@ def test_call_should_get_response():
 
     # verify response
     assert isinstance(resp, Response)
-    assert resp.headers == 'raw resp headers'
-    assert resp.body == 'raw resp body'
+    assert resp.headers == 'resp headers'
+    assert resp.body == 'resp body'
 
     # verify response transport headers
     assert isinstance(resp.transport, ResponseTransportHeaders)
     assert resp.transport.scheme == schemes.RAW
     assert resp.transport.failure_domain is None
+
+
+@pytest.mark.gen_test
+@pytest.mark.callz
+def test_headers_and_body_should_be_optional():
+
+    # Given this test server:
+
+    server = TChannel(name='server')
+
+    @server.register(scheme=schemes.RAW)
+    def endpoint(request):
+        #assert request.headers is None # TODO uncomment
+        #assert request.body is None # TODO uncomment
+        pass
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    resp = yield tchannel.call(
+        scheme=schemes.RAW,
+        service='server',
+        arg1='endpoint',
+        hostport=server.hostport,
+    )
+
+    # verify response
+    assert isinstance(resp, Response)
+    assert resp.headers == '' # TODO should be None to match server
+    assert resp.body == '' # TODO should be None to match server
+
+
+@pytest.mark.gen_test
+@pytest.mark.callz
+def test_endpoint_can_return_just_body():
+
+    # Given this test server:
+
+    server = TChannel(name='server')
+
+    @server.register(scheme=schemes.RAW)
+    def endpoint(request):
+        return 'resp body'
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    resp = yield tchannel.call(
+        scheme=schemes.RAW,
+        service='server',
+        arg1='endpoint',
+        hostport=server.hostport,
+    )
+
+    # verify response
+    assert isinstance(resp, Response)
+    assert resp.headers == '' # TODO should be is None to match server
+    assert resp.body == 'resp body'

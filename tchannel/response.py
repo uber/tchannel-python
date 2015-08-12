@@ -12,7 +12,7 @@ class Response(object):
     # TODO add __slots__
     # TODO implement __repr__
 
-    def __init__(self, body, headers, transport):
+    def __init__(self, body=None, headers=None, transport=None):
         self.body = body
         self.headers = headers
         self.transport = transport
