@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import ipdb
 import pytest
 import tornado
 
@@ -34,6 +35,7 @@ def test_call_should_get_response():
     @server.register(scheme=schemes.RAW)
     @tornado.gen.coroutine
     def endpoint(request):
+        ipdb.set_trace()
 
         assert request.headers == 'raw req headers'
         assert request.body == 'raw req body'
@@ -45,6 +47,8 @@ def test_call_should_get_response():
     # Make a call:
 
     tchannel = TChannel(name='client')
+
+    ipdb.set_trace()
 
     resp = yield tchannel.call(
         scheme=schemes.RAW,

@@ -60,13 +60,13 @@ class RequestDispatcher(object):
 
     FALLBACK = object()
 
-    def __init__(self):
+    def __init__(self, from_new_api=False):
         self.handlers = defaultdict(lambda: Handler(
             self.not_found, RawSerializer(), RawSerializer())
         )
+        self._from_new_api = from_new_api
 
     _HANDLER_NAMES = {
-        Types.PING_REQ: 'ping',
         Types.CALL_REQ: 'pre_call',
         Types.CALL_REQ_CONTINUE: 'pre_call'
     }
@@ -162,17 +162,39 @@ class RequestDispatcher(object):
 
         connection.post_response(response)
 
+        import ipdb
+        ipdb.set_trace()
+
         try:
-            yield gen.maybe_future(
-                handler.endpoint(
-                    request,
-                    response,
-                    TChannelProxy(
-                        connection.tchannel,
-                        request.tracing,
-                    ),
+
+            # use the deprecated impl by default
+            if not self._from_new_api:
+                yield gen.maybe_future(
+                    handler.endpoint(
+                        request,
+                        response,
+                        TChannelProxy(
+                            connection.tchannel,
+                            request.tracing,
+                        ),
+                    )
                 )
-            )
+
+            # else, if opted in (by tchannel.TChannel), use thew new impl
+            else:
+
+                # convert deprecated req to new top-level req
+
+                # get new top-level resp from controller
+                new_resp = yield gen.maybe_future(
+                    handler.endpoint(request)
+                )
+                print(new_resp)
+
+                # assign resp values to dep response
+                import ipdb
+                ipdb.set_trace()
+
             response.flush()
         except InvalidEndpointError as e:
             connection.send_error(
