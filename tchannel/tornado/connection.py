@@ -455,7 +455,7 @@ class TornadoConnection(object):
             message = yield self.await()
 
             try:
-                handler.handle(message, self)
+                handler(message, self)
             except Exception:
                 # TODO Send error frame back
                 logging.exception("Failed to process %s", repr(message))
