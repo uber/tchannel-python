@@ -22,34 +22,10 @@ from __future__ import absolute_import
 from .errors import InvalidChecksumError
 from .errors import StreamingError
 from .messages import ErrorCode
-from .messages import PingResponseMessage
 from .messages import Types
 
 
-class RequestHandler(object):
-    """Specifies how a TChannel server handles incoming requests.
-
-    This class is agnostic of whether specific implementations are synchronous
-    or Tornado-based.
-    """
-
-    def handle(self, message, connection):
-        """Handle an incoming request.
-
-        The handshake has already been completed.
-
-        :param message:
-            the incoming message.
-        :param connection:
-            Reference to the connection object
-        :returns:
-            Nothing. The connection object must be used to send the response
-            back.
-        """
-        raise NotImplementedError()
-
-
-class BaseRequestHandler(RequestHandler):
+class BaseRequestHandler(object):
     """A minimal RequestHandler skeleton.
 
     This implements a minimal base RequestHandler that implements methods
@@ -62,9 +38,6 @@ class BaseRequestHandler(RequestHandler):
         Types.CALL_REQ: 'pre_call',
         Types.CALL_REQ_CONTINUE: 'pre_call'
     }
-
-    def __init__(self):
-        super(BaseRequestHandler, self).__init__()
 
     def handle(self, message, connection):
         # TODO assert that the handshake was already completed
@@ -113,24 +86,8 @@ class BaseRequestHandler(RequestHandler):
                 message.id,
             )
 
-    def handle_ping(self, ping, connection):
-        return connection.write(PingResponseMessage(), ping.id)
 
-    def handle_call(self, call, connection):
-        """Handle an incoming call.
-
-        :param call:
-            CallRequestMessage containing information about the call
-        :param connection:
-            Connection through which the call was made
-        :returns:
-            Nothing. The response must be sent using the
-            implementation-specific connection object.
-        """
-        raise NotImplementedError("Must be implemented.")
-
-
-class CallableRequestHandler(RequestHandler):
+class CallableRequestHandler(object):
     """An adapter from a function to a RequestHandler."""
 
     def __init__(self, f):
