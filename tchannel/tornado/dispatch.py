@@ -30,15 +30,19 @@ from tornado import gen
 from ..errors import InvalidEndpointError
 from ..errors import TChannelError
 from ..event import EventType
-from ..handler import BaseRequestHandler
 from ..messages.error import ErrorCode
 from ..serializer.raw import RawSerializer
 from .response import Response
 
+from ..errors import InvalidChecksumError
+from ..errors import StreamingError
+from ..messages import Types
+
+
 Handler = namedtuple('Handler', 'endpoint req_serializer resp_serializer')
 
 
-class RequestDispatcher(BaseRequestHandler):
+class RequestDispatcher(object):
     """A synchronous RequestHandler that dispatches calls to different
     endpoints based on ``arg1``.
 
@@ -57,10 +61,62 @@ class RequestDispatcher(BaseRequestHandler):
     FALLBACK = object()
 
     def __init__(self):
-        super(RequestDispatcher, self).__init__()
         self.handlers = defaultdict(lambda: Handler(
             self.not_found, RawSerializer(), RawSerializer())
         )
+
+    _HANDLER_NAMES = {
+        Types.PING_REQ: 'ping',
+        Types.CALL_REQ: 'pre_call',
+        Types.CALL_REQ_CONTINUE: 'pre_call'
+    }
+
+    def handle(self, message, connection):
+        # TODO assert that the handshake was already completed
+        assert message, "message must not be None"
+
+        if message.message_type not in self._HANDLER_NAMES:
+            # TODO handle this more gracefully
+            raise NotImplementedError("Unexpected message: %s" % str(message))
+
+        handler_name = "handle_" + self._HANDLER_NAMES[message.message_type]
+        return getattr(self, handler_name)(message, connection)
+
+    def handle_pre_call(self, message, connection):
+        """Handle incoming request message including CallRequestMessage and
+        CallRequestContinueMessage
+
+        This method will build the User friendly request object based on the
+        incoming messages.
+
+        It passes all the messages into the message_factory to build the init
+        request object. Only when it get a CallRequestMessage and a completed
+        arg_1=argstream[0], the message_factory will return a request object.
+        Then it will trigger the async call_handle call.
+
+        :param message: CallRequestMessage or CallRequestContinueMessage
+        :param connection: tornado connection
+        """
+        try:
+            req = connection.request_message_factory.build(message)
+            # message_factory will create Request only when it receives
+            # CallRequestMessage. It will return None, if it receives
+            # CallRequestContinueMessage.
+            if req:
+                self.handle_call(req, connection)
+
+        except (InvalidChecksumError, StreamingError) as e:
+            connection.send_error(
+                ErrorCode.bad_request,
+                e.message,
+                message.id,
+            )
+        except Exception:
+            connection.send_error(
+                ErrorCode.unexpected,
+                "An unexpected error has occurred.",
+                message.id,
+            )
 
     @tornado.gen.coroutine
     def handle_call(self, request, connection):
