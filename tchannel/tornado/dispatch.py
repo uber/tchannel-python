@@ -109,7 +109,7 @@ class RequestDispatcher(object):
                 self.handle_call(req, connection)
 
         except (InvalidChecksumError, StreamingError) as e:
-            log.warn('Received a bad request.')
+            log.warn('Received a bad request.', exc_info=True)
 
             connection.send_error(
                 ErrorCode.bad_request,
@@ -132,7 +132,7 @@ class RequestDispatcher(object):
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
 
-        log.info('Received a call to %s.', request.endpoint)
+        log.debug('Received a call to %s.', request.endpoint)
 
         # event: receive_request
         request.tracing.name = request.endpoint
