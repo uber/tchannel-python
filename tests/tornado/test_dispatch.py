@@ -93,7 +93,7 @@ def test_uncaught_exceptions_fire_event_hook(dispatcher, req, connection):
     yield dispatcher.handle_call(req, connection)
 
     connection.tchannel.event_emitter.fire.assert_called_with(
-        EventType.on_application_error,
+        EventType.on_exception,
         req,
         mock.ANY,
     )

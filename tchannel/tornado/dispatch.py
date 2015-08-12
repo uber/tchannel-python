@@ -133,7 +133,7 @@ class RequestDispatcher(BaseRequestHandler):
                 response.id,
             )
             connection.tchannel.event_emitter.fire(
-                EventType.on_application_error,
+                EventType.on_exception,
                 request,
                 e,
             )
