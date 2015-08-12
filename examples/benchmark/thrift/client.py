@@ -66,6 +66,9 @@ def do_work():
         local.requests += 1
 
 
-ioloop.PeriodicCallback(report_work, 1000).start()
-
-resp = ioloop.IOLoop.current().run_sync(do_work)
+if __name__ == '__main__':
+    ioloop.PeriodicCallback(report_work, 1000).start()
+    try:
+        ioloop.IOLoop.current().run_sync(do_work)
+    except KeyboardInterrupt:
+        pass
