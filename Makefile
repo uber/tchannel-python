@@ -43,6 +43,7 @@ test: clean
 
 test_ci: clean
 	tox -e $(TOX_ENV) -- tests
+	make lint
 
 testhtml: clean
 	$(pytest) $(html_report) && open htmlcov/index.html
