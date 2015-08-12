@@ -75,8 +75,8 @@ def test_headers_and_body_should_be_optional():
 
     @server.register(scheme=schemes.RAW)
     def endpoint(request):
-        #assert request.headers is None # TODO uncomment
-        #assert request.body is None # TODO uncomment
+        # assert request.headers is None  # TODO uncomment
+        # assert request.body is None  # TODO uncomment
         pass
 
     server.listen()
@@ -94,8 +94,8 @@ def test_headers_and_body_should_be_optional():
 
     # verify response
     assert isinstance(resp, Response)
-    assert resp.headers == '' # TODO should be None to match server
-    assert resp.body == '' # TODO should be None to match server
+    assert resp.headers == ''  # TODO should be None to match server
+    assert resp.body == ''  # TODO should be None to match server
 
 
 @pytest.mark.gen_test
@@ -125,5 +125,52 @@ def test_endpoint_can_return_just_body():
 
     # verify response
     assert isinstance(resp, Response)
-    assert resp.headers == '' # TODO should be is None to match server
+    assert resp.headers == ''  # TODO should be is None to match server
+    assert resp.body == 'resp body'
+
+
+# TODO - verify register programmatic use cases
+
+@pytest.mark.gen_test
+@pytest.mark.callz
+def test_endpoint_can_be_called_as_a_pure_func():
+
+    # Given this test server:
+
+    server = TChannel(name='server')
+
+    @server.register(scheme=schemes.RAW)
+    def endpoint(request):
+
+        assert isinstance(request, Request)
+        assert request.body == 'req body'
+        assert request.headers == 'req headers'
+
+        return Response('resp body', headers='resp headers')
+
+    server.listen()
+
+    # Able to call over TChannel
+
+    tchannel = TChannel(name='client')
+
+    resp = yield tchannel.call(
+        scheme=schemes.RAW,
+        service='server',
+        arg1='endpoint',
+        arg2='req headers',
+        arg3='req body',
+        hostport=server.hostport,
+    )
+
+    assert isinstance(resp, Response)
+    assert resp.headers == 'resp headers'
+    assert resp.body == 'resp body'
+
+    # Able to call as function
+
+    resp = endpoint(Request('req body', headers='req headers'))
+
+    assert isinstance(resp, Response)
+    assert resp.headers == 'resp headers'
     assert resp.body == 'resp body'

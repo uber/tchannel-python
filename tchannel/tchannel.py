@@ -139,7 +139,7 @@ class TChannel(object):
 
         def decorator(fn):
 
-            assert handler is None, "can't handler when using as decorator"
+            # assert handler is None, "can't handler when using as decorator"
 
             if endpoint is None:
                 e = fn.__name__

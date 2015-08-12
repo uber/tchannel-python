@@ -64,7 +64,6 @@ class RawArgScheme(object):
 
     def register(self, endpoint, **kwargs):
 
-
         # no args, eg - server.raw.register
         if callable(endpoint):
             handler = endpoint
@@ -73,7 +72,6 @@ class RawArgScheme(object):
         # args, eg - server.raw.register('foo')
         else:
             handler = None
-
 
         # server.raw.register(endpoint="foo", handler=bar)
 
