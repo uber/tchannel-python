@@ -38,7 +38,6 @@ from tchannel.glossary import DEFAULT_TIMEOUT
 from ..errors import NoAvailablePeerError
 from ..errors import ProtocolError
 from ..errors import TimeoutError
-from ..handler import CallableRequestHandler
 from ..zipkin.annotation import Endpoint
 from ..zipkin.trace import Trace
 from .connection import StreamConnection
@@ -317,7 +316,7 @@ class Peer(object):
             hostport=self.hostport,
             process_name=self.tchannel.process_name,
             serve_hostport=self.tchannel.hostport,
-            handler=CallableRequestHandler(self.tchannel.receive_call),
+            handler=self.tchannel.receive_call,
             tchannel=self.tchannel,
         )
 
