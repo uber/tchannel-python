@@ -63,7 +63,7 @@ class TChannel(object):
     FALLBACK = RequestDispatcher.FALLBACK
 
     def __init__(self, name, hostport=None, process_name=None,
-                 known_peers=None, trace=False, _from_new_api=False):
+                 known_peers=None, trace=False, dispatcher=None):
         """Build or re-use a TChannel.
 
         :param name:
@@ -89,7 +89,11 @@ class TChannel(object):
             a function that return true or false.
         """
         self._state = State.ready
-        self._handler = RequestDispatcher(_from_new_api)
+
+        if not dispatcher:
+            self._handler = RequestDispatcher()
+        else:
+            self._handler = dispatcher
 
         self.peers = PeerGroup(self)
 

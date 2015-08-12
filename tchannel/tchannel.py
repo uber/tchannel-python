@@ -8,6 +8,7 @@ from . import schemes, transport, retry
 from .glossary import DEFAULT_TIMEOUT
 from .response import Response, ResponseTransportHeaders
 from .tornado import TChannel as DeprecatedTChannel
+from .tornado.dispatch import RequestDispatcher as DeprecatedDispatcher
 
 __all__ = ['TChannel']
 
@@ -26,7 +27,7 @@ class TChannel(object):
             process_name=process_name,
             known_peers=known_peers,
             trace=trace,
-            _from_new_api=True,
+            dispatcher=DeprecatedDispatcher(_from_new_api=True),
         )
 
         self.name = name
