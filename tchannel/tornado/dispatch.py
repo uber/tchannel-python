@@ -60,11 +60,11 @@ class RequestDispatcher(object):
 
     FALLBACK = object()
 
-    def __init__(self, from_new_api=False):
+    def __init__(self, _from_new_api=False):
         self.handlers = defaultdict(lambda: Handler(
             self.not_found, RawSerializer(), RawSerializer())
         )
-        self._from_new_api = from_new_api
+        self._from_new_api = _from_new_api
 
     _HANDLER_NAMES = {
         Types.CALL_REQ: 'pre_call',

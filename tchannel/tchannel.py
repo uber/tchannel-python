@@ -26,7 +26,7 @@ class TChannel(object):
             process_name=process_name,
             known_peers=known_peers,
             trace=trace,
-            from_new_api=True,
+            _from_new_api=True,
         )
 
         self.name = name
