@@ -9,7 +9,7 @@ Changelog
 - Simplify the TChannel event types. Removed ``operational_error``,
   ``system_error`` and ``application_error``. Added ``on_error``
 - Remove ``CallableRequestHandler`` and ``BaseRequestHandler``.
-- **BREAKING** - remove ``retry_delay`` option in the send Method.
+- **BREAKING** - remove ``retry_delay`` option in the ``send`` method.
 
 
 0.15.2 (2015-08-07)
