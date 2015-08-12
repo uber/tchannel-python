@@ -37,7 +37,6 @@ from ..enum import enum
 from ..errors import AlreadyListeningError
 from ..event import EventEmitter
 from ..event import EventRegistrar
-from ..handler import CallableRequestHandler
 from ..net import local_ip
 from ..schemes import DEFAULT_NAMES
 from ..schemes import JSON
@@ -416,7 +415,7 @@ class TChannelServer(tornado.tcpserver.TCPServer):
                        conn.remote_host_port)
         ).register_incoming(conn)
 
-        yield conn.serve(handler=CallableRequestHandler(self._handle))
+        yield conn.serve(handler=self._handle)
 
     def _handle(self, message, connection):
         self.tchannel.receive_call(message, connection)
