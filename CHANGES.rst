@@ -8,6 +8,7 @@ Changelog
 - Remove ``broker.py`` and depreciated arg scheme related code.
 - Simplify the TChannel event types. Removed ``operational_error``,
   ``system_error`` and ``application_error``. Added ``on_error``
+- Remove ``CallableRequestHandler`` and ``BaseRequestHandler``.
 
 
 0.15.2 (2015-08-07)
