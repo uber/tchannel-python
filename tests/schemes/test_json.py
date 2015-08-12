@@ -48,3 +48,32 @@ def test_call_should_get_response():
     assert isinstance(resp.transport, ResponseTransportHeaders)
     assert resp.transport.scheme == schemes.JSON
     assert resp.transport.failure_domain is None
+
+
+@pytest.mark.gen_test
+@pytest.mark.callz
+def test_endpoint_can_return_just_body():
+
+    # Given this test server:
+
+    server = TChannel(name='server')
+
+    @server.json.register
+    def endpoint(request):
+        return {'resp': 'body'}
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    resp = yield tchannel.json(
+        service='server',
+        endpoint='endpoint',
+        hostport=server.hostport,
+    )
+
+    # verify response
+    assert isinstance(resp, Response)
+    assert resp.body == {'resp': 'body'}
