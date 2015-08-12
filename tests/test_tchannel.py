@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 import pytest
 
-from tchannel import TChannel, Response, schemes
+from tchannel import TChannel, Request, Response, schemes
 from tchannel.response import ResponseTransportHeaders
 
 # TODO - need integration tests for timeout and retries, use testing.vcr
@@ -33,8 +33,9 @@ def test_call_should_get_response():
     @server.register(scheme=schemes.RAW)
     def endpoint(request):
 
-        # assert request.headers == 'raw req headers'
-        # assert request.body == 'raw req body'
+        assert isinstance(request, Request)
+        assert request.headers == 'req headers'
+        assert request.body == 'req body'
 
         return Response('resp body', 'resp headers')
 
@@ -48,8 +49,8 @@ def test_call_should_get_response():
         scheme=schemes.RAW,
         service='server',
         arg1='endpoint',
-        arg2='raw req headers',
-        arg3='raw req body',
+        arg2='req headers',
+        arg3='req body',
         hostport=server.hostport,
     )
 

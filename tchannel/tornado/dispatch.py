@@ -27,14 +27,14 @@ import tornado
 import tornado.gen
 from tornado import gen
 
+from tchannel import Request, Response
+
 from ..errors import InvalidEndpointError
 from ..errors import TChannelError
 from ..event import EventType
 from ..messages.error import ErrorCode
 from ..serializer.raw import RawSerializer
-from ..response import Response
 from .response import Response as DeprecatedResponse
-
 from ..errors import InvalidChecksumError
 from ..errors import StreamingError
 from ..messages import Types
@@ -169,10 +169,13 @@ class RequestDispatcher(object):
             if self._handler_returns_response:
 
                 # convert deprecated req to new top-level req
+                b = yield request.get_body()
+                h = yield request.get_header()
+                new_req = Request(b, h)
 
                 # get new top-level resp from controller
                 new_resp = yield gen.maybe_future(
-                    handler.endpoint(request)
+                    handler.endpoint(new_req)
                 )
 
                 # if no return then use empty response
