@@ -452,7 +452,7 @@ class PeerClientOperation(object):
         self.headers = {
             'as': arg_scheme or DEFAULT_SCHEME,
             're': retry or DEFAULT_RETRY,
-            'cn': self.peer_group.tchannel.name,
+            'cn': self.tchannel.name,
         }
 
         # keep all arguments for retry purpose.
