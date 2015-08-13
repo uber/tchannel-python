@@ -170,7 +170,7 @@ class PeerGroup(object):
         """Get all Peers managed by this PeerGroup."""
         return self._peers.values()
 
-    def request(self, **kwargs):
+    def request(self, service, hostport=None, **kwargs):
         """Initiate a new request through this PeerGroup.
 
         :param hostport:
@@ -181,18 +181,12 @@ class PeerGroup(object):
         :param service_threshold:
             If ``hostport`` was not specified, this specifies the score
             threshold at or below which peers will be ignored.
-        :param blacklist:
-            Peers on the blacklist won't be chosen.
         """
-        peer = self.choose(
-            hostport=kwargs.get('hostport', None),
-            score_threshold=kwargs.get('score_threshold', None),
-            blacklist=kwargs.get('blacklist', None),
-        )
-        if peer:
-            return peer.request(**kwargs)
-        else:
-            raise NoAvailablePeerError("Can't find available peer.")
+        return PeerClientOperation(
+            peer_group=self,
+            service=service,
+            hostport=hostport,
+            **kwargs)
 
     def choose(self, hostport=None, score_threshold=None, blacklist=None):
         """Choose a Peer that matches the given criteria.
@@ -338,11 +332,6 @@ class Peer(object):
 
         # TODO on-close cleanup
 
-    def request(self, *args, **kwargs):
-        """Begin a request to this peer."""
-
-        return PeerClientOperation(self, *args, **kwargs)
-
     @property
     def hostport(self):
         """The host-port this Peer is for."""
@@ -426,15 +415,18 @@ class PeerHealthyState(PeerState):
 class PeerClientOperation(object):
     """Encapsulates client operations that can be performed against a peer."""
 
-    def __init__(self, peer, service, arg_scheme=None,
+    def __init__(self,
+                 peer_group,
+                 service,
+                 arg_scheme=None,
                  retry=None,
                  parent_tracing=None,
                  hostport=None,
                  score_threshold=None):
         """Initialize a new PeerClientOperation.
 
-        :param peer:
-            Peer to which requests will be made
+        :param peer_group:
+            instance of PeerGroup that maintain all peers.
         :param service:
             Name of the service being called through this peer. Defaults to
             an empty string.
@@ -444,11 +436,14 @@ class PeerClientOperation(object):
             retry type
         :param parent_tracing
             tracing span from parent request
+        :param hostport
+            remote server's host port.
         """
-        assert peer, "peer must not be None"
+        assert peer_group, "peer group must not be None"
         service = service or ''
 
-        self.peer = peer
+        self.peer_group = peer_group
+        self.tchannel = peer_group.tchannel
         self.service = service
         self.parent_tracing = parent_tracing
 
@@ -457,7 +452,7 @@ class PeerClientOperation(object):
         self.headers = {
             'as': arg_scheme or DEFAULT_SCHEME,
             're': retry or DEFAULT_RETRY,
-            'cn': self.peer.tchannel.name,
+            'cn': self.peer_group.tchannel.name,
         }
 
         # keep all arguments for retry purpose.
@@ -468,12 +463,19 @@ class PeerClientOperation(object):
         # used to call multiple services if it's being used for request
         # forwarding
 
+    def _choose(self, blacklist=None):
+        return self.peer_group.choose(
+            hostport=self._hostport,
+            score_threshold=self._score_threshold,
+            blacklist=blacklist,
+        )
+
     @gen.coroutine
     def send(
         self, arg1, arg2, arg3,
         headers=None,
         traceflag=None,
-        attempt_times=None,
+        retry_limit=None,
         ttl=None,
     ):
         """Make a request to the Peer.
@@ -491,7 +493,7 @@ class PeerClientOperation(object):
             Headers will be put int he message as protocol header.
         :param traceflag:
             Flag is for tracing.
-        :param attempt_times:
+        :param retry_limit:
            Maximum number of attempts to send the message.
         :param ttl:
             Timeout for each request (ms).
@@ -503,12 +505,13 @@ class PeerClientOperation(object):
             maybe_stream(arg1), maybe_stream(arg2), maybe_stream(arg3)
         )
 
-        attempt_times = attempt_times or DEFAULT_RETRY_LIMIT
+        retry_limit = retry_limit or DEFAULT_RETRY_LIMIT
         ttl = ttl or DEFAULT_TIMEOUT
         # hack to get endpoint from arg_1 for trace name
         arg1.close()
         endpoint = yield read_full(arg1)
 
+        # TODO after adding stackcontext, get ride of this.
         if self.parent_tracing:
             parent_span_id = self.parent_tracing.span_id
             trace_id = self.parent_tracing.trace_id
@@ -517,7 +520,7 @@ class PeerClientOperation(object):
             trace_id = None
 
         if traceflag is None:
-            traceflag = self.peer.tchannel.trace
+            traceflag = self.tchannel.trace
 
         traceflag = traceflag() if callable(traceflag) else traceflag
 
@@ -526,7 +529,7 @@ class PeerClientOperation(object):
         for k, v in self.headers.iteritems():
             headers.setdefault(k, v)
 
-        peer = self.peer
+        peer = self._choose()
         connection = yield peer.connect()
 
         request = Request(
@@ -540,41 +543,39 @@ class PeerClientOperation(object):
                 name=endpoint,
                 trace_id=trace_id,
                 parent_span_id=parent_span_id,
-                endpoint=Endpoint(self.peer.host,
-                                  self.peer.port,
-                                  self.service),
+                endpoint=Endpoint(peer.host, peer.port, self.service),
                 traceflags=traceflag,
             )
         )
 
         # only retry on non-stream request
         if request.is_streaming_request or self._hostport:
-            attempt_times = 1
+            retry_limit = 1
 
         if request.is_streaming_request:
             request.ttl = 0
 
         # event: send_request
-        self.peer.tchannel.event_emitter.fire(
+        self.tchannel.event_emitter.fire(
             EventType.before_send_request,
             request,
         )
 
         try:
             response = yield self.send_with_retry(
-                request, peer, attempt_times
+                request, peer, retry_limit, connection
             )
         except ProtocolError as protocol_error:
-            # event: after_receive_protocol_error
-            self.peer.tchannel.event_emitter.fire(
+            # event: after_receive_error
+            self.tchannel.event_emitter.fire(
                 EventType.after_receive_error,
                 request,
                 protocol_error,
             )
             raise
         except Exception as e:
-            # event: on_operational_error
-            self.peer.tchannel.event_emitter.fire(
+            # event: on_exception
+            self.tchannel.event_emitter.fire(
                 EventType.on_exception,
                 request,
                 e,
@@ -583,7 +584,7 @@ class PeerClientOperation(object):
 
         log.debug("Got response %s", response)
         # event: after_receive_response
-        self.peer.tchannel.event_emitter.fire(
+        self.tchannel.event_emitter.fire(
             EventType.after_receive_response,
             request,
             response,
@@ -600,47 +601,42 @@ class PeerClientOperation(object):
         raise gen.Return(response)
 
     @gen.coroutine
-    def send_with_retry(self, request, peer, attempt_times):
-
+    def send_with_retry(self, request, peer, retry_limit, connection):
         # black list to record all used peers, so they aren't chosen again.
         blacklist = set()
-        response = None
-        connection = yield peer.connect()
-        # mac number of times to retry 3.
-        for num_of_attempt in range(attempt_times):
+        for num_of_attempt in range(retry_limit):
             try:
                 response = yield self._send(connection, request)
-                break
+                raise gen.Return(response)
             except (ProtocolError, TimeoutError) as error:
-
                 (peer, connection) = yield self.prepare_for_retry(
-                    request, connection,
-                    error,
-                    peer, blacklist,
-                    num_of_attempt,
-                    attempt_times,
+                    request=request,
+                    connection=connection,
+                    protocol_error=error,
+                    peer=peer,
+                    blacklist=blacklist,
+                    num_of_attempt=num_of_attempt,
+                    max_retry_limit=retry_limit,
                 )
 
                 if not connection:
                     raise error
 
-        raise gen.Return(response)
-
     @gen.coroutine
     def prepare_for_retry(
-            self,
-            request,
-            connection,
-            protocol_error,
-            peer,
-            blacklist,
-            num_of_attempt,
-            max_attempt_times,
+        self,
+        request,
+        connection,
+        protocol_error,
+        peer,
+        blacklist,
+        num_of_attempt,
+        max_retry_limit,
     ):
 
         self.clean_up_outgoing_request(request, connection, protocol_error)
         if not self.should_retry(request, protocol_error,
-                                 num_of_attempt, max_attempt_times):
+                                 num_of_attempt, max_retry_limit):
             raise gen.Return((None, None))
 
         result = yield self.prepare_next_request(request, peer, blacklist)
@@ -650,7 +646,7 @@ class PeerClientOperation(object):
     def prepare_next_request(self, request, peer, blacklist):
         blacklist.add(peer.hostport)
         # find new peer
-        peer = self.peer.tchannel.peers.choose(
+        peer = self.peer_group.choose(
             hostport=self._hostport,
             score_threshold=self._score_threshold,
             blacklist=blacklist,
@@ -667,10 +663,10 @@ class PeerClientOperation(object):
         raise gen.Return((peer, connection))
 
     @staticmethod
-    def should_retry(request, error, num_of_attempt, max_attempt_times):
+    def should_retry(request, error, num_of_attempt, max_retry_limit):
         return (
             request.should_retry_on_error(error) and
-            num_of_attempt != max_attempt_times - 1
+            num_of_attempt != max_retry_limit - 1
         )
 
     @staticmethod

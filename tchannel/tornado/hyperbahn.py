@@ -64,7 +64,7 @@ def _advertise(tchannel, service):
                 ]
             }),
             headers={'as': 'json'},
-            attempt_times=1,
+            retry_limit=1,
         )
     except Exception as e:  # Big scope to keep it alive.
         log.error('Failed to register with Hyperbahn: %s', e)

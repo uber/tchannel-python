@@ -88,7 +88,7 @@ def test_retry_timeout():
                     're': retry.CONNECTION_ERROR_AND_TIMEOUT
                 },
                 ttl=0.005,
-                attempt_times=3,
+                retry_limit=3,
             )
 
 
@@ -114,7 +114,7 @@ def test_retry_on_error_fail():
                     're': retry.CONNECTION_ERROR_AND_TIMEOUT
                 },
                 ttl=0.02,
-                attempt_times=3,
+                retry_limit=3,
             )
 
         assert mock_should_retry_on_error.called
@@ -150,7 +150,7 @@ def test_retry_on_error_success():
                 're': retry.CONNECTION_ERROR_AND_TIMEOUT,
             },
             ttl=0.01,
-            attempt_times=3,
+            retry_limit=3,
         )
 
         header = yield response.get_header()

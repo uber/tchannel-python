@@ -132,7 +132,7 @@ class TChannel(object):
             arg2=arg2,
             arg3=arg3,
             headers=transport_headers,
-            attempt_times=retry_limit,
+            retry_limit=retry_limit,
             ttl=timeout,
         )
 
