@@ -464,11 +464,13 @@ class PeerClientOperation(object):
         # forwarding
 
     def _choose(self, blacklist=None):
-        return self.peer_group.choose(
+        peer = self.peer_group.choose(
             hostport=self._hostport,
             score_threshold=self._score_threshold,
             blacklist=blacklist,
         )
+
+        return peer
 
     @gen.coroutine
     def send(
@@ -501,6 +503,15 @@ class PeerClientOperation(object):
             Future that contains the response from the peer.
         """
 
+        # find a peer connection
+        # If we can't find available peer at the first time, we throw
+        # NoAvailablePeerError. Later during retry, if we can't find available
+        # peer, we throw exceptions from retry not NoAvailablePeerError.
+        peer = self._choose()
+        if not peer:
+            raise NoAvailablePeerError("Can't find available peer.")
+        connection = yield peer.connect()
+
         arg1, arg2, arg3 = (
             maybe_stream(arg1), maybe_stream(arg2), maybe_stream(arg3)
         )
@@ -529,9 +540,6 @@ class PeerClientOperation(object):
         for k, v in self.headers.iteritems():
             headers.setdefault(k, v)
 
-        peer = self._choose()
-        connection = yield peer.connect()
-
         request = Request(
             service=self.service,
             argstreams=[InMemStream(endpoint), arg2, arg3],
@@ -555,49 +563,41 @@ class PeerClientOperation(object):
         if request.is_streaming_request:
             request.ttl = 0
 
-        # event: send_request
-        self.tchannel.event_emitter.fire(
-            EventType.before_send_request,
-            request,
-        )
-
         try:
             response = yield self.send_with_retry(
                 request, peer, retry_limit, connection
             )
-        except ProtocolError as protocol_error:
-            # event: after_receive_error
-            self.tchannel.event_emitter.fire(
-                EventType.after_receive_error,
-                request,
-                protocol_error,
-            )
-            raise
         except Exception as e:
             # event: on_exception
             self.tchannel.event_emitter.fire(
-                EventType.on_exception,
-                request,
-                e,
+                EventType.on_exception, request, e,
             )
             raise
 
         log.debug("Got response %s", response)
-        # event: after_receive_response
-        self.tchannel.event_emitter.fire(
-            EventType.after_receive_response,
-            request,
-            response,
-        )
 
         raise gen.Return(response)
 
     @gen.coroutine
     def _send(self, connection, req):
+        # event: send_request
+        self.tchannel.event_emitter.fire(EventType.before_send_request, req)
         response_future = connection.send_request(req)
-        with timeout(response_future, req.ttl):
-            response = yield response_future
 
+        with timeout(response_future, req.ttl):
+            try:
+                response = yield response_future
+            except ProtocolError as protocol_error:
+                # event: after_receive_error
+                self.tchannel.event_emitter.fire(
+                    EventType.after_receive_error, req, protocol_error,
+                )
+                raise
+
+        # event: after_receive_response
+        self.tchannel.event_emitter.fire(
+            EventType.after_receive_response, req, response,
+        )
         raise gen.Return(response)
 
     @gen.coroutine
@@ -609,11 +609,11 @@ class PeerClientOperation(object):
                 response = yield self._send(connection, request)
                 raise gen.Return(response)
             except (ProtocolError, TimeoutError) as error:
-                (peer, connection) = yield self.prepare_for_retry(
+                blacklist.add(peer.hostport)
+                (peer, connection) = yield self._prepare_for_retry(
                     request=request,
                     connection=connection,
                     protocol_error=error,
-                    peer=peer,
                     blacklist=blacklist,
                     num_of_attempt=num_of_attempt,
                     max_retry_limit=retry_limit,
@@ -623,12 +623,11 @@ class PeerClientOperation(object):
                     raise error
 
     @gen.coroutine
-    def prepare_for_retry(
+    def _prepare_for_retry(
         self,
         request,
         connection,
         protocol_error,
-        peer,
         blacklist,
         num_of_attempt,
         max_retry_limit,
@@ -639,18 +638,13 @@ class PeerClientOperation(object):
                                  num_of_attempt, max_retry_limit):
             raise gen.Return((None, None))
 
-        result = yield self.prepare_next_request(request, peer, blacklist)
+        result = yield self.prepare_next_request(request, blacklist)
         raise gen.Return(result)
 
     @gen.coroutine
-    def prepare_next_request(self, request, peer, blacklist):
-        blacklist.add(peer.hostport)
+    def prepare_next_request(self, request, blacklist):
         # find new peer
-        peer = self.peer_group.choose(
-            hostport=self._hostport,
-            score_threshold=self._score_threshold,
-            blacklist=blacklist,
-        )
+        peer = self._choose(blacklist=blacklist,)
 
         # no peer is available
         if not peer:
