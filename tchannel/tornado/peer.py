@@ -594,7 +594,6 @@ class PeerClientOperation(object):
                     EventType.after_receive_error, req, protocol_error,
                 )
                 raise
-
         # event: after_receive_response
         self.tchannel.event_emitter.fire(
             EventType.after_receive_response, req, response,
