@@ -126,14 +126,14 @@ def test_retry_on_error_fail():
 
 class TestHook(EventHook):
     def __init__(self):
-        self.test_obj = None
+        self.test_obj = 0
 
     def after_receive_response(self, request, response):
-        self.test_obj = object()
+        self.test_obj += 1
         assert request.id == response.id
 
     def after_receive_error(self, request, error):
-        self.test_obj = object()
+        self.test_obj += 1
         assert request.id == error.id
 
 
@@ -164,7 +164,7 @@ def test_retry_on_error_success():
             headers={
                 're': retry.CONNECTION_ERROR_AND_TIMEOUT,
             },
-            ttl=0.01,
+            ttl=1,
             retry_limit=3,
         )
 
@@ -173,7 +173,7 @@ def test_retry_on_error_success():
         assert body == "success"
         assert header == ""
 
-    assert hook.test_obj
+    assert hook.test_obj == 2
 
 
 @pytest.mark.gen_test
