@@ -496,7 +496,8 @@ class PeerClientOperation(object):
         :param traceflag:
             Flag is for tracing.
         :param retry_limit:
-           Maximum number of attempts to send the message.
+           Maximum number of retries will perform on the message. If the number
+           is 0, it means no retry.
         :param ttl:
             Timeout for each request (ms).
         :return:
@@ -604,7 +605,7 @@ class PeerClientOperation(object):
     def send_with_retry(self, request, peer, retry_limit, connection):
         # black list to record all used peers, so they aren't chosen again.
         blacklist = set()
-        for num_of_attempt in range(retry_limit):
+        for num_of_attempt in range(retry_limit + 1):
             try:
                 response = yield self._send(connection, request)
                 raise gen.Return(response)
