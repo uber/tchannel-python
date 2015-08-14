@@ -71,7 +71,7 @@ class PatchedClientOperation(object):
     def send(self, arg1, arg2, arg3,
              headers=None,
              traceflag=None,
-             attempt_times=None,
+             retry_limit=None,
              ttl=None):
         arg1, arg2, arg3 = map(maybe_stream, [arg1, arg2, arg3])
 
