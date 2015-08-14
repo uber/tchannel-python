@@ -21,13 +21,20 @@
 from __future__ import absolute_import
 
 
+TIMEOUT = 0x01
+CANCELED = 0x02
+BUSY = 0x03
+DECLINED = 0x04
+UNEXPECTED_ERROR = 0x05
+BAD_REQUEST = 0x06
+NETWORK_ERROR = 0x07
+UNHEALTHY = 0x08
+FATAL = 0xFF
+
+
 class TChannelError(Exception):
     """Represent a TChannel-generated exception."""
-    pass
 
-
-class ProtocolError(TChannelError):
-    """Represent a protocol-level exception"""
     __slots__ = (
         'code',
         'description',
@@ -35,97 +42,107 @@ class ProtocolError(TChannelError):
         'tracing',
     )
 
+    code = None
+
     def __init__(
         self,
-        code,
-        description,
+        description=None,
         id=None,
         tracing=None,
     ):
         super(TChannelError, self).__init__(description)
-        self.code = code
         self.tracing = tracing
         self.id = id
         self.description = description
 
+    @classmethod
+    def from_code(cls, code, **kw):
+        return {
+            TIMEOUT: TimeoutError,
+            CANCELED: CanceledError,
+            BUSY: BusyError,
+            DECLINED: DeclinedError,
+            UNEXPECTED_ERROR: UnexpectedError,
+            BAD_REQUEST: BadRequestError,
+            NETWORK_ERROR: NetworkError,
+            UNHEALTHY: UnhealthyError,
+            FATAL: FatalProtocolError,
+        }[code](**kw)
 
-class InvalidMessageError(TChannelError):
-    """Represent an invalid message."""
+
+class AlwaysRetryableError(TChannelError):
     pass
 
 
-class InvalidEndpointError(TChannelError):
-    """Represent an message containing invalid endpoint."""
+class PossiblyRetryableError(TChannelError):
     pass
 
 
-class TimeoutError(TChannelError):
-    # TODO fix circular dependence
-    code = 0x01
-
-
-class ConnectionClosedError(TChannelError):
+class UnretryableError(TChannelError):
     pass
 
 
-class ReadError(TChannelError):
+class TimeoutError(PossiblyRetryableError):
+    code = TIMEOUT
+
+
+class CanceledError(UnretryableError):
+    code = CANCELED
+
+
+class BusyError(AlwaysRetryableError):
+    code = BUSY
+
+
+class DeclinedError(AlwaysRetryableError):
+    code = DECLINED
+
+
+class UnexpectedError(PossiblyRetryableError):
+    code = UNEXPECTED_ERROR
+
+
+class BadRequestError(UnretryableError):
+    code = BAD_REQUEST
+
+
+class NetworkError(PossiblyRetryableError):
+    code = NETWORK_ERROR
+
+
+class UnhealthyError(UnretryableError):
+    code = UNHEALTHY
+
+
+class FatalProtocolError(UnretryableError):
+    code = FATAL
+
+
+class ReadError(FatalProtocolError):
     """Raised when there is an error while reading input."""
     pass
 
 
-class InvalidChecksumError(TChannelError):
+class InvalidChecksumError(FatalProtocolError):
     """Represent invalid checksum type in the message"""
     pass
 
 
-class StreamingError(TChannelError):
-    """Represent Streaming Message Exception"""
-    pass
-
-
-class NoAvailablePeerError(TChannelError):
+class NoAvailablePeerError(AlwaysRetryableError):
     """Represents a failure to find any peers for a request."""
     pass
 
 
-class InvalidErrorCodeError(TChannelError):
-    """Represent Invalid Error Code exception"""
-    def __init__(self, code):
-        super(InvalidErrorCodeError, self).__init__(
-            'Invalid Error Code (%s)' % (code))
-        self.code = code
-
-
-class AdvertiseError(TChannelError):
-    """Represent advertise failure exception"""
-    pass
-
-
-class AlreadyListeningError(TChannelError):
+class AlreadyListeningError(FatalProtocolError):
     """Represents exception from attempting to listen multiple times."""
     pass
 
 
-class TChannelApplicationError(TChannelError):
-    """The remote application returned an exception.
-
-    This is not a protocol error. This means a response was received with the
-    ``code`` flag set to fail.
-    """
-    def __init__(self, code, args):
-        super(TChannelError, self).__init__(
-            'TChannel application error (%s)' % (args)
-        )
-
-        self.code = code
-        self.args = args
-
-
-class OneWayNotSupportedError(TChannelError):
+class OneWayNotSupportedError(BadRequestError):
     """Raised when oneway Thrift procedure is called."""
     pass
 
 
-class ValueExpectedError(TChannelError):
+class ValueExpectedError(BadRequestError):
     """Raised when a non-void Thrift response contains no value."""
     pass

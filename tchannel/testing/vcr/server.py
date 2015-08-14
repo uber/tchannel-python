@@ -24,7 +24,7 @@ from functools import wraps
 
 from tornado import gen
 
-from tchannel.errors import ProtocolError
+from tchannel.errors import TChannelError
 from tchannel.tornado import TChannel
 
 from .proxy import VCRProxy
@@ -128,7 +128,7 @@ class VCRProxyService(object):
         # Don't actually yield while everything is unpatched.
         try:
             response = yield response_future
-        except ProtocolError as e:
+        except TChannelError as e:
             raise VCRProxy.RemoteServiceError(
                 code=e.code,
                 message=e.message,

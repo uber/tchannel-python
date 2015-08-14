@@ -27,7 +27,7 @@ import tornado.ioloop
 from tornado.iostream import PipeIOStream
 from tornado.iostream import StreamClosedError
 
-from ..errors import StreamingError
+from ..errors import UnexpectedError
 from ..messages import common
 from ..messages.common import StreamState
 
@@ -77,8 +77,8 @@ class Stream(object):
     def write(self, chunk):
         """Async write to internal stream buffer
 
-        :raises StreamingError:
-            if stream has been closed, it will raise StreamingError
+        :raises UnexpectedError:
+            if stream has been closed, it will raise UnexpectedError
         """
         raise NotImplementedError()
 
@@ -152,7 +152,7 @@ class InMemStream(Stream):
             raise self.exception
 
         if self.state == StreamState.completed:
-            raise StreamingError("Stream has been closed.")
+            raise UnexpectedError("Stream has been closed.")
 
         if chunk:
             self._stream.append(chunk)
@@ -235,7 +235,7 @@ class PipeStream(Stream):
             self.state = StreamState.streaming
         except StreamClosedError:
             self.state = StreamState.completed
-            raise StreamingError("Stream has been closed.")
+            raise UnexpectedError("Stream has been closed.")
         finally:
             if self.exception:
                 raise self.exception

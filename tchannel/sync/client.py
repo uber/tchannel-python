@@ -26,8 +26,8 @@ from concurrent.futures import TimeoutError
 from tornado import gen
 
 from tchannel import tornado as async
+from tchannel import errors
 from tchannel.tornado.hyperbahn import FIRST_ADVERTISE_TIME
-from tchannel.tornado.hyperbahn import AdvertiseError
 from threadloop import ThreadLoop
 
 
@@ -124,7 +124,7 @@ class TChannelSyncClient(object):
         try:
             result = future.result(wait_until)
         except TimeoutError:
-            raise AdvertiseError(
+            raise errors.TimeoutError(
                 "Failed to register with Hyperbahn."
             )
 

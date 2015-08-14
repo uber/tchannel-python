@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import pytest
 
 from tchannel import tcurl
-from tchannel.errors import ConnectionClosedError
+from tchannel.errors import NetworkError
 from tchannel.errors import TChannelError
 from tchannel.tornado import TChannel
 from tchannel.tornado.connection import StreamConnection
@@ -33,7 +33,7 @@ from tests.util import big_arg
 
 @pytest.mark.gen_test
 def test_tornado_client_with_server_not_there():
-    with pytest.raises(ConnectionClosedError):
+    with pytest.raises(NetworkError):
         yield StreamConnection.outgoing(
             # Try a random port that we're not listening on.
             # This should fail.

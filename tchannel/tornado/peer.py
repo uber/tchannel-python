@@ -36,8 +36,7 @@ from ..retry import (
 from tchannel.event import EventType
 from tchannel.glossary import DEFAULT_TIMEOUT
 from ..errors import NoAvailablePeerError
-from ..errors import ProtocolError
-from ..errors import TimeoutError
+from ..errors import TChannelError
 from ..zipkin.annotation import Endpoint
 from ..zipkin.trace import Trace
 from .connection import StreamConnection
@@ -588,10 +587,10 @@ class PeerClientOperation(object):
         with timeout(response_future, req.ttl):
             try:
                 response = yield response_future
-            except ProtocolError as protocol_error:
+            except TChannelError as error:
                 # event: after_receive_error
                 self.tchannel.event_emitter.fire(
-                    EventType.after_receive_error, req, protocol_error,
+                    EventType.after_receive_error, req, error,
                 )
                 raise
         # event: after_receive_response
@@ -608,7 +607,8 @@ class PeerClientOperation(object):
             try:
                 response = yield self._send(connection, request)
                 raise gen.Return(response)
-            except (ProtocolError, TimeoutError) as error:
+            # Why are we retying on all errors????
+            except TChannelError as error:
                 blacklist.add(peer.hostport)
                 (peer, connection) = yield self._prepare_for_retry(
                     request=request,

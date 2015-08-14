@@ -32,7 +32,7 @@ from tchannel import response
 from tchannel import schemes
 from tchannel import thrift_request_builder
 from tchannel.errors import OneWayNotSupportedError
-from tchannel.errors import ProtocolError
+from tchannel.errors import UnexpectedError
 from tchannel.errors import ValueExpectedError
 from tchannel.testing.data.generated.ThriftTest import SecondService
 from tchannel.testing.data.generated.ThriftTest import ThriftTest
@@ -856,7 +856,7 @@ def test_exception():
         assert e.value.message == 'Xception'
 
     # case #2
-    with pytest.raises(ProtocolError):
+    with pytest.raises(UnexpectedError):
         yield tchannel.thrift(
             service.testException(arg='TException')
         )
@@ -1106,7 +1106,7 @@ def test_call_response_should_contain_transport_headers():
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_call_unexpected_error_should_result_in_protocol_error():
+def test_call_unexpected_error_should_result_in_unexpected_error():
 
     # Given this test server:
 
@@ -1128,7 +1128,7 @@ def test_call_unexpected_error_should_result_in_protocol_error():
         hostport=server.hostport,
     )
 
-    with pytest.raises(ProtocolError):
+    with pytest.raises(UnexpectedError):
         yield tchannel.thrift(
             service.testMultiException(arg0='Xception', arg1='thingy')
         )

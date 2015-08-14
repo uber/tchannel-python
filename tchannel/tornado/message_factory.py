@@ -23,8 +23,8 @@ from __future__ import absolute_import
 import logging
 
 from ..errors import InvalidChecksumError
-from ..errors import ProtocolError
-from ..errors import StreamingError
+from ..errors import TChannelError
+from ..errors import FatalProtocolError
 from ..messages import RW
 from ..messages import Types
 from ..messages import common
@@ -62,18 +62,6 @@ def build_raw_error_message(protocol_exception):
     )
 
     return message
-
-
-def build_protocol_exception(message, message_id=None):
-    """build protocol level error message based on Error object"""
-
-    error = ProtocolError(
-        code=message.code,
-        description=message.description,
-        id=message_id,
-    )
-
-    return error
 
 
 class MessageFactory(object):
@@ -129,8 +117,6 @@ class MessageFactory(object):
             )
             request.state = (StreamState.completed if is_completed
                              else StreamState.streaming)
-        else:
-            raise StreamingError("request state Error")
 
         message.id = request.id
         return message
@@ -172,8 +158,6 @@ class MessageFactory(object):
             )
             response.state = (StreamState.completed if is_completed
                               else StreamState.streaming)
-        else:
-            raise StreamingError("response state Error")
 
         message.id = response.id
         return message
@@ -183,8 +167,6 @@ class MessageFactory(object):
             return self.build_raw_request_message(reqres, args, is_completed)
         elif isinstance(reqres, Response):
             return self.build_raw_response_message(reqres, args, is_completed)
-        else:
-            raise StreamingError("context object type error")
 
     def prepare_args(self, message):
         args = [
@@ -262,9 +244,6 @@ class MessageFactory(object):
             return self.build_request(message)
         elif message.message_type == Types.CALL_RES:
             return self.build_response(message)
-        else:
-            raise StreamingError("invalid message type: %s" %
-                                 message.message_type)
 
     def build(self, message):
         """buffer all the streaming messages based on the
@@ -301,7 +280,7 @@ class MessageFactory(object):
             context = self.message_buffer.get(message.id)
             if context is None:
                 # missing call msg before continue msg
-                raise StreamingError(
+                raise FatalProtocolError(
                     "missing call message after receiving continue message")
 
             # find the incompleted stream
@@ -338,11 +317,14 @@ class MessageFactory(object):
                 log.warn('Unconsumed error %s', context)
                 return None
             else:
-                protocol_exception = build_protocol_exception(message)
-                protocol_exception.tracing = context.tracing
+                error = TChannelError.from_code(
+                    message.code,
+                    description=message.description,
+                    tracing=context.tracing,
+                )
 
-                context.set_exception(protocol_exception)
-                return protocol_exception
+                context.set_exception(error)
+                return error
         else:
             return message
 
@@ -425,7 +407,7 @@ class MessageFactory(object):
         reqres = self.message_buffer.get(protocol_error.id)
         if reqres is None:
             # missing call msg before continue msg
-            raise StreamingError(
+            raise FatalProtocolError(
                 "missing call message after receiving continue message")
 
         # find the incompleted stream

@@ -21,22 +21,19 @@
 from __future__ import absolute_import
 
 import logging
-from collections import defaultdict
 from collections import namedtuple
 
 import tornado
 import tornado.gen
 from tornado import gen
 
-from ..errors import InvalidEndpointError
+from ..errors import BadRequestError
 from ..errors import TChannelError
 from ..event import EventType
 from ..messages.error import ErrorCode
 from ..serializer.raw import RawSerializer
 from .response import Response
 
-from ..errors import InvalidChecksumError
-from ..errors import StreamingError
 from ..messages import Types
 
 log = logging.getLogger('tchannel')
@@ -64,9 +61,11 @@ class RequestDispatcher(object):
     FALLBACK = object()
 
     def __init__(self):
-        self.handlers = defaultdict(lambda: Handler(
-            self.not_found, RawSerializer(), RawSerializer())
-        )
+        self.handlers = {
+            self.FALLBACK: Handler(
+                self.not_found, RawSerializer(), RawSerializer()
+            )
+        }
 
     _HANDLER_NAMES = {
         Types.PING_REQ: 'ping',
@@ -108,11 +107,11 @@ class RequestDispatcher(object):
             if req:
                 self.handle_call(req, connection)
 
-        except (InvalidChecksumError, StreamingError) as e:
+        except TChannelError as e:
             log.warn('Received a bad request.', exc_info=True)
 
             connection.send_error(
-                ErrorCode.bad_request,
+                e.code,
                 e.message,
                 message.id,
             )
@@ -142,7 +141,10 @@ class RequestDispatcher(object):
             request,
         )
 
-        handler = self.handlers[request.endpoint]
+        handler = self.handlers.get(request.endpoint)
+        if handler is None:
+            handler = self.handlers[self.FALLBACK]
+
         if request.headers.get('as', None) != handler.req_serializer.name:
             connection.send_error(
                 ErrorCode.bad_request,
@@ -175,9 +177,9 @@ class RequestDispatcher(object):
                 )
             )
             response.flush()
-        except InvalidEndpointError as e:
+        except TChannelError as e:
             connection.send_error(
-                ErrorCode.bad_request,
+                e.code,
                 e.message,
                 request.id,
             )
@@ -236,19 +238,13 @@ class RequestDispatcher(object):
         assert handler, "handler must not be None"
         req_serializer = req_serializer or RawSerializer()
         resp_serializer = resp_serializer or RawSerializer()
-        if rule is self.FALLBACK:
-            self.handlers.default_factory = lambda: Handler(
-                handler, RawSerializer(), RawSerializer()
-            )
-            return
-
         self.handlers[rule] = Handler(handler, req_serializer, resp_serializer)
 
     @staticmethod
     def not_found(request, response, proxy):
         """Default behavior for requests to unrecognized endpoints."""
-        raise InvalidEndpointError(
-            "Endpoint '%s' for service '%s' is not defined" % (
+        raise BadRequestError(
+            description="Endpoint '%s' for service '%s' is not defined" % (
                 request.endpoint,
                 request.service,
             ),
