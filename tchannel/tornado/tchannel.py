@@ -271,8 +271,6 @@ class TChannel(object):
 
     def receive_call(self, message, connection):
 
-        # noqa TODO WTF - call -> req/send -> connect -> peer -> here -> dispatcher -> connection -> here
-
         if not self._handler:
             log.warn(
                 "Received %s but a handler has not been defined.", str(message)
