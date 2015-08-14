@@ -27,10 +27,7 @@ from tornado import gen
 
 from tchannel import Response
 from tchannel.tornado.request import TransportMetadata
-from tchannel.tornado.response import (
-    StatusCode,
-    Response as DeprecatedResponse,
-)
+from tchannel.tornado.response import StatusCode
 
 from ..serializer.thrift import ThriftSerializer
 
@@ -105,12 +102,17 @@ def register(dispatcher, service_module, handler, method=None, service=None):
 def new_build_handler(result_type, f):
     @gen.coroutine
     def handler(request):
+
         result = ThriftResponse(result_type())
         response = Response()
 
         try:
             response = yield gen.maybe_future(f(request))
 
+        except Exception:
+            result.write_exc_info(sys.exc_info())
+        else:
+            # TODO dont duplicate in dispatcher
             # if no return then use empty response
             if response is None:
                 response = Response()
@@ -118,16 +120,13 @@ def new_build_handler(result_type, f):
             # if not a response, then it's just the body, create resp
             if not isinstance(response, Response):
                 response = Response(response)
-        except Exception:
-            result.write_exc_info(sys.exc_info())
-        else:
+
             result.write_result(response.body)
 
         response.body = result.result
 
         raise gen.Return(response)
     return handler
-
 
 
 def build_handler(result_type, f):
@@ -196,7 +195,6 @@ class ThriftRequest(namedtuple('_Request', 'headers args transport')):
         )
 
 
-
 class ThriftResponse(object):
     """Represents a response to a Thrift call."""
 
@@ -221,6 +219,10 @@ class ThriftResponse(object):
             Return value of the call
         """
         assert not self.finished, "Already sent a response"
+
+        if not self.result.thrift_spec:
+            self.finished = True
+            return
 
         spec = self.result.thrift_spec[0]
         if result is not None:

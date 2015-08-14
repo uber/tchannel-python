@@ -27,9 +27,7 @@ import tornado
 import tornado.gen
 from tornado import gen
 
-from tchannel import Request, Response, schemes
-from tchannel.thrift.server import ThriftRequest, ThriftResponse
-
+from tchannel import Request, Response
 from ..errors import InvalidEndpointError
 from ..errors import TChannelError
 from ..event import EventType

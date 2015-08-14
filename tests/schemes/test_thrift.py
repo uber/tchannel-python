@@ -17,7 +17,6 @@ from tchannel.errors import ProtocolError
 from tchannel.errors import ValueExpectedError
 from tchannel.testing.data.generated.ThriftTest import SecondService
 from tchannel.testing.data.generated.ThriftTest import ThriftTest
-from tchannel.thrift import client_for
 
 
 # TODO - where possible, in req/res style test, create parameterized tests,
