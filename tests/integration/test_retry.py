@@ -97,7 +97,7 @@ def test_retry_timeout():
                     're': retry.CONNECTION_ERROR_AND_TIMEOUT
                 },
                 ttl=0.005,
-                retry_limit=3,
+                retry_limit=2,
             )
 
 
@@ -109,7 +109,8 @@ def test_retry_on_error_fail():
     with (
         patch(
             'tchannel.tornado.Request.should_retry_on_error',
-            autospec=True)
+            autospec=True
+        )
     ) as mock_should_retry_on_error:
         mock_should_retry_on_error.return_value = True
         with pytest.raises(ProtocolError) as e:
@@ -123,12 +124,11 @@ def test_retry_on_error_fail():
                     're': retry.CONNECTION_ERROR_AND_TIMEOUT
                 },
                 ttl=0.02,
-                retry_limit=3,
+                retry_limit=2,
             )
 
         assert mock_should_retry_on_error.called
-        assert mock_should_retry_on_error.call_count == (
-            retry.DEFAULT_RETRY_LIMIT)
+        assert mock_should_retry_on_error.call_count == 3
         assert e.value.code == ErrorCode.busy
 
 
@@ -174,7 +174,7 @@ def test_retry_on_error_success():
                 're': retry.CONNECTION_ERROR_AND_TIMEOUT,
             },
             ttl=1,
-            retry_limit=3,
+            retry_limit=2,
         )
 
         header = yield response.get_header()

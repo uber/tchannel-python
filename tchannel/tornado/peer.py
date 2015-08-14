@@ -559,7 +559,7 @@ class PeerClientOperation(object):
 
         # only retry on non-stream request
         if request.is_streaming_request or self._hostport:
-            retry_limit = 1
+            retry_limit = 0
 
         if request.is_streaming_request:
             request.ttl = 0
@@ -660,7 +660,7 @@ class PeerClientOperation(object):
     def should_retry(request, error, num_of_attempt, max_retry_limit):
         return (
             request.should_retry_on_error(error) and
-            num_of_attempt != max_retry_limit - 1
+            num_of_attempt != max_retry_limit
         )
 
     @staticmethod
