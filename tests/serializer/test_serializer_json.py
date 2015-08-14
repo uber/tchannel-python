@@ -6,11 +6,8 @@ from tchannel.serializer.json import JsonSerializer
 
 @pytest.mark.parametrize('v1, v2', [
     (True, 'true'),
-    (False, 'false'),
-    ({}, '{}'),
     ({'a': 'd'}, '{"a": "d"}'),
     (2, '2'),
-    (None, 'null'),
     (['a'], '["a"]'),
 ])
 def test_header(v1, v2):
