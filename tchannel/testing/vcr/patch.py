@@ -71,9 +71,8 @@ class PatchedClientOperation(object):
     def send(self, arg1, arg2, arg3,
              headers=None,
              traceflag=None,
-             attempt_times=None,
-             ttl=None,
-             retry_delay=None):
+             retry_limit=None,
+             ttl=None):
         arg1, arg2, arg3 = map(maybe_stream, [arg1, arg2, arg3])
 
         endpoint = yield read_full(arg1)
@@ -93,7 +92,7 @@ class PatchedClientOperation(object):
             ],
         )
 
-        # TODO what to do with traceflag, attempt-times, ttl, and retry_delay
+        # TODO what to do with traceflag, attempt-times, ttl
         # TODO catch protocol errors
 
         with force_reset():

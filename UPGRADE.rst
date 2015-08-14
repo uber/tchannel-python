@@ -4,6 +4,16 @@ Version Upgrade Guide
 Migrating to a version of TChannel with breaking changes? This guide documents
 what broke and how to safely migrate to newer versions.
 
+From 0.15 to 0.16
+-----------------
+
+- Remove ``retry_delay`` option from ``tchannel.tornado.peer.PeerClientOperation.send``
+  method.
+
+  Before: ``tchannel.request.send(retry_delay=300)``
+
+  After: no more ``retry_delay`` in  ``tchannel.request.send()``
+
 From 0.14 to 0.15
 -----------------
 

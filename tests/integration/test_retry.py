@@ -21,6 +21,8 @@
 from __future__ import absolute_import
 
 import pytest
+from tchannel.event import EventHook
+from tchannel.tornado.peer import PeerState
 import tornado
 import tornado.gen
 from mock import patch
@@ -59,10 +61,17 @@ def server(endpoint):
     return tchannel_server
 
 
+class FakeState(PeerState):
+    def score(self):
+        return 100
+
+
 def chain(number_of_peers, endpoint):
     tchannel = TChannel(name='test')
     for i in range(number_of_peers):
-        tchannel.peers.get(server(endpoint).hostport)
+        p = tchannel.peers.get(server(endpoint).hostport)
+        # Gaurantee error servers have score in order to pick first.
+        p.state = FakeState()
 
     return tchannel
 
@@ -88,8 +97,7 @@ def test_retry_timeout():
                     're': retry.CONNECTION_ERROR_AND_TIMEOUT
                 },
                 ttl=0.005,
-                attempt_times=3,
-                retry_delay=0.01,
+                retry_limit=2,
             )
 
 
@@ -101,7 +109,8 @@ def test_retry_on_error_fail():
     with (
         patch(
             'tchannel.tornado.Request.should_retry_on_error',
-            autospec=True)
+            autospec=True
+        )
     ) as mock_should_retry_on_error:
         mock_should_retry_on_error.return_value = True
         with pytest.raises(ProtocolError) as e:
@@ -115,21 +124,34 @@ def test_retry_on_error_fail():
                     're': retry.CONNECTION_ERROR_AND_TIMEOUT
                 },
                 ttl=0.02,
-                attempt_times=3,
-                retry_delay=0.01,
+                retry_limit=2,
             )
 
         assert mock_should_retry_on_error.called
-        assert mock_should_retry_on_error.call_count == (
-            retry.DEFAULT_RETRY_LIMIT)
+        assert mock_should_retry_on_error.call_count == 3
         assert e.value.code == ErrorCode.busy
+
+
+class TestHook(EventHook):
+    def __init__(self):
+        self.received_response = 0
+        self.received_error = 0
+
+    def after_receive_response(self, request, response):
+        self.received_response += 1
+        assert request.id == response.id
+
+    def after_receive_error(self, request, error):
+        self.received_error += 1
+        assert request.id == error.id
 
 
 @pytest.mark.gen_test
 def test_retry_on_error_success():
-
     endpoint = b'tchannelretrytest'
     tchannel = chain(2, endpoint)
+    hook = TestHook()
+    tchannel.hooks.register(hook)
 
     tchannel_success = TChannel(name='test', hostport='localhost:0')
     tchannel_success.register(endpoint, 'raw', handler_success)
@@ -151,15 +173,17 @@ def test_retry_on_error_success():
             headers={
                 're': retry.CONNECTION_ERROR_AND_TIMEOUT,
             },
-            ttl=0.01,
-            attempt_times=3,
-            retry_delay=0.01,
+            ttl=1,
+            retry_limit=2,
         )
 
         header = yield response.get_header()
         body = yield response.get_body()
         assert body == "success"
         assert header == ""
+
+    assert hook.received_response == 1
+    assert hook.received_error == 2
 
 
 @pytest.mark.gen_test
