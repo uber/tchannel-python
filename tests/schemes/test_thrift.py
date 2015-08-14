@@ -1001,16 +1001,14 @@ def test_second_service_second_test_string():
     @gen.coroutine
     def secondtestString(request):
 
-        # TODO - is this really how our server thrift story looks?
-        ThriftTestService = client_for(
+        service = thrift_request_builder(
             service='server',
-            service_module=ThriftTest
-        )
-        service = ThriftTestService(
-            tchannel=server,
+            thrift_module=ThriftTest,
             hostport=server.hostport,
         )
-        resp = yield service.testString(request.body.thing)
+        resp = yield tchannel.thrift(
+            service.testString(request.body.thing),
+        )
 
         raise gen.Return(resp)
 
