@@ -14,7 +14,7 @@ class Response(object):
 
     def __init__(self, body=None, headers=None, transport=None):
         self.body = body
-        self.headers = headers
+        self.headers = headers or {}
         self.transport = transport
 
 

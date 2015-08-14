@@ -1,4 +1,4 @@
-from tornado import gen, ioloop
+from tornado import ioloop
 
 from tchannel import TChannel, Response
 
@@ -7,7 +7,6 @@ tchannel = TChannel('json-server', hostport='localhost:54496')
 
 
 @tchannel.json.register
-@gen.coroutine
 def endpoint(request):
 
     assert request.headers == {'req': 'header'}

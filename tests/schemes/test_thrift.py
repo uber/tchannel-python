@@ -56,7 +56,7 @@ def test_void():
 
 
 @pytest.mark.gen_test
-@pytest.mark.callz
+@pytest.mark.call
 def test_void_with_headers():
 
     # Given this test server:
@@ -65,6 +65,7 @@ def test_void_with_headers():
 
     @server.thrift.register(ThriftTest)
     def testVoid(request):
+        assert request.headers == {'req': 'header'}
         return Response(headers={'resp': 'header'})
 
     server.listen()
@@ -79,7 +80,10 @@ def test_void_with_headers():
         hostport=server.hostport,
     )
 
-    resp = yield tchannel.thrift(service.testVoid())
+    resp = yield tchannel.thrift(
+        service.testVoid(),
+        headers={'req': 'header'},
+    )
 
     assert resp.headers == {
         'resp': 'header'

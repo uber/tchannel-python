@@ -25,8 +25,12 @@ from collections import namedtuple
 
 from tornado import gen
 
+from tchannel import Response
 from tchannel.tornado.request import TransportMetadata
-from tchannel.tornado.response import StatusCode
+from tchannel.tornado.response import (
+    StatusCode,
+    Response as DeprecatedResponse,
+)
 
 from ..serializer.thrift import ThriftSerializer
 
@@ -83,13 +87,47 @@ def register(dispatcher, service_module, handler, method=None, service=None):
     args_type = getattr(service_module, method + '_args')
     result_type = getattr(service_module, method + '_result')
 
+    # only wrap the handler if we arent using the new server api
+    if not dispatcher._handler_returns_response:
+        handler = build_handler(result_type, handler)
+    else:
+        handler = new_build_handler(result_type, handler)
+
     dispatcher.register(
         endpoint,
-        build_handler(result_type, handler),
+        handler,
         ThriftSerializer(args_type),
         ThriftSerializer(result_type)
     )
     return handler
+
+
+def new_build_handler(result_type, f):
+    @gen.coroutine
+    def handler(request):
+        result = ThriftResponse(result_type())
+        response = Response()
+
+        try:
+            response = yield gen.maybe_future(f(request))
+
+            # if no return then use empty response
+            if response is None:
+                response = Response()
+
+            # if not a response, then it's just the body, create resp
+            if not isinstance(response, Response):
+                response = Response(response)
+        except Exception:
+            result.write_exc_info(sys.exc_info())
+        else:
+            result.write_result(response.body)
+
+        response.body = result.result
+
+        raise gen.Return(response)
+    return handler
+
 
 
 def build_handler(result_type, f):
@@ -156,6 +194,7 @@ class ThriftRequest(namedtuple('_Request', 'headers args transport')):
                 transport=transport_metadata,
             )
         )
+
 
 
 class ThriftResponse(object):

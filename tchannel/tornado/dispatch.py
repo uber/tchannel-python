@@ -27,7 +27,8 @@ import tornado
 import tornado.gen
 from tornado import gen
 
-from tchannel import Request, Response
+from tchannel import Request, Response, schemes
+from tchannel.thrift.server import ThriftRequest, ThriftResponse
 
 from ..errors import InvalidEndpointError
 from ..errors import TChannelError
@@ -170,8 +171,8 @@ class RequestDispatcher(object):
 
                 # convert deprecated req to new top-level req
                 b = yield request.get_body()
-                h = yield request.get_header()
-                new_req = Request(b, h)
+                he = yield request.get_header()
+                new_req = Request(b, he)
 
                 # get new top-level resp from controller
                 new_resp = yield gen.maybe_future(
@@ -187,8 +188,7 @@ class RequestDispatcher(object):
                     new_resp = Response(new_resp)
 
                 # assign resp values to dep response
-                if new_resp.headers is not None:
-                    response.write_header(new_resp.headers)
+                response.write_header(new_resp.headers)
 
                 if new_resp.body is not None:
                     response.write_body(new_resp.body)
