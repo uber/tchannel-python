@@ -9,7 +9,7 @@ from tchannel.response import ResponseTransportHeaders
 
 
 @pytest.mark.gen_test
-@pytest.mark.callz
+@pytest.mark.call
 def test_call_should_get_response():
 
     # Given this test server:
@@ -51,7 +51,7 @@ def test_call_should_get_response():
 
 
 @pytest.mark.gen_test
-@pytest.mark.callz
+@pytest.mark.call
 def test_register_should_work_with_different_endpoint():
 
     # Given this test server:
@@ -78,7 +78,7 @@ def test_register_should_work_with_different_endpoint():
 
 
 @pytest.mark.gen_test
-@pytest.mark.callz
+@pytest.mark.call
 @pytest.mark.xfail  # TODO register programmatically is broke
 def test_register_should_work_programatically():
 

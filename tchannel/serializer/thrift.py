@@ -26,10 +26,12 @@ class ThriftSerializer(object):
         self.deserialize_type = deserialize_type
 
     def serialize_header(self, headers):
+        headers = headers or {}
         result = self._headers_rw.write(headers, io.BytesIO()).getvalue()
         return result
 
     def deserialize_header(self, headers):
+        headers = headers or {}
         headers = io.BytesIO(headers)
         headers = self._headers_rw.read(headers)
         result = dict(headers)

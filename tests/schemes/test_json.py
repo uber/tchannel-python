@@ -10,7 +10,7 @@ from tchannel.response import ResponseTransportHeaders
 
 
 @pytest.mark.gen_test
-@pytest.mark.callz
+@pytest.mark.call
 def test_call_should_get_response():
 
     # Given this test server:
@@ -51,7 +51,7 @@ def test_call_should_get_response():
 
 
 @pytest.mark.gen_test
-@pytest.mark.callz
+@pytest.mark.call
 def test_endpoint_can_return_just_body():
 
     # Given this test server:

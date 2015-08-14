@@ -23,7 +23,7 @@ def test_should_have_default_schemes():
 
 
 @pytest.mark.gen_test
-@pytest.mark.callz
+@pytest.mark.call
 def test_call_should_get_response():
 
     # Given this test server:
@@ -66,7 +66,7 @@ def test_call_should_get_response():
 
 
 @pytest.mark.gen_test
-@pytest.mark.callz
+@pytest.mark.call
 def test_headers_and_body_should_be_optional():
 
     # Given this test server:
@@ -99,7 +99,7 @@ def test_headers_and_body_should_be_optional():
 
 
 @pytest.mark.gen_test
-@pytest.mark.callz
+@pytest.mark.call
 def test_endpoint_can_return_just_body():
 
     # Given this test server:
@@ -132,7 +132,7 @@ def test_endpoint_can_return_just_body():
 # TODO - verify register programmatic use cases
 
 @pytest.mark.gen_test
-@pytest.mark.callz
+@pytest.mark.call
 def test_endpoint_can_be_called_as_a_pure_func():
 
     # Given this test server:

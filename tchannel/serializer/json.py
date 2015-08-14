@@ -9,10 +9,12 @@ class JsonSerializer(object):
     name = JSON
 
     def deserialize_header(self, obj):
+        obj = obj or {}
         if obj:
             return json.loads(obj)
 
     def serialize_header(self, obj):
+        obj = obj or {}
         if obj:
             return json.dumps(obj)
 
