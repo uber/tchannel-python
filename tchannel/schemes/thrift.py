@@ -81,3 +81,8 @@ class ThriftArgScheme(object):
         else:
             response.body = None
             raise gen.Return(response)
+
+    def register(self, thrift_module, endpoint=None, **kwargs):
+
+        import ipdb
+        ipdb.set_trace()
