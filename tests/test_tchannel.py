@@ -23,6 +23,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import subprocess
+import textwrap
+
+import psutil
 import pytest
 import tornado
 
@@ -90,3 +94,30 @@ def test_call_should_get_response():
     assert isinstance(resp.transport, response.ResponseTransportHeaders)
     assert resp.transport.scheme == schemes.RAW
     assert resp.transport.failure_domain is None
+
+
+def test_uninitialized_tchannel_is_fork_safe_by_not_scheduling_any_futures():
+    process = psutil.Popen(
+        [
+            'python',
+            '-c',
+            textwrap.dedent(
+                """
+                import os
+                from tchannel import TChannel
+                t = TChannel("app")
+                os.fork()
+                t.listen()
+                """
+            ),
+        ],
+        stderr=subprocess.PIPE,
+    )
+
+    try:
+        stderr = process.stderr.read()
+        ret = process.wait()
+        assert ret == 0 and not stderr, stderr
+    finally:
+        if process.is_running():
+            process.kill()
