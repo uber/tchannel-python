@@ -60,6 +60,8 @@ State = enum(
 class TChannel(object):
     """Manages inbound and outbound connections to various hosts."""
 
+    # TODO deprecate in favor of top-level tchannel.TChannel
+
     FALLBACK = RequestDispatcher.FALLBACK
 
     def __init__(self, name, hostport=None, process_name=None,

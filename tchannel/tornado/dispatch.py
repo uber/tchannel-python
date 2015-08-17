@@ -28,7 +28,9 @@ import tornado
 import tornado.gen
 from tornado import gen
 
-from tchannel import Request, Response
+from tchannel import transport
+from tchannel.request import Request, TransportHeaders
+from tchannel.response import response_from_mixed
 from ..errors import InvalidEndpointError
 from ..errors import TChannelError
 from ..event import EventType
@@ -164,27 +166,28 @@ class RequestDispatcher(object):
         connection.post_response(response)
 
         try:
-
             # New impl - the handler takes a request and returns a response
             if self._handler_returns_response:
 
                 # convert deprecated req to new top-level req
                 b = yield request.get_body()
                 he = yield request.get_header()
-                new_req = Request(b, he)
+                t = request.headers
+                t = transport.to_kwargs(t)
+                t = TransportHeaders(**t)
+                new_req = Request(
+                    body=b,
+                    headers=he,
+                    transport=t,
+                )
 
                 # get new top-level resp from controller
                 new_resp = yield gen.maybe_future(
                     handler.endpoint(new_req)
                 )
 
-                # if no return then use empty response
-                if new_resp is None:
-                    new_resp = Response()
-
-                # if not a response, then it's just the body, create resp
-                if not isinstance(new_resp, Response):
-                    new_resp = Response(new_resp)
+                # instantiate a tchannel.Response
+                new_resp = response_from_mixed(new_resp)
 
                 # assign resp values to dep response
                 response.write_header(new_resp.headers)

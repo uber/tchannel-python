@@ -25,7 +25,7 @@ from collections import namedtuple
 
 from tornado import gen
 
-from tchannel import Response
+from tchannel.response import Response, response_from_mixed
 from tchannel.tornado.request import TransportMetadata
 from tchannel.tornado.response import StatusCode
 
@@ -113,15 +113,7 @@ def build_handler(result_type, f):
         except Exception:
             result.write_exc_info(sys.exc_info())
         else:
-            # TODO dont duplicate in dispatcher
-            # if no return then use empty response
-            if response is None:
-                response = Response()
-
-            # if not a response, then it's just the body, create resp
-            if not isinstance(response, Response):
-                response = Response(response)
-
+            response = response_from_mixed(response)
             result.write_result(response.body)
 
         response.body = result.result
