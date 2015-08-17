@@ -84,11 +84,12 @@ def register(dispatcher, service_module, handler, method=None, service=None):
     args_type = getattr(service_module, method + '_args')
     result_type = getattr(service_module, method + '_result')
 
-    # only wrap the handler if we arent using the new server api
-    if not dispatcher._handler_returns_response:
+    # if the dispatcher is set to deal with handlers that
+    # return responses, then use new api, else use deprecated
+    if dispatcher._handler_returns_response:
         handler = build_handler(result_type, handler)
     else:
-        handler = new_build_handler(result_type, handler)
+        handler = deprecated_build_handler(result_type, handler)
 
     dispatcher.register(
         endpoint,
@@ -99,7 +100,7 @@ def register(dispatcher, service_module, handler, method=None, service=None):
     return handler
 
 
-def new_build_handler(result_type, f):
+def build_handler(result_type, f):
     @gen.coroutine
     def handler(request):
 
@@ -129,7 +130,7 @@ def new_build_handler(result_type, f):
     return handler
 
 
-def build_handler(result_type, f):
+def deprecated_build_handler(result_type, f):
     @gen.coroutine
     def handler(request, response, tchannel):
         req = yield ThriftRequest._from_raw_request(request)
