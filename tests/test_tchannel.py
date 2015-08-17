@@ -96,7 +96,9 @@ def test_call_should_get_response():
     assert resp.transport.failure_domain is None
 
 
-def test_uninitialized_tchannel_is_fork_safe_by_not_scheduling_any_futures():
+def test_uninitialized_tchannel_is_fork_safe():
+    """TChannel('foo') should not schedule any work on the io loop."""
+
     process = psutil.Popen(
         [
             'python',
