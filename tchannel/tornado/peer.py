@@ -83,7 +83,11 @@ class PeerGroup(object):
         # Notified when a reset is performed. This allows multiple coroutines
         # to block on the same reset.
         self._resetting = False
-        self._reset_condition = Condition()
+
+        # We'll create a Condition here later. We want to avoid it right now
+        # because it has a side-effect of scheduling some dummy work on the
+        # ioloop, which prevents us from forking (if you're into that).
+        self._reset_condition = None
 
     def __str__(self):
         return "<PeerGroup peers=%s>" % str(self._peers)
@@ -106,6 +110,9 @@ class PeerGroup(object):
             raise gen.Return(None)
 
         self._resetting = True
+        if self._reset_condition is None:
+            self._reset_condition = Condition()
+
         try:
             for peer in self._peers.values():
                 peer.close()
