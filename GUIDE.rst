@@ -116,12 +116,12 @@ something like this:
 
 
     @app.register(KeyValue)
-    def getValue(request, response, tchannel):
+    def getValue(request, response):
         pass
 
 
     @app.register(KeyValue)
-    def setValue(request, response, tchannel):
+    def setValue(request, response):
         pass
 
 
@@ -182,7 +182,7 @@ our endpoints will manipulate:
 
 
     @app.register(KeyValue)
-    def getValue(request, response, tchannel):
+    def getValue(request, response):
         key = request.args.key
         value = values.get(key)
 
@@ -193,7 +193,7 @@ our endpoints will manipulate:
 
 
     @app.register(KeyValue)
-    def setValue(request, response, tchannel):
+    def setValue(request, response):
         key = request.args.key
         value = request.args.value
         values[key] = value
@@ -211,7 +211,7 @@ define our handlers as coroutines and yield to IO operations:
 
     @app.register(KeyValue)
     @gen.coroutine
-    def setValue(request, response, tchannel):
+    def setValue(request, response):
         key = request.args.key
         value = request.args.value
 

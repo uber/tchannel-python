@@ -17,7 +17,7 @@ From 0.15 to 0.16
       from tchannel import TChannel
 
       @tchannel.register('endpoint', 'json')
-      def endpoint(request, response, proxy):
+      def endpoint(request, response):
           response.write({'resp': 'body'})
 
 
