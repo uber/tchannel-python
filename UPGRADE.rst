@@ -39,6 +39,27 @@ From 0.15 to 0.16
 
   After: no more ``retry_delay`` in  ``tchannel.tornado.TChannel.request.send()``
 
+- If you were catching ``ProtocolError`` you will need to catch a more specific
+  type, such as ``TimeoutError``, ``BadRequestError``, ``NetworkError``,
+  ``UnhealthyError``, or ``UnexpectedError``.
+
+- If you were catching ``AdvertiseError``, it has been replaced by
+  ``TimeoutError``.
+
+- If you were catching ``BadRequest``, it may have been masking checksum errors
+  and fatal streaming errors. These are now raised as ``FatalProtocolError``,
+  but in practive should not need to be handled when interacting with a
+  well-behaved TChannel implementation.
+
+- ``TChannelApplicationError`` was unused and removed.
+
+- Three error types have been introduced to simplify retry handling:
+  ``UnretryableError`` (for requests should never be retried),
+  ``AlwaysRetryableError`` (for requests that are always safe to retry), and
+  ``PossiblyRetryableError`` (for requests that are safe to retry on idempotent
+  endpoints).
+
+
 From 0.14 to 0.15
 -----------------
 

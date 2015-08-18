@@ -19,6 +19,10 @@ Changelog
   the new server API. See the upgrade guide for details.
 - **BREAKING** - remove ``retry_delay`` option in the ``tchannel.tornado.send``
   method.
+- **BREAKING** - error types have been reworked significantly. In particular,
+  the all-encompassing ``ProtocolError`` has been replaced with more
+  granualar/actionable exceptions. See the upgrade guide for more info.
+
 
 
 0.15.2 (2015-08-07)
