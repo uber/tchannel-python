@@ -34,7 +34,7 @@ values = {'hello': 'world'}
 
 
 @app.register(KeyValue)
-def getValue(request, response, tchannel):
+def getValue(request, response):
     key = request.args.key
     value = values.get(key)
 
@@ -45,7 +45,7 @@ def getValue(request, response, tchannel):
 
 
 @app.register(KeyValue)
-def setValue(request, response, tchannel):
+def setValue(request, response):
     key = request.args.key
     value = request.args.value
     values[key] = value
