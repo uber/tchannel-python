@@ -20,7 +20,7 @@ Changelog
 - **BREAKING** - remove ``retry_delay`` option in the ``tchannel.tornado.send``
   method.
 - **BREAKING** - remove third arugment ``proxy`` from the server handler interface.
-- **BREAKING** - make the zipkintracehook not default registered.
+- **BREAKING** - ``ZipkinTraceHook`` is not longer registered by default.
 
 
 0.15.2 (2015-08-07)
