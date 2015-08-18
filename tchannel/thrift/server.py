@@ -44,7 +44,7 @@ def register(dispatcher, service_module, handler, method=None, service=None):
         import tchannel.thrift
         import HelloWorld
 
-        def hello(request, response, tchannel):
+        def hello(request, response):
             name = request.args.name
             response.write_result("Hello, %s" % name)
 
@@ -124,7 +124,7 @@ def build_handler(result_type, f):
 
 def deprecated_build_handler(result_type, f):
     @gen.coroutine
-    def handler(request, response, tchannel):
+    def handler(request, response):
         req = yield ThriftRequest._from_raw_request(request)
         res = ThriftResponse(result_type())
         try:
@@ -133,7 +133,7 @@ def deprecated_build_handler(result_type, f):
             # function to return. This would allow for use cases where the
             # implementation returns the result early but still does some work
             # after that.
-            result = yield gen.maybe_future(f(req, res, tchannel))
+            result = yield gen.maybe_future(f(req, res))
         except Exception:
             res.write_exc_info(sys.exc_info())
         else:

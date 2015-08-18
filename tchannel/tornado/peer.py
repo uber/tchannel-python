@@ -453,6 +453,9 @@ class PeerClientOperation(object):
         self.tchannel = peer_group.tchannel
         self.service = service
         self.parent_tracing = parent_tracing
+        if self.tchannel.get_context():
+            self.parent_tracing = (parent_tracing or
+                                   self.tchannel.get_context().parent_tracing)
 
         # TODO the term headers are reserved for application headers,
         # these are transport headers,

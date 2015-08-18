@@ -33,6 +33,7 @@ import tornado.tcpserver
 from tornado.netutil import bind_sockets
 
 from . import hyperbahn
+from ..context import get_local
 from ..enum import enum
 from ..errors import AlreadyListeningError
 from ..event import EventEmitter
@@ -121,15 +122,21 @@ class TChannel(object):
         self.event_emitter = EventEmitter()
         self.hooks = EventRegistrar(self.event_emitter)
 
-        from ..zipkin.zipkin_trace import ZipkinTraceHook
-        self.hooks.register(ZipkinTraceHook(tchannel=self))
-
         if known_peers:
             for peer_hostport in known_peers:
                 self.peers.add(peer_hostport)
 
         # server created from calling listen()
         self._server = None
+
+        self._local = get_local()
+
+    def get_context(self):
+        """
+
+        :return: stack context in current running aysnc thread.
+        """
+        return self._local.context
 
     @property
     def trace(self):
@@ -333,7 +340,7 @@ class TChannel(object):
             app = TChannel(name='bar')
 
             @app.register("hello", "json")
-            def hello_handler(request, response, tchannel):
+            def hello_handler(request, response):
                 params = yield request.get_body()
 
         Or as a function:
@@ -379,7 +386,6 @@ class TChannel(object):
             else:
                 scheme = "raw"
         scheme = scheme.lower()
-
         if scheme == 'thrift':
             decorator = partial(self._register_thrift, endpoint, **kwargs)
         else:
