@@ -38,7 +38,7 @@ from tchannel.tornado.stream import InMemStream
 
 
 @tornado.gen.coroutine
-def handler_error(request, response, proxy):
+def handler_error(request, response):
     yield tornado.gen.sleep(0.01)
     response.connection.send_error(
         ErrorCode.busy,
@@ -50,7 +50,7 @@ def handler_error(request, response, proxy):
 
 
 @tornado.gen.coroutine
-def handler_success(request, response, proxy):
+def handler_success(request, response):
     response.set_body_s(InMemStream("success"))
 
 

@@ -54,7 +54,7 @@ def connection():
 
 @pytest.mark.gen_test
 def test_handle_call(dispatcher, req, connection):
-    def handler(req, response, proxy):
+    def handler(req, response):
         response.write_body('bar')
 
     dispatcher.register('foo', handler)
@@ -73,7 +73,7 @@ def test_default_fallback_behavior(dispatcher, req, connection):
 
 @pytest.mark.gen_test
 def test_custom_fallback_behavior(dispatcher, req, connection):
-    def handler(req, response, proxy):
+    def handler(req, response):
         response.write_body('bar')
 
     dispatcher.register(dispatcher.FALLBACK, handler)
@@ -85,7 +85,7 @@ def test_custom_fallback_behavior(dispatcher, req, connection):
 @pytest.mark.gen_test
 def test_uncaught_exceptions_fire_event_hook(dispatcher, req, connection):
 
-    def handler(req, response, proxy):
+    def handler(req, response):
         raise Exception()
 
     dispatcher.register('foo', handler)

@@ -26,6 +26,7 @@ from mock import patch
 from tchannel import errors
 from tchannel.thrift import client_for as thrift_client_for
 from tchannel.tornado import TChannel
+from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
 
 
 def mk_client(thrift_service, port, trace=False):
@@ -82,7 +83,7 @@ def test_thrift_exception(mock_server, thrift_service):
         'thrift',
         method='getItem',
     ).and_raise(thrift_service.ItemDoesNotExist("stahp"))
-
+    mock_server.tchannel.hooks.register(ZipkinTraceHook(tchannel=mock_server))
     client = mk_client(thrift_service, mock_server.port, trace=True)
 
     with patch(
@@ -105,7 +106,7 @@ def test_false_result(thrift_service):
     app = TChannel(name='app')
 
     @app.register(thrift_service)
-    def healthy(request, response, body):
+    def healthy(request, response):
         return False
 
     app.listen()
