@@ -26,7 +26,7 @@ from __future__ import unicode_literals
 import pytest
 
 from tchannel import TChannel, Response, schemes
-from tchannel.response import ResponseTransportHeaders
+from tchannel.response import TransportHeaders
 
 
 @pytest.mark.gen_test
@@ -65,7 +65,7 @@ def test_call_should_get_response():
     assert resp.body == {'resp': 'body'}
 
     # verify response transport headers
-    assert isinstance(resp.transport, ResponseTransportHeaders)
+    assert isinstance(resp.transport, TransportHeaders)
     assert resp.transport.scheme == schemes.JSON
     assert resp.transport.failure_domain is None
 

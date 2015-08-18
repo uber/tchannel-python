@@ -330,7 +330,7 @@ class TChannel(object):
 
         .. code-block:: python
 
-            app = TChannel(name='foo')
+            app = TChannel(name='bar')
 
             @app.register("hello", "json")
             def hello_handler(request, response, tchannel):

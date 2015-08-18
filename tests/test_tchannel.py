@@ -26,7 +26,7 @@ from __future__ import unicode_literals
 import pytest
 
 from tchannel import TChannel, Request, Response, schemes
-from tchannel.response import ResponseTransportHeaders
+from tchannel.response import TransportHeaders
 
 # TODO - need integration tests for timeout and retries, use testing.vcr
 
@@ -80,7 +80,7 @@ def test_call_should_get_response():
     assert resp.body == 'resp body'
 
     # verify response transport headers
-    assert isinstance(resp.transport, ResponseTransportHeaders)
+    assert isinstance(resp.transport, TransportHeaders)
     assert resp.transport.scheme == schemes.RAW
     assert resp.transport.failure_domain is None
 

@@ -89,21 +89,9 @@ class RawArgScheme(object):
             handler = endpoint
             endpoint = None
 
-        # args, eg - server.raw.register('foo')
+        # args, eg - server.raw.register('bar')
         else:
             handler = None
-
-        # server.raw.register(endpoint="foo", handler=bar)
-
-        # @server.raw.register
-        # def bar():
-        # => server.raw.register(handler)
-
-        # @servre.raw.register(endpoint="foo")
-        # def bar():
-        #  pass
-
-        # server.raw.register("foo")(bar)
 
         return self._tchannel.register(
             scheme=self.NAME,

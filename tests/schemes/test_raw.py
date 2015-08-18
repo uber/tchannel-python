@@ -25,7 +25,7 @@ from __future__ import (
 import pytest
 
 from tchannel import TChannel, Request, Response, schemes
-from tchannel.response import ResponseTransportHeaders
+from tchannel.response import TransportHeaders
 
 
 @pytest.mark.gen_test
@@ -65,7 +65,7 @@ def test_call_should_get_response():
     assert resp.body == 'resp body'
 
     # verify response transport headers
-    assert isinstance(resp.transport, ResponseTransportHeaders)
+    assert isinstance(resp.transport, TransportHeaders)
     assert resp.transport.scheme == schemes.RAW
     assert resp.transport.failure_domain is None
 
@@ -91,34 +91,6 @@ def test_register_should_work_with_different_endpoint():
     resp = yield tchannel.raw(
         service='server',
         endpoint='foo',
-        hostport=server.hostport,
-    )
-
-    assert resp.body == 'resp body'
-
-
-@pytest.mark.gen_test
-@pytest.mark.call
-@pytest.mark.xfail  # TODO register programmatically is broke
-def test_register_should_work_programatically():
-
-    # Given this test server:
-
-    server = TChannel(name='server')
-
-    def endpoint(request):
-        return 'resp body'
-
-    server.raw.register('bar', handler=endpoint)
-    server.listen()
-
-    # Make a call:
-
-    tchannel = TChannel(name='client')
-
-    resp = yield tchannel.raw(
-        service='server',
-        endpoint='bar',
         hostport=server.hostport,
     )
 

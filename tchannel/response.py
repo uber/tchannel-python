@@ -44,7 +44,7 @@ class Response(object):
         self.transport = transport
 
 
-class ResponseTransportHeaders(object):
+class TransportHeaders(object):
     """Response-specific Transport Headers"""
 
     # TODO implement __repr__

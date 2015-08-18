@@ -26,7 +26,7 @@ from tornado import gen
 
 from . import schemes, transport, retry
 from .glossary import DEFAULT_TIMEOUT
-from .response import Response, ResponseTransportHeaders
+from .response import Response, TransportHeaders
 from .tornado import TChannel as DeprecatedTChannel
 from .tornado.dispatch import RequestDispatcher as DeprecatedDispatcher
 
@@ -142,9 +142,12 @@ class TChannel(object):
         body = yield response.get_body()
         headers = yield response.get_header()
         t = transport.to_kwargs(response.headers)
-        t = ResponseTransportHeaders(**t)
-
-        result = Response(body, headers, t)
+        t = TransportHeaders(**t)
+        result = Response(
+            body=body,
+            headers=headers,
+            transport=t
+        )
 
         raise gen.Return(result)
 

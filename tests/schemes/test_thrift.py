@@ -31,7 +31,7 @@ from tchannel import (
     TChannel, Request, Response,
     thrift_request_builder, schemes,
 )
-from tchannel.response import ResponseTransportHeaders
+from tchannel.response import TransportHeaders
 from tchannel.errors import OneWayNotSupportedError
 from tchannel.errors import ProtocolError
 from tchannel.errors import ValueExpectedError
@@ -1096,7 +1096,7 @@ def test_call_response_should_contain_transport_headers():
     assert resp.body == 'hi'
 
     # verify response transport headers
-    assert isinstance(resp.transport, ResponseTransportHeaders)
+    assert isinstance(resp.transport, TransportHeaders)
     assert resp.transport.scheme == schemes.THRIFT
     assert resp.transport.failure_domain is None
 
