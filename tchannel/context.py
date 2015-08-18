@@ -29,16 +29,18 @@ class TChannelLocal(threading.local):
         self.context = None
 
 _LOCAL = TChannelLocal()
-_LOCAL.context = None
 
 
-class Context(object):
-    """Stack context for each TChannel instance."""
+class TChannelContext(object):
+    """TChannelContext is used to save necessary context information related
+    to current running async thread.
+    """
 
     __slots__ = ('parent_tracing', '_old_context',)
 
-    def __init__(self):
-        self.parent_tracing = None
+    def __init__(self, parent_tracing=None):
+        self.parent_tracing = parent_tracing
+        self._old_context = None
 
     def __enter__(self):
         self._old_context = _LOCAL.context
@@ -48,5 +50,9 @@ class Context(object):
         _LOCAL.context = self._old_context
 
 
-def get_local():
-    return _LOCAL
+def get_current_context():
+    """
+
+    :return: stack context in current running aysnc thread.
+    """
+    return _LOCAL.context

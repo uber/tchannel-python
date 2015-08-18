@@ -34,7 +34,7 @@ from tchannel.request import Request
 from tchannel.request import TransportHeaders
 from tchannel.response import response_from_mixed
 
-from ..context import Context
+from ..context import TChannelContext
 from ..errors import InvalidChecksumError
 from ..errors import InvalidEndpointError
 from ..errors import StreamingError
@@ -168,7 +168,6 @@ class RequestDispatcher(object):
         connection.post_response(response)
 
         try:
-            _context = Context()
             # New impl - the handler takes a request and returns a response
             if self._handler_returns_response:
 
@@ -185,8 +184,7 @@ class RequestDispatcher(object):
                 )
 
                 # get new top-level resp from controller
-                with StackContext(lambda: _context):
-                    tchannel.get_context().parent_tracing = request.tracing
+                with StackContext(lambda: TChannelContext(request.tracing)):
                     f = handler.endpoint(new_req)
 
                 new_resp = yield gen.maybe_future(f)
@@ -202,8 +200,7 @@ class RequestDispatcher(object):
 
             # Dep impl - the handler is provided with a req & resp writer
             else:
-                with StackContext(lambda: _context):
-                    tchannel.get_context().parent_tracing = request.tracing
+                with StackContext(lambda: TChannelContext(request.tracing)):
                     f = handler.endpoint(request, response)
 
                 yield gen.maybe_future(f)

@@ -21,12 +21,10 @@
 from __future__ import absolute_import
 
 import pytest
-from mock import patch
 
 from tchannel import errors
 from tchannel.thrift import client_for as thrift_client_for
 from tchannel.tornado import TChannel
-from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
 
 
 def mk_client(thrift_service, port, trace=False):
@@ -67,13 +65,7 @@ def test_protocol_error(mock_server, thrift_service):
 
     client = mk_client(thrift_service, mock_server.port, trace=False)
     with pytest.raises(errors.ProtocolError):
-        with patch(
-            'tchannel.zipkin.tracers.TChannelZipkinTracer.record',
-            autospec=True,
-        ) as mock_trace_record:
-            yield client.getItem("foo")
-
-    assert not mock_trace_record.called
+        yield client.getItem("foo")
 
 
 @pytest.mark.gen_test
@@ -83,19 +75,13 @@ def test_thrift_exception(mock_server, thrift_service):
         'thrift',
         method='getItem',
     ).and_raise(thrift_service.ItemDoesNotExist("stahp"))
-    mock_server.tchannel.hooks.register(ZipkinTraceHook(tchannel=mock_server))
-    client = mk_client(thrift_service, mock_server.port, trace=True)
+    client = mk_client(thrift_service, mock_server.port, trace=False)
 
-    with patch(
-        'tchannel.zipkin.tracers.TChannelZipkinTracer.record',
-        autospec=True,
-    ) as mock_trace_record:
-        with (
-            pytest.raises(thrift_service.ItemDoesNotExist)
-        ) as excinfo:
-            yield client.getItem("foo")
+    with (
+        pytest.raises(thrift_service.ItemDoesNotExist)
+    ) as excinfo:
+        yield client.getItem("foo")
 
-    assert mock_trace_record.called
     assert 'stahp' in str(excinfo.value)
 
 

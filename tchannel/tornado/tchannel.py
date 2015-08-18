@@ -33,7 +33,6 @@ import tornado.tcpserver
 from tornado.netutil import bind_sockets
 
 from . import hyperbahn
-from ..context import get_local
 from ..enum import enum
 from ..errors import AlreadyListeningError
 from ..event import EventEmitter
@@ -128,15 +127,6 @@ class TChannel(object):
 
         # server created from calling listen()
         self._server = None
-
-        self._local = get_local()
-
-    def get_context(self):
-        """
-
-        :return: stack context in current running aysnc thread.
-        """
-        return self._local.context
 
     @property
     def trace(self):

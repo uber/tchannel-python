@@ -27,7 +27,6 @@ from tornado import gen
 from . import schemes
 from . import transport
 from . import retry
-from .context import get_local
 from .glossary import DEFAULT_TIMEOUT
 from .response import Response, TransportHeaders
 from .tornado import TChannel as DeprecatedTChannel
@@ -59,15 +58,6 @@ class TChannel(object):
         self.raw = schemes.RawArgScheme(self)
         self.json = schemes.JsonArgScheme(self)
         self.thrift = schemes.ThriftArgScheme(self)
-
-        self._local = get_local()
-
-    def get_context(self):
-        """
-
-        :return: stack context in current running aysnc thread.
-        """
-        return self._local.context
 
     @gen.coroutine
     def call(self, scheme, service, arg1, arg2=None, arg3=None,

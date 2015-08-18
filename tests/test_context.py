@@ -25,6 +25,7 @@ from tornado import gen
 
 from tchannel import TChannel
 from tchannel import Response
+from tchannel.context import get_current_context
 
 
 @pytest.mark.gen_test
@@ -42,12 +43,12 @@ def test_context():
             body='req body',
             hostport=server.hostport,
         )
-        context[0] = server.get_context()
+        context[0] = get_current_context()
         raise gen.Return(Response('resp body', 'resp headers'))
 
     @server.raw.register
     def endpoint2(request):
-        context[1] = server.get_context()
+        context[1] = get_current_context()
         return Response('resp body', 'resp headers')
 
     server.listen()
