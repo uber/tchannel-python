@@ -22,26 +22,60 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals
 )
 
-from . import transport
+from . import schemes
 
 __all__ = ['Response']
 
 
 class Response(object):
+    """TChannel Response"""
 
-    # TODO add __slots__
     # TODO implement __repr__
 
-    def __init__(self, headers, body, transport):
-        self.headers = headers
+    __slots__ = (
+        'body',
+        'headers',
+        'transport',
+    )
+
+    def __init__(self, body=None, headers=None, transport=None):
         self.body = body
+        self.headers = headers
         self.transport = transport
 
 
-class ResponseTransportHeaders(transport.TransportHeaders):
+class TransportHeaders(object):
+    """Response-specific Transport Headers"""
 
-    # TODO add __slots__
     # TODO implement __repr__
 
-    """Response-specific Transport Headers"""
-    pass
+    __slots__ = (
+        'failure_domain',
+        'scheme',
+    )
+
+    def __init__(self,
+                 failure_domain=None,
+                 scheme=None,
+                 **kwargs):
+
+        if scheme is None:
+            scheme = schemes.RAW
+
+        self.failure_domain = failure_domain
+        self.scheme = scheme
+
+
+def response_from_mixed(mixed):
+    """Create Response from mixed input."""
+
+    # if none then give empty Response
+    if mixed is None:
+        return Response()
+
+    # if not Response, then treat like body
+    if not isinstance(mixed, Response):
+        return Response(mixed)
+
+    # it's already a Response
+    return mixed

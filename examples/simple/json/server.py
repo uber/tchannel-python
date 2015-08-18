@@ -18,38 +18,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from tornado import gen, ioloop
+from tornado import ioloop
 
-from tchannel import TChannel, schemes
-
-
-app = TChannel('json-server', hostport='localhost:54496')
+from tchannel import TChannel, Response
 
 
-@app.register('endpoint', schemes.JSON)
-@gen.coroutine
-def endpoint(request, response, proxy):
-
-    header = yield request.get_header()
-    body = yield request.get_body()
-
-    assert header == {
-        'req': 'header',
-    }
-    assert body == {
-        'req': 'body',
-    }
-
-    response.write_header({
-        'resp': 'header',
-    })
-    response.write_body({
-        'resp': 'body',
-    })
+tchannel = TChannel('json-server', hostport='localhost:54496')
 
 
-app.listen()
+@tchannel.json.register
+def endpoint(request):
 
-print app.hostport
+    assert request.headers == {'req': 'header'}
+    assert request.body == {'req': 'body'}
+
+    return Response({'resp': 'body'}, headers={'resp': 'header'})
+
+
+tchannel.listen()
+
+print tchannel.hostport
 
 ioloop.IOLoop.current().start()

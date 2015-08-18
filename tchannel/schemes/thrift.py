@@ -101,3 +101,11 @@ class ThriftArgScheme(object):
         else:
             response.body = None
             raise gen.Return(response)
+
+    def register(self, thrift_module, **kwargs):
+
+        return self._tchannel.register(
+            scheme=self.NAME,
+            endpoint=thrift_module,
+            **kwargs
+        )

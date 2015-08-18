@@ -24,11 +24,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import pytest
-import tornado
 
-from tchannel import TChannel
-from tchannel import response
-from tchannel import schemes
+from tchannel import TChannel, Response, schemes
+from tchannel.response import TransportHeaders
 
 
 @pytest.mark.gen_test
@@ -39,22 +37,13 @@ def test_call_should_get_response():
 
     server = TChannel(name='server')
 
-    @server.register('endpoint', schemes.JSON)
-    @tornado.gen.coroutine
-    def endpoint(request, response, proxy):
+    @server.json.register
+    def endpoint(request):
 
-        headers = yield request.get_header()
-        body = yield request.get_body()
+        assert request.headers == {'req': 'headers'}
+        assert request.body == {'req': 'body'}
 
-        assert headers == {'req': 'headers'}
-        assert body == {'req': 'body'}
-
-        response.write_header({
-            'resp': 'headers'
-        })
-        response.write_body({
-            'resp': 'body'
-        })
+        return Response({'resp': 'body'}, headers={'resp': 'headers'})
 
     server.listen()
 
@@ -71,11 +60,40 @@ def test_call_should_get_response():
     )
 
     # verify response
-    assert isinstance(resp, response.Response)
+    assert isinstance(resp, Response)
     assert resp.headers == {'resp': 'headers'}
     assert resp.body == {'resp': 'body'}
 
     # verify response transport headers
-    assert isinstance(resp.transport, response.ResponseTransportHeaders)
+    assert isinstance(resp.transport, TransportHeaders)
     assert resp.transport.scheme == schemes.JSON
     assert resp.transport.failure_domain is None
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_endpoint_can_return_just_body():
+
+    # Given this test server:
+
+    server = TChannel(name='server')
+
+    @server.json.register
+    def endpoint(request):
+        return {'resp': 'body'}
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    resp = yield tchannel.json(
+        service='server',
+        endpoint='endpoint',
+        hostport=server.hostport,
+    )
+
+    # verify response
+    assert isinstance(resp, Response)
+    assert resp.body == {'resp': 'body'}

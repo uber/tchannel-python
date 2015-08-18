@@ -22,8 +22,6 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals
 )
 
-from . import schemes
-
 CALLER_NAME = "cn"
 CLAIM_AT_START = "cas"
 CLAIM_AT_FINISH = "caf"
@@ -47,15 +45,3 @@ def to_kwargs(data):
     args['speculative_exe'] = data.get(SPECULATIVE_EXE)
 
     return args
-
-
-class TransportHeaders(object):
-    """Transport Headers common between Request & Response"""
-
-    def __init__(self, scheme=None, failure_domain=None, **kwargs):
-
-        if scheme is None:
-            scheme = schemes.DEFAULT
-
-        self.scheme = scheme
-        self.failure_domain = failure_domain
