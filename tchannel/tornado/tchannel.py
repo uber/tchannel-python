@@ -60,10 +60,12 @@ State = enum(
 class TChannel(object):
     """Manages inbound and outbound connections to various hosts."""
 
+    # TODO deprecate in favor of top-level tchannel.TChannel
+
     FALLBACK = RequestDispatcher.FALLBACK
 
     def __init__(self, name, hostport=None, process_name=None,
-                 known_peers=None, trace=False):
+                 known_peers=None, trace=False, dispatcher=None):
         """Build or re-use a TChannel.
 
         :param name:
@@ -89,7 +91,11 @@ class TChannel(object):
             a function that return true or false.
         """
         self._state = State.ready
-        self._handler = RequestDispatcher()
+
+        if not dispatcher:
+            self._handler = RequestDispatcher()
+        else:
+            self._handler = dispatcher
 
         self.peers = PeerGroup(self)
 
@@ -266,6 +272,7 @@ class TChannel(object):
         return False
 
     def receive_call(self, message, connection):
+
         if not self._handler:
             log.warn(
                 "Received %s but a handler has not been defined.", str(message)
@@ -323,7 +330,7 @@ class TChannel(object):
 
         .. code-block:: python
 
-            app = TChannel(name='foo')
+            app = TChannel(name='bar')
 
             @app.register("hello", "json")
             def hello_handler(request, response, tchannel):

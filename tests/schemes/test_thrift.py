@@ -27,16 +27,16 @@ import mock
 import pytest
 from tornado import gen
 
-from tchannel import TChannel
-from tchannel import response
-from tchannel import schemes
-from tchannel import thrift_request_builder
+from tchannel import (
+    TChannel, Request, Response,
+    thrift_request_builder, schemes,
+)
+from tchannel.response import TransportHeaders
 from tchannel.errors import OneWayNotSupportedError
 from tchannel.errors import ProtocolError
 from tchannel.errors import ValueExpectedError
 from tchannel.testing.data.generated.ThriftTest import SecondService
 from tchannel.testing.data.generated.ThriftTest import ThriftTest
-from tchannel.thrift import client_for
 
 
 # TODO - where possible, in req/res style test, create parameterized tests,
@@ -52,8 +52,8 @@ def test_void():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testVoid(request, response, proxy):
+    @server.thrift.register(ThriftTest)
+    def testVoid(request):
         pass
 
     server.listen()
@@ -82,9 +82,10 @@ def test_void_with_headers():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testVoid(request, response, proxy):
-        response.write_header('resp', 'header')
+    @server.thrift.register(ThriftTest)
+    def testVoid(request):
+        assert request.headers == {'req': 'header'}
+        return Response(headers={'resp': 'header'})
 
     server.listen()
 
@@ -98,7 +99,10 @@ def test_void_with_headers():
         hostport=server.hostport,
     )
 
-    resp = yield tchannel.thrift(service.testVoid())
+    resp = yield tchannel.thrift(
+        service.testVoid(),
+        headers={'req': 'header'},
+    )
 
     assert resp.headers == {
         'resp': 'header'
@@ -114,9 +118,9 @@ def test_string():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testString(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testString(request):
+        return request.body.thing
 
     server.listen()
 
@@ -146,9 +150,9 @@ def test_byte():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testByte(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testByte(request):
+        return request.body.thing
 
     server.listen()
 
@@ -178,9 +182,9 @@ def test_i32():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testI32(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testI32(request):
+        return request.body.thing
 
     server.listen()
 
@@ -217,9 +221,9 @@ def test_i64():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testI64(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testI64(request):
+        return request.body.thing
 
     server.listen()
 
@@ -249,9 +253,9 @@ def test_double():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testDouble(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testDouble(request):
+        return request.body.thing
 
     server.listen()
 
@@ -281,9 +285,9 @@ def test_binary():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testBinary(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testBinary(request):
+        return request.body.thing
 
     server.listen()
 
@@ -319,10 +323,10 @@ def test_struct():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testStruct(request, response, proxy):
+    @server.thrift.register(ThriftTest)
+    def testStruct(request):
 
-        assert request.args.thing.string_thing == 'req string'
+        assert request.body.thing.string_thing == 'req string'
 
         return ThriftTest.Xtruct(
             string_thing="resp string"
@@ -345,7 +349,7 @@ def test_struct():
     )
 
     # verify response
-    assert isinstance(resp, response.Response)
+    assert isinstance(resp, Response)
     assert resp.headers == {}
     assert resp.body == ThriftTest.Xtruct("resp string")
 
@@ -358,24 +362,18 @@ def test_struct_with_headers():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testStruct(request, response, proxy):
+    @server.thrift.register(ThriftTest)
+    def testStruct(request):
 
-        # TODO server getting headers in non-friendly format,
-        # create a top-level request that has friendly headers :)
-        # assert request.headers == {'req': 'headers'}
+        assert isinstance(request, Request)
         assert request.headers == {'req': 'header'}
-        assert request.args.thing.string_thing == 'req string'
+        assert request.body.thing.string_thing == 'req string'
 
-        # TODO should this response object be shared w client case?
-        # TODO are we ok with the approach here? it's diff than client...
-        # response.write_header({
-        #    'resp': 'header'
-        # })
-        response.write_header('resp', 'header')
-
-        return ThriftTest.Xtruct(
-            string_thing="resp string"
+        return Response(
+            ThriftTest.Xtruct(
+                string_thing="resp string"
+            ),
+            headers={'resp': 'header'},
         )
 
     server.listen()
@@ -396,7 +394,7 @@ def test_struct_with_headers():
     )
 
     # verify response
-    assert isinstance(resp, response.Response)
+    assert isinstance(resp, Response)
     assert resp.headers == {'resp': 'header'}
     assert resp.body == ThriftTest.Xtruct("resp string")
 
@@ -409,9 +407,9 @@ def test_nest():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testNest(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testNest(request):
+        return request.body.thing
 
     server.listen()
 
@@ -453,9 +451,9 @@ def test_map():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testMap(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testMap(request):
+        return request.body.thing
 
     server.listen()
 
@@ -492,9 +490,9 @@ def test_string_map():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testStringMap(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testStringMap(request):
+        return request.body.thing
 
     server.listen()
 
@@ -529,9 +527,9 @@ def test_set():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testSet(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testSet(request):
+        return request.body.thing
 
     server.listen()
 
@@ -562,9 +560,9 @@ def test_list():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testList(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testList(request):
+        return request.body.thing
 
     server.listen()
 
@@ -595,9 +593,9 @@ def test_enum():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testEnum(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testEnum(request):
+        return request.body.thing
 
     server.listen()
 
@@ -628,9 +626,9 @@ def test_type_def():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testTypedef(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testTypedef(request):
+        return request.body.thing
 
     server.listen()
 
@@ -676,8 +674,8 @@ def test_map_map():
         },
     }
 
-    @server.register(ThriftTest)
-    def testMapMap(request, response, proxy):
+    @server.thrift.register(ThriftTest)
+    def testMapMap(request):
         return map_map
 
     server.listen()
@@ -708,12 +706,12 @@ def test_insanity():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testInsanity(request, response, proxy):
+    @server.thrift.register(ThriftTest)
+    def testInsanity(request):
         result = {
             1: {
-                2: request.args.argument,
-                3: request.args.argument,
+                2: request.body.argument,
+                3: request.body.argument,
             },
             2: {
                 6: ThriftTest.Insanity(),
@@ -771,13 +769,13 @@ def test_multi():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testMulti(request, response, proxy):
+    @server.thrift.register(ThriftTest)
+    def testMulti(request):
         return ThriftTest.Xtruct(
             string_thing='Hello2',
-            byte_thing=request.args.arg0,
-            i32_thing=request.args.arg1,
-            i64_thing=request.args.arg2,
+            byte_thing=request.body.arg0,
+            i32_thing=request.body.arg1,
+            i64_thing=request.body.arg2,
         )
 
     server.listen()
@@ -822,15 +820,15 @@ def test_exception():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testException(request, response, proxy):
+    @server.thrift.register(ThriftTest)
+    def testException(request):
 
-        if request.args.arg == 'Xception':
+        if request.body.arg == 'Xception':
             raise ThriftTest.Xception(
                 errorCode=1001,
-                message=request.args.arg
+                message=request.body.arg
             )
-        elif request.args.arg == 'TException':
+        elif request.body.arg == 'TException':
             # TODO - what to raise here? We dont want dep on Thrift
             # so we don't have thrift.TException available to us...
             raise Exception()
@@ -865,7 +863,7 @@ def test_exception():
     resp = yield tchannel.thrift(
         service.testException(arg='something else')
     )
-    assert isinstance(resp, response.Response)
+    assert isinstance(resp, Response)
     assert resp.headers == {}
     assert resp.body is None
 
@@ -878,20 +876,20 @@ def test_multi_exception():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testMultiException(request, response, proxy):
+    @server.thrift.register(ThriftTest)
+    def testMultiException(request):
 
-        if request.args.arg0 == 'Xception':
+        if request.body.arg0 == 'Xception':
             raise ThriftTest.Xception(
                 errorCode=1001,
                 message='This is an Xception',
             )
-        elif request.args.arg0 == 'Xception2':
+        elif request.body.arg0 == 'Xception2':
             raise ThriftTest.Xception2(
                 errorCode=2002
             )
 
-        return ThriftTest.Xtruct(string_thing=request.args.arg1)
+        return ThriftTest.Xtruct(string_thing=request.body.arg1)
 
     server.listen()
 
@@ -924,7 +922,7 @@ def test_multi_exception():
     resp = yield tchannel.thrift(
         service.testMultiException(arg0='something else', arg1='thingy')
     )
-    assert isinstance(resp, response.Response)
+    assert isinstance(resp, Response)
     assert resp.headers == {}
     assert resp.body == ThriftTest.Xtruct('thingy')
 
@@ -939,8 +937,8 @@ def test_oneway():
 
     # TODO - server should raise same exception as client
     with pytest.raises(AssertionError):
-        @server.register(ThriftTest)
-        def testOneway(request, response, proxy):
+        @server.thrift.register(ThriftTest)
+        def testOneway(request):
             pass
 
     server.listen()
@@ -967,12 +965,12 @@ def test_second_service_blah_blah():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testString(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testString(request):
+        return request.body.thing
 
-    @server.register(SecondService)
-    def blahBlah(request, response, proxy):
+    @server.thrift.register(SecondService)
+    def blahBlah(request):
         pass
 
     server.listen()
@@ -995,13 +993,13 @@ def test_second_service_blah_blah():
 
     resp = yield tchannel.thrift(service.testString('thing'))
 
-    assert isinstance(resp, response.Response)
+    assert isinstance(resp, Response)
     assert resp.headers == {}
     assert resp.body == 'thing'
 
     resp = yield tchannel.thrift(second_service.blahBlah())
 
-    assert isinstance(resp, response.Response)
+    assert isinstance(resp, Response)
     assert resp.headers == {}
     assert resp.body is None
 
@@ -1014,25 +1012,24 @@ def test_second_service_second_test_string():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testString(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testString(request):
+        return request.body.thing
 
-    @server.register(SecondService)
+    @server.thrift.register(SecondService)
     @gen.coroutine
-    def secondtestString(request, response, proxy):
+    def secondtestString(request):
 
-        # TODO - is this really how our server thrift story looks?
-        ThriftTestService = client_for(
+        service = thrift_request_builder(
             service='server',
-            service_module=ThriftTest
-        )
-        service = ThriftTestService(
-            tchannel=proxy,
+            thrift_module=ThriftTest,
             hostport=server.hostport,
         )
-        resp = yield service.testString(request.args.thing)
-        response.write_result(resp)
+        resp = yield tchannel.thrift(
+            service.testString(request.body.thing),
+        )
+
+        raise gen.Return(resp)
 
     server.listen()
 
@@ -1054,7 +1051,7 @@ def test_second_service_second_test_string():
 
     resp = yield tchannel.thrift(service.testString('thing'))
 
-    assert isinstance(resp, response.Response)
+    assert isinstance(resp, Response)
     assert resp.headers == {}
     assert resp.body == 'thing'
 
@@ -1062,7 +1059,7 @@ def test_second_service_second_test_string():
         second_service.secondtestString('second_string')
     )
 
-    assert isinstance(resp, response.Response)
+    assert isinstance(resp, Response)
     assert resp.headers == {}
     assert resp.body == 'second_string'
 
@@ -1075,9 +1072,9 @@ def test_call_response_should_contain_transport_headers():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testString(request, response, proxy):
-        return request.args.thing
+    @server.thrift.register(ThriftTest)
+    def testString(request):
+        return request.body.thing
 
     server.listen()
 
@@ -1094,12 +1091,12 @@ def test_call_response_should_contain_transport_headers():
     resp = yield tchannel.thrift(service.testString('hi'))
 
     # verify response
-    assert isinstance(resp, response.Response)
+    assert isinstance(resp, Response)
     assert resp.headers == {}
     assert resp.body == 'hi'
 
     # verify response transport headers
-    assert isinstance(resp.transport, response.ResponseTransportHeaders)
+    assert isinstance(resp.transport, TransportHeaders)
     assert resp.transport.scheme == schemes.THRIFT
     assert resp.transport.failure_domain is None
 
@@ -1112,8 +1109,8 @@ def test_call_unexpected_error_should_result_in_protocol_error():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testMultiException(request, response, proxy):
+    @server.thrift.register(ThriftTest)
+    def testMultiException(request):
         raise Exception('well, this is unfortunate')
 
     server.listen()
@@ -1142,8 +1139,8 @@ def test_value_expected_but_none_returned_should_error():
 
     server = TChannel(name='server')
 
-    @server.register(ThriftTest)
-    def testString(request, response, proxy):
+    @server.thrift.register(ThriftTest)
+    def testString(request):
         pass
 
     server.listen()

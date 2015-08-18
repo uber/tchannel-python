@@ -28,12 +28,9 @@ import textwrap
 
 import psutil
 import pytest
-import tornado
 
-from tchannel import TChannel
-from tchannel import response
-from tchannel import schemes
-
+from tchannel import TChannel, Request, Response, schemes
+from tchannel.response import TransportHeaders
 
 # TODO - need integration tests for timeout and retries, use testing.vcr
 
@@ -57,18 +54,14 @@ def test_call_should_get_response():
 
     server = TChannel(name='server')
 
-    @server.register('endpoint', schemes.RAW)
-    @tornado.gen.coroutine
-    def endpoint(request, response, proxy):
+    @server.register(scheme=schemes.RAW)
+    def endpoint(request):
 
-        headers = yield request.get_header()
-        body = yield request.get_body()
+        assert isinstance(request, Request)
+        assert request.headers == 'req headers'
+        assert request.body == 'req body'
 
-        assert headers == 'raw req headers'
-        assert body == 'raw req body'
-
-        response.write_header('raw resp headers')
-        response.write_body('raw resp body')
+        return Response('resp body', 'resp headers')
 
     server.listen()
 
@@ -80,18 +73,18 @@ def test_call_should_get_response():
         scheme=schemes.RAW,
         service='server',
         arg1='endpoint',
-        arg2='raw req headers',
-        arg3='raw req body',
+        arg2='req headers',
+        arg3='req body',
         hostport=server.hostport,
     )
 
     # verify response
-    assert isinstance(resp, response.Response)
-    assert resp.headers == 'raw resp headers'
-    assert resp.body == 'raw resp body'
+    assert isinstance(resp, Response)
+    assert resp.headers == 'resp headers'
+    assert resp.body == 'resp body'
 
     # verify response transport headers
-    assert isinstance(resp.transport, response.ResponseTransportHeaders)
+    assert isinstance(resp.transport, TransportHeaders)
     assert resp.transport.scheme == schemes.RAW
     assert resp.transport.failure_domain is None
 
@@ -123,3 +116,114 @@ def test_uninitialized_tchannel_is_fork_safe():
     finally:
         if process.is_running():
             process.kill()
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_headers_and_body_should_be_optional():
+
+    # Given this test server:
+
+    server = TChannel(name='server')
+
+    @server.register(scheme=schemes.RAW)
+    def endpoint(request):
+        # assert request.headers is None  # TODO uncomment
+        # assert request.body is None  # TODO uncomment
+        pass
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    resp = yield tchannel.call(
+        scheme=schemes.RAW,
+        service='server',
+        arg1='endpoint',
+        hostport=server.hostport,
+    )
+
+    # verify response
+    assert isinstance(resp, Response)
+    assert resp.headers == ''  # TODO should be None to match server
+    assert resp.body == ''  # TODO should be None to match server
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_endpoint_can_return_just_body():
+
+    # Given this test server:
+
+    server = TChannel(name='server')
+
+    @server.register(scheme=schemes.RAW)
+    def endpoint(request):
+        return 'resp body'
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    resp = yield tchannel.call(
+        scheme=schemes.RAW,
+        service='server',
+        arg1='endpoint',
+        hostport=server.hostport,
+    )
+
+    # verify response
+    assert isinstance(resp, Response)
+    assert resp.headers == ''  # TODO should be is None to match server
+    assert resp.body == 'resp body'
+
+
+# TODO - verify register programmatic use cases
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_endpoint_can_be_called_as_a_pure_func():
+
+    # Given this test server:
+
+    server = TChannel(name='server')
+
+    @server.register(scheme=schemes.RAW)
+    def endpoint(request):
+
+        assert isinstance(request, Request)
+        assert request.body == 'req body'
+        assert request.headers == 'req headers'
+
+        return Response('resp body', headers='resp headers')
+
+    server.listen()
+
+    # Able to call over TChannel
+
+    tchannel = TChannel(name='client')
+
+    resp = yield tchannel.call(
+        scheme=schemes.RAW,
+        service='server',
+        arg1='endpoint',
+        arg2='req headers',
+        arg3='req body',
+        hostport=server.hostport,
+    )
+
+    assert isinstance(resp, Response)
+    assert resp.headers == 'resp headers'
+    assert resp.body == 'resp body'
+
+    # Able to call as function
+
+    resp = endpoint(Request('req body', headers='req headers'))
+
+    assert isinstance(resp, Response)
+    assert resp.headers == 'resp headers'
+    assert resp.body == 'resp body'

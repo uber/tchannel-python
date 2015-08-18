@@ -44,7 +44,9 @@ class Request(object):
     This is going to hide the protocol level message information.
     """
 
+    # TODO deprecate in favor of top-level tchannel.Request
     # TODO decide which elements inside "message" object to expose to user.
+
     def __init__(
         self,
         id=None,

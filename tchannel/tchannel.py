@@ -26,8 +26,9 @@ from tornado import gen
 
 from . import schemes, transport, retry
 from .glossary import DEFAULT_TIMEOUT
-from .response import Response, ResponseTransportHeaders
+from .response import Response, TransportHeaders
 from .tornado import TChannel as DeprecatedTChannel
+from .tornado.dispatch import RequestDispatcher as DeprecatedDispatcher
 
 __all__ = ['TChannel']
 
@@ -45,7 +46,8 @@ class TChannel(object):
             hostport=hostport,
             process_name=process_name,
             known_peers=known_peers,
-            trace=trace
+            trace=trace,
+            dispatcher=DeprecatedDispatcher(_handler_returns_response=True),
         )
 
         self.name = name
@@ -137,12 +139,15 @@ class TChannel(object):
         )
 
         # unwrap response
-        header = yield response.get_header()
         body = yield response.get_body()
+        headers = yield response.get_header()
         t = transport.to_kwargs(response.headers)
-        t = ResponseTransportHeaders(**t)
-
-        result = Response(header, body, t)
+        t = TransportHeaders(**t)
+        result = Response(
+            body=body,
+            headers=headers,
+            transport=t
+        )
 
         raise gen.Return(result)
 
@@ -153,13 +158,28 @@ class TChannel(object):
     def hostport(self):
         return self._dep_tchannel.hostport
 
-    def register(self, endpoint, scheme=None, handler=None, **kwargs):
-        return self._dep_tchannel.register(
-            endpoint=endpoint,
-            scheme=scheme,
-            handler=handler,
-            **kwargs
-        )
+    def register(self, scheme, endpoint=None, handler=None, **kwargs):
+
+        def decorator(fn):
+
+            # assert handler is None, "can't handler when using as decorator"
+
+            if endpoint is None:
+                e = fn.__name__
+            else:
+                e = endpoint
+
+            return self._dep_tchannel.register(
+                endpoint=e,
+                scheme=scheme,
+                handler=fn,
+                **kwargs
+            )
+
+        if handler is None:
+            return decorator
+        else:
+            return decorator(handler)
 
     def advertise(self, routers, name=None, timeout=None):
         return self._dep_tchannel.advertise(
