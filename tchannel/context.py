@@ -31,8 +31,8 @@ class TChannelLocal(threading.local):
 _LOCAL = TChannelLocal()
 
 
-class TChannelContext(object):
-    """TChannelContext is used to save necessary context information related
+class RequestContext(object):
+    """RequestContext is used to save necessary context information related
     to current running async thread.
     """
 
