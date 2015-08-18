@@ -109,8 +109,8 @@ def use_cassette(path, record_mode=None, inject=False):
         from tchannel.testing import vcr
 
         @pytest.mark.gen_test
-        @vcr.use_cassette('tests/data/foo.yaml')
-        def test_foo():
+        @vcr.use_cassette('tests/data/bar.yaml')
+        def test_bar():
             channel = TChannel('test-client')
             service_client = MyServiceClient(channel)
 

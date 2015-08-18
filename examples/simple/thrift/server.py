@@ -20,27 +20,26 @@
 
 from __future__ import absolute_import
 
-from tornado import gen
-from tornado import ioloop
-
-from tchannel import TChannel
+from tornado import gen, ioloop
+from tchannel import TChannel, Response
 from tchannel.testing.data.generated.ThriftTest import ThriftTest
 
-app = TChannel('thrift-server', hostport='localhost:54497')
+
+tchannel = TChannel('thrift-server', hostport='localhost:54497')
 
 
-@app.register(ThriftTest)
+@tchannel.thrift.register(ThriftTest)
 @gen.coroutine
-def testString(request, response, tchannel):
+def testString(request):
+
     assert request.headers == {'req': 'header'}
-    assert request.args.thing == 'req'
+    assert request.body.thing == 'req'
 
-    response.write_header('resp', 'header')
-    response.write_result('resp')
+    return Response('resp', headers={'resp': 'header'})
 
 
-app.listen()
+tchannel.listen()
 
-print app.hostport
+print tchannel.hostport
 
 ioloop.IOLoop.current().start()

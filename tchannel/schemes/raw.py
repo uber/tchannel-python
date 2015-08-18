@@ -81,3 +81,21 @@ class RawArgScheme(object):
             retry_limit=retry_limit,
             hostport=hostport,
         )
+
+    def register(self, endpoint, **kwargs):
+
+        # no args, eg - server.raw.register
+        if callable(endpoint):
+            handler = endpoint
+            endpoint = None
+
+        # args, eg - server.raw.register('bar')
+        else:
+            handler = None
+
+        return self._tchannel.register(
+            scheme=self.NAME,
+            endpoint=endpoint,
+            handler=handler,
+            **kwargs
+        )

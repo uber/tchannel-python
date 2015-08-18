@@ -8,6 +8,11 @@ TChannel
 .. autoclass:: tchannel.TChannel
     :members:
 
+.. autoclass:: tchannel.Request
+    :members:
+
+.. autoclass:: tchannel.Response
+
 .. autoclass:: tchannel.schemes.RawArgScheme
     :members:
 
@@ -17,14 +22,7 @@ TChannel
 .. autoclass:: tchannel.schemes.ThriftArgScheme
     :members:
 
-.. autoclass:: tchannel.tornado.RequestDispatcher
-    :members:
-
-.. autoclass:: tchannel.tornado.Request
-    :members:
-
-.. autoclass:: tchannel.tornado.Response
-    :members:
+.. autofunction:: tchannel.thrift_request_builder
 
 
 Exceptions
@@ -33,12 +31,6 @@ Exceptions
 .. automodule:: tchannel.errors
     :members:
 
-
-Thrift
-------
-
-.. automodule:: tchannel.thrift.client
-    :members:
 
 
 Synchronous Client
@@ -60,3 +52,20 @@ Testing
     This automodule directive intentionally doesn't include :members: because
     the module documentation for it explicitly calls out members that should be
     documented.
+
+
+Deprecated
+----------
+
+.. autoclass:: tchannel.tornado.TChannel
+
+.. autoclass:: tchannel.tornado.Request
+    :members:
+
+.. autoclass:: tchannel.tornado.Response
+    :members:
+
+.. automodule:: tchannel.thrift.client
+    :members:
+
+

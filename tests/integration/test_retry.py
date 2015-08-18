@@ -132,7 +132,7 @@ def test_retry_on_error_fail():
         assert e.value.code == ErrorCode.busy
 
 
-class TestHook(EventHook):
+class MyTestHook(EventHook):
     def __init__(self):
         self.received_response = 0
         self.received_error = 0
@@ -150,7 +150,7 @@ class TestHook(EventHook):
 def test_retry_on_error_success():
     endpoint = b'tchannelretrytest'
     tchannel = chain(2, endpoint)
-    hook = TestHook()
+    hook = MyTestHook()
     tchannel.hooks.register(hook)
 
     tchannel_success = TChannel(name='test', hostport='localhost:0')

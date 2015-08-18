@@ -25,6 +25,7 @@ from collections import namedtuple
 
 from tornado import gen
 
+from tchannel.response import Response, response_from_mixed
 from tchannel.tornado.request import TransportMetadata
 from tchannel.tornado.response import StatusCode
 
@@ -83,9 +84,16 @@ def register(dispatcher, service_module, handler, method=None, service=None):
     args_type = getattr(service_module, method + '_args')
     result_type = getattr(service_module, method + '_result')
 
+    # if the dispatcher is set to deal with handlers that
+    # return responses, then use new api, else use deprecated
+    if dispatcher._handler_returns_response:
+        handler = build_handler(result_type, handler)
+    else:
+        handler = deprecated_build_handler(result_type, handler)
+
     dispatcher.register(
         endpoint,
-        build_handler(result_type, handler),
+        handler,
         ThriftSerializer(args_type),
         ThriftSerializer(result_type)
     )
@@ -93,6 +101,28 @@ def register(dispatcher, service_module, handler, method=None, service=None):
 
 
 def build_handler(result_type, f):
+    @gen.coroutine
+    def handler(request):
+
+        result = ThriftResponse(result_type())
+        response = Response()
+
+        try:
+            response = yield gen.maybe_future(f(request))
+
+        except Exception:
+            result.write_exc_info(sys.exc_info())
+        else:
+            response = response_from_mixed(response)
+            result.write_result(response.body)
+
+        response.body = result.result
+
+        raise gen.Return(response)
+    return handler
+
+
+def deprecated_build_handler(result_type, f):
     @gen.coroutine
     def handler(request, response, tchannel):
         req = yield ThriftRequest._from_raw_request(request)
@@ -182,6 +212,10 @@ class ThriftResponse(object):
             Return value of the call
         """
         assert not self.finished, "Already sent a response"
+
+        if not self.result.thrift_spec:
+            self.finished = True
+            return
 
         spec = self.result.thrift_spec[0]
         if result is not None:

@@ -25,7 +25,7 @@ import pytest
 from thrift.Thrift import TType
 
 from tchannel.serializer.thrift import ThriftSerializer
-from tchannel.thrift.server import build_handler
+from tchannel.thrift.server import deprecated_build_handler
 from tchannel.tornado.request import Request
 from tchannel.tornado.response import Response
 from tchannel.tornado.stream import InMemStream
@@ -89,7 +89,7 @@ class FakeResult(object):
 
 
 @pytest.mark.gen_test
-def test_build_handler():
+def test_deprecated_build_handler():
 
     def call(treq, tres, tchan):
         assert treq.transport.headers == {
@@ -123,7 +123,7 @@ def test_build_handler():
     )
     tchannel = mock.Mock()
 
-    handler = build_handler(FakeResult, call)
+    handler = deprecated_build_handler(FakeResult, call)
     yield handler(req, res, tchannel)
 
     serialized_headers = yield response_header.read()
@@ -149,7 +149,7 @@ def test_build_handler():
 
 
 @pytest.mark.gen_test
-def test_build_handler_exception():
+def test_deprecated_build_handler_exception():
     def call(treq, tres, tchan):
         raise FakeException('fail')
 
@@ -175,7 +175,7 @@ def test_build_handler_exception():
     )
     tchannel = mock.Mock()
 
-    handler = build_handler(FakeResult, call)
+    handler = deprecated_build_handler(FakeResult, call)
     yield handler(req, res, tchannel)
 
     response_body.write.assert_called_once_with(

@@ -2,14 +2,23 @@ Changelog
 =========
 
 
-0.15.3 (unreleased)
+0.16.0 (unreleased)
 -------------------
 
-- Remove ``broker.py`` and depreciated arg scheme related code.
-- Simplify the TChannel event types. Removed ``operational_error``,
-  ``system_error`` and ``application_error``. Added ``on_error``
-- Remove ``CallableRequestHandler`` and ``BaseRequestHandler``.
-- **BREAKING** - remove ``retry_delay`` option in the ``send`` method.
+- Introduced new server API through methods
+  ``tchannel.TChannel.thrift.register``, ``tchannel.TChannel.json.register``,
+  and ``tchannel.TChannel.raw.register`` - when these methods are used,
+  endpoints are passed a ``tchannel.Request`` object, and are expected to
+  return a ``tchannel.Response`` object or just a response body. The deprecated
+  ``tchannel.tornado.TChannel.register`` continues to function how it did
+  before. Note the breaking change to the top-level TChannel on the next line.
+- Fixed a crash that would occur when forking with an unitialized ``TChannel``
+  instance.
+- **BREAKING** - ``tchannel.TChannel.register`` no longer has the same
+  functionality as ``tchannel.tornado.TChannel.register``, instead it exposes
+  the new server API. See the upgrade guide for details.
+- **BREAKING** - remove ``retry_delay`` option in the ``tchannel.tornado.send``
+  method.
 
 
 0.15.2 (2015-08-07)

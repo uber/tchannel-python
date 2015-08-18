@@ -7,12 +7,37 @@ what broke and how to safely migrate to newer versions.
 From 0.15 to 0.16
 -----------------
 
+- ``tchannel.TChannel.register`` no longer mimicks ``tchannel.tornado.TChannel.register``,
+  instead it exposes the new server API like so:
+
+  Before:
+
+  .. code:: python
+
+      from tchannel import TChannel
+
+      @tchannel.register('endpoint', 'json')
+      def endpoint(request, response, proxy):
+          response.write({'resp': 'body'})
+
+
+  After:
+
+  .. code:: python
+
+      from tchannel import TChannel, Response
+
+      @tchannel.json.register
+      def endpoint(request):
+          return Response({'resp': 'body'})
+
+
 - Remove ``retry_delay`` option from ``tchannel.tornado.peer.PeerClientOperation.send``
   method.
 
-  Before: ``tchannel.request.send(retry_delay=300)``
+  Before: ``tchannel.tornado.TChannel.request.send(retry_delay=300)``
 
-  After: no more ``retry_delay`` in  ``tchannel.request.send()``
+  After: no more ``retry_delay`` in  ``tchannel.tornado.TChannel.request.send()``
 
 From 0.14 to 0.15
 -----------------

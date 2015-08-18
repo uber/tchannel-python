@@ -27,13 +27,15 @@ import tornado
 import tornado.gen
 from tornado import gen
 
+from tchannel import transport
+from tchannel.request import Request, TransportHeaders
+from tchannel.response import response_from_mixed
 from ..errors import BadRequestError
 from ..errors import TChannelError
 from ..event import EventType
 from ..messages.error import ErrorCode
 from ..serializer.raw import RawSerializer
-from .response import Response
-
+from .response import Response as DeprecatedResponse
 from ..messages import Types
 
 log = logging.getLogger('tchannel')
@@ -60,15 +62,15 @@ class RequestDispatcher(object):
 
     FALLBACK = object()
 
-    def __init__(self):
+    def __init__(self, _handler_returns_response=False):
         self.handlers = {
             self.FALLBACK: Handler(
                 self.not_found, RawSerializer(), RawSerializer()
             )
         }
+        self._handler_returns_response = _handler_returns_response
 
     _HANDLER_NAMES = {
-        Types.PING_REQ: 'ping',
         Types.CALL_REQ: 'pre_call',
         Types.CALL_REQ_CONTINUE: 'pre_call'
     }
@@ -154,7 +156,7 @@ class RequestDispatcher(object):
             raise gen.Return(None)
 
         request.serializer = handler.req_serializer
-        response = Response(
+        response = DeprecatedResponse(
             id=request.id,
             checksum=request.checksum,
             tracing=request.tracing,
@@ -166,16 +168,48 @@ class RequestDispatcher(object):
         connection.post_response(response)
 
         try:
-            yield gen.maybe_future(
-                handler.endpoint(
-                    request,
-                    response,
-                    TChannelProxy(
-                        connection.tchannel,
-                        request.tracing,
-                    ),
+            # New impl - the handler takes a request and returns a response
+            if self._handler_returns_response:
+
+                # convert deprecated req to new top-level req
+                b = yield request.get_body()
+                he = yield request.get_header()
+                t = request.headers
+                t = transport.to_kwargs(t)
+                t = TransportHeaders(**t)
+                new_req = Request(
+                    body=b,
+                    headers=he,
+                    transport=t,
                 )
-            )
+
+                # get new top-level resp from controller
+                new_resp = yield gen.maybe_future(
+                    handler.endpoint(new_req)
+                )
+
+                # instantiate a tchannel.Response
+                new_resp = response_from_mixed(new_resp)
+
+                # assign resp values to dep response
+                response.write_header(new_resp.headers)
+
+                if new_resp.body is not None:
+                    response.write_body(new_resp.body)
+
+            # Dep impl - the handler is provided with a req & resp writer
+            else:
+                yield gen.maybe_future(
+                    handler.endpoint(
+                        request,
+                        response,
+                        TChannelProxy(
+                            connection.tchannel,
+                            request.tracing,
+                        ),
+                    )
+                )
+
             response.flush()
         except TChannelError as e:
             connection.send_error(

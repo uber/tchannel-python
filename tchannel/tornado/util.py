@@ -49,7 +49,7 @@ def chain(iterable, func):
     .. code-block:: python
 
         @gen.coroutine
-        def foo():
+        def bar():
             for thing in things:
                 yield async_operation(thing)
 
