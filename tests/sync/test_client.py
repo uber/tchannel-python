@@ -70,7 +70,7 @@ def test_advertise_should_result_in_peer_connections(mock_server):
 
     assert result.headers == {'as': 'json'}
     # TODO: getting back a tornado.Request here?
-    #assert result.body == json.dumps(body)
+    # assert result.body == json.dumps(body)
     assert client._dep_tchannel.peers.hosts == routers
 
 

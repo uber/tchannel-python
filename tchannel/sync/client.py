@@ -46,14 +46,14 @@ class TChannelSyncClient(TChannel):
     """
 
     def __init__(
-            self,
-            name,
-            hostport=None,
-            process_name=None,
-            known_peers=None,
-            trace=False,
-            threadloop=None,
-        ):
+        self,
+        name,
+        hostport=None,
+        process_name=None,
+        known_peers=None,
+        trace=False,
+        threadloop=None,
+    ):
         """Initialize a new TChannelClient.
 
         :param process_name:
@@ -88,4 +88,6 @@ class TChannelSyncClient(TChannel):
         return wrapper
 
     def register(self, *a, **kw):
-        raise NotImplementedError("Registration not yet supported for sync clients")
+        raise NotImplementedError(
+            "Registration not yet supported for sync clients",
+        )
