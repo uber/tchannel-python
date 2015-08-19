@@ -182,7 +182,13 @@ class RequestDispatcher(object):
                     transport=t,
                 )
 
-                # get new top-level resp from controller
+                # Not safe to have coroutine yields statement within
+                # stack context.
+                # The right way to do it is:
+                # with request_context(..):
+                #    future = f()
+                # yield future
+
                 with request_context(request.tracing):
                     f = handler.endpoint(new_req)
 
