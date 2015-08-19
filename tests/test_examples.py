@@ -56,6 +56,7 @@ def popen(path, wait_for_listen=False):
         ('raw', 'simple/raw/'),
         ('json', 'simple/json/'),
         ('thrift', 'simple/thrift/'),
+        ('bench', 'benchmark/thrift/'),
         ('guide', 'guide/keyvalue/keyvalue/'),
     )
 )
@@ -75,17 +76,13 @@ def test_example(scheme, path):
     with popen(server_path, wait_for_listen=True):
         with popen(client_path) as client:
 
-            out = client.stdout.read()
+            body = client.stdout.readline().strip()
+            headers = client.stdout.readline().strip()
 
             # TODO the guide test should be the same as others
             if scheme == 'guide':
-                assert out == 'Hello, world!\n'
+                assert body == 'Hello, world!'
                 return
-
-            try:
-                body, headers = out.split(os.linesep)[:-1]
-            except ValueError:
-                raise AssertionError(out + client.stderr.read())
 
             if scheme == 'raw':
 
@@ -104,6 +101,10 @@ def test_example(scheme, path):
                     'resp': 'header'
                 }
 
+            elif scheme == 'bench':
+                assert int(body)
+                assert int(headers)
+
             elif scheme == 'thrift':
 
                 headers = json.loads(headers)
@@ -112,3 +113,6 @@ def test_example(scheme, path):
                 assert headers == {
                     'resp': 'header',
                 }
+
+            else:
+                assert False
