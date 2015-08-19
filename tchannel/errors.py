@@ -70,51 +70,51 @@ class TChannelError(Exception):
         }[code](**kw)
 
 
-class AlwaysRetryableError(TChannelError):
+class RetryableError(TChannelError):
     pass
 
 
-class PossiblyRetryableError(TChannelError):
+class MaybeRetryableError(TChannelError):
     pass
 
 
-class UnretryableError(TChannelError):
+class NotRetryableError(TChannelError):
     pass
 
 
-class TimeoutError(PossiblyRetryableError):
+class TimeoutError(MaybeRetryableError):
     code = TIMEOUT
 
 
-class CanceledError(UnretryableError):
+class CanceledError(NotRetryableError):
     code = CANCELED
 
 
-class BusyError(AlwaysRetryableError):
+class BusyError(RetryableError):
     code = BUSY
 
 
-class DeclinedError(AlwaysRetryableError):
+class DeclinedError(RetryableError):
     code = DECLINED
 
 
-class UnexpectedError(PossiblyRetryableError):
+class UnexpectedError(MaybeRetryableError):
     code = UNEXPECTED_ERROR
 
 
-class BadRequestError(UnretryableError):
+class BadRequestError(NotRetryableError):
     code = BAD_REQUEST
 
 
-class NetworkError(PossiblyRetryableError):
+class NetworkError(MaybeRetryableError):
     code = NETWORK_ERROR
 
 
-class UnhealthyError(UnretryableError):
+class UnhealthyError(NotRetryableError):
     code = UNHEALTHY
 
 
-class FatalProtocolError(UnretryableError):
+class FatalProtocolError(NotRetryableError):
     code = FATAL
 
 
@@ -128,7 +128,7 @@ class InvalidChecksumError(FatalProtocolError):
     pass
 
 
-class NoAvailablePeerError(AlwaysRetryableError):
+class NoAvailablePeerError(RetryableError):
     """Represents a failure to find any peers for a request."""
     pass
 
