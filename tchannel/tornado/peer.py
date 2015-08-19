@@ -35,6 +35,7 @@ from ..retry import (
 )
 from tchannel.event import EventType
 from tchannel.glossary import DEFAULT_TIMEOUT
+from ..context import get_current_context
 from ..errors import NoAvailablePeerError
 from ..errors import ProtocolError
 from ..errors import TimeoutError
@@ -453,6 +454,8 @@ class PeerClientOperation(object):
         self.tchannel = peer_group.tchannel
         self.service = service
         self.parent_tracing = parent_tracing
+        if not self.parent_tracing and get_current_context():
+            self.parent_tracing = get_current_context().parent_tracing
 
         # TODO the term headers are reserved for application headers,
         # these are transport headers,

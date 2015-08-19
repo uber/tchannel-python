@@ -91,7 +91,7 @@ class FakeResult(object):
 @pytest.mark.gen_test
 def test_deprecated_build_handler():
 
-    def call(treq, tres, tchan):
+    def call(treq, tres):
         assert treq.transport.headers == {
             'as': 'thrift', 'cn': 'test_caller'
         }
@@ -121,10 +121,9 @@ def test_deprecated_build_handler():
         ],
         serializer=ThriftSerializer(FakeResult),
     )
-    tchannel = mock.Mock()
 
     handler = deprecated_build_handler(FakeResult, call)
-    yield handler(req, res, tchannel)
+    yield handler(req, res)
 
     serialized_headers = yield response_header.read()
     assert serialized_headers == bytearray(
@@ -150,7 +149,7 @@ def test_deprecated_build_handler():
 
 @pytest.mark.gen_test
 def test_deprecated_build_handler_exception():
-    def call(treq, tres, tchan):
+    def call(treq, tres):
         raise FakeException('fail')
 
     response_body = mock.Mock(spec=InMemStream)
@@ -173,10 +172,9 @@ def test_deprecated_build_handler_exception():
         ],
         serializer=ThriftSerializer(FakeResult),
     )
-    tchannel = mock.Mock()
 
     handler = deprecated_build_handler(FakeResult, call)
-    yield handler(req, res, tchannel)
+    yield handler(req, res)
 
     response_body.write.assert_called_once_with(
         bytearray([

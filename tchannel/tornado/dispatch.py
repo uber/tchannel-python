@@ -29,17 +29,20 @@ import tornado.gen
 from tornado import gen
 
 from tchannel import transport
-from tchannel.request import Request, TransportHeaders
+from tchannel.request import Request
+from tchannel.request import TransportHeaders
 from tchannel.response import response_from_mixed
+
+from ..context import request_context
+from ..errors import InvalidChecksumError
 from ..errors import InvalidEndpointError
+from ..errors import StreamingError
 from ..errors import TChannelError
 from ..event import EventType
+from ..messages import Types
 from ..messages.error import ErrorCode
 from ..serializer.raw import RawSerializer
 from .response import Response as DeprecatedResponse
-from ..errors import InvalidChecksumError
-from ..errors import StreamingError
-from ..messages import Types
 
 log = logging.getLogger('tchannel')
 
@@ -59,7 +62,7 @@ class RequestDispatcher(object):
         handler = # ...
 
         @handler.route('my_method')
-        def my_method(request, response, proxy):
+        def my_method(request, response):
             response.write('hello world')
     """
 
@@ -136,13 +139,11 @@ class RequestDispatcher(object):
 
         log.debug('Received a call to %s.', request.endpoint)
 
+        tchannel = connection.tchannel
+
         # event: receive_request
         request.tracing.name = request.endpoint
-
-        connection.tchannel.event_emitter.fire(
-            EventType.before_receive_request,
-            request,
-        )
+        tchannel.event_emitter.fire(EventType.before_receive_request, request)
 
         handler = self.handlers[request.endpoint]
         if request.headers.get('as', None) != handler.req_serializer.name:
@@ -181,10 +182,17 @@ class RequestDispatcher(object):
                     transport=t,
                 )
 
-                # get new top-level resp from controller
-                new_resp = yield gen.maybe_future(
-                    handler.endpoint(new_req)
-                )
+                # Not safe to have coroutine yields statement within
+                # stack context.
+                # The right way to do it is:
+                # with request_context(..):
+                #    future = f()
+                # yield future
+
+                with request_context(request.tracing):
+                    f = handler.endpoint(new_req)
+
+                new_resp = yield gen.maybe_future(f)
 
                 # instantiate a tchannel.Response
                 new_resp = response_from_mixed(new_resp)
@@ -197,16 +205,10 @@ class RequestDispatcher(object):
 
             # Dep impl - the handler is provided with a req & resp writer
             else:
-                yield gen.maybe_future(
-                    handler.endpoint(
-                        request,
-                        response,
-                        TChannelProxy(
-                            connection.tchannel,
-                            request.tracing,
-                        ),
-                    )
-                )
+                with request_context(request.tracing):
+                    f = handler.endpoint(request, response)
+
+                yield gen.maybe_future(f)
 
             response.flush()
         except InvalidEndpointError as e:
@@ -220,14 +222,10 @@ class RequestDispatcher(object):
             log.exception(msg)
 
             response.set_exception(TChannelError(e.message))
-
             connection.request_message_factory.remove_buffer(response.id)
+
             connection.send_error(ErrorCode.unexpected, msg, response.id)
-            connection.tchannel.event_emitter.fire(
-                EventType.on_exception,
-                request,
-                e,
-            )
+            tchannel.event_emitter.fire(EventType.on_exception, request, e)
 
         raise gen.Return(response)
 
@@ -243,7 +241,7 @@ class RequestDispatcher(object):
         .. code-block:: python
 
             @dispatcher.register('is_healthy')
-            def check_health(request, response, proxy):
+            def check_health(request, response):
                 # ...
 
         :param rule:
@@ -255,8 +253,7 @@ class RequestDispatcher(object):
             match any registered rules.
 
         :param handler:
-            A function that gets called with ``Request``, ``Response``, and
-            the ``proxy``.
+            A function that gets called with ``Request`` and ``Response``.
 
         :param req_serializer:
             Arg scheme serializer of this endpoint. It should be
@@ -279,7 +276,7 @@ class RequestDispatcher(object):
         self.handlers[rule] = Handler(handler, req_serializer, resp_serializer)
 
     @staticmethod
-    def not_found(request, response, proxy):
+    def not_found(request, response):
         """Default behavior for requests to unrecognized endpoints."""
         raise InvalidEndpointError(
             "Endpoint '%s' for service '%s' is not defined" % (
@@ -287,37 +284,3 @@ class RequestDispatcher(object):
                 request.service,
             ),
         )
-
-
-class TChannelProxy(object):
-    """TChannel Proxy with additional runtime info
-
-    TChannelProxy contains parent_tracing information which is created by
-    received request.
-
-    TChannelProxy will be used as one parameter for the request handler.
-
-    Example::
-
-        def handler(request, response, proxy):
-
-    """
-    __slots__ = ('_tchannel', 'parent_tracing')
-
-    def __init__(self, tchannel, parent_tracing=None):
-        self._tchannel = tchannel
-        self.parent_tracing = parent_tracing
-
-    @property
-    def closed(self):
-        return self._tchannel.closed
-
-    @property
-    def hostport(self):
-        return self._tchannel.hostport
-
-    def request(self, hostport=None, service=None, **kwargs):
-        kwargs['parent_tracing'] = self.parent_tracing
-        return self._tchannel.request(hostport,
-                                      service,
-                                      **kwargs)

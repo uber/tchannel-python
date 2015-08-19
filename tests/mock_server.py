@@ -133,7 +133,7 @@ class MockServer(object):
 
         expectation = Expectation()
 
-        def handle_expected_endpoint(request, response, proxy):
+        def handle_expected_endpoint(request, response):
             expectation.execute(request, response)
 
         self.tchannel.register(

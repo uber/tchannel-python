@@ -21,7 +21,7 @@ from tchannel.serializer.raw import RawSerializer
 from tchannel.tornado.dispatch import RequestDispatcher
 
 
-def dummy_endpoint(request, response, proxy):
+def dummy_endpoint(request, response):
     pass
 
 

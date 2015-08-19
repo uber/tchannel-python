@@ -42,7 +42,7 @@ def test_reuse():
 
     @server2.register('hello')
     @gen.coroutine
-    def hello(request, response, opts):
+    def hello(request, response):
         yield response.write_body('hello to you too')
 
     @gen.coroutine
@@ -78,7 +78,7 @@ def test_reuse():
 
     @server1.register('reverse')
     @gen.coroutine
-    def reverse(request, response, opts):
+    def reverse(request, response):
         body = yield request.get_body()
         assert body == 'foo'
         yield response.write_body('bar')

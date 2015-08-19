@@ -42,38 +42,35 @@ except:
     from StringIO import StringIO
 
 
-@tornado.gen.coroutine
-def handler2(request, response, proxy):
-    response.set_body_s(InMemStream("from handler2"))
-
-
-@tornado.gen.coroutine
-def handler1(request, response, proxy):
-    header = yield request.get_header()
-    res = yield proxy.request(header).send(
-        "endpoint2",
-        "",
-        "",
-        traceflag=True
-    )
-    body = yield res.get_body()
-    yield response.write_header("from handler1")
-    yield response.write_body(body)
-    response.flush()
-
-
-def submit(request, response, proxy):
+def submit(request, response):
     span = request.args.span
     r = Response()
     r.ok = request.transport.headers['shardKey'] == base64.b64encode(
         span.traceId
     )
-
     return r
 
 
 @pytest.fixture
 def register(tchannel):
+    @tornado.gen.coroutine
+    def handler2(request, response):
+        response.set_body_s(InMemStream("from handler2"))
+
+    @tornado.gen.coroutine
+    def handler1(request, response):
+        header = yield request.get_header()
+        res = yield tchannel.request(header).send(
+            "endpoint2",
+            "",
+            "",
+            traceflag=True
+        )
+        body = yield res.get_body()
+        yield response.write_header("from handler1")
+        yield response.write_body(body)
+        response.flush()
+
     tchannel.register("endpoint1", "raw", handler1)
     tchannel.register("endpoint2", "raw", handler2)
     tchannel.register(TCollector, "thrift", submit)
@@ -127,7 +124,7 @@ def test_zipkin_trace(trace_server):
 
 
 @pytest.mark.gen_test
-def test_tcollector_submit(monkeypatch, trace_server):
+def test_tcollector_submit(trace_server):
     tchannel = TChannel(name='test', known_peers=[trace_server.hostport])
 
     trace = Trace(endpoint=Endpoint("1.0.0.1", 1111, "tcollector"))
