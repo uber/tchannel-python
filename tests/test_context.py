@@ -25,28 +25,31 @@ from tornado import gen
 
 from tchannel import TChannel
 from tchannel import Response
+from tchannel import schemes
 from tchannel.context import get_current_context
 
 
 @pytest.mark.gen_test
-def test_context():
+@pytest.mark.call
+def test_context_should_carry_tracing_info():
     context = [None, None]
     server = TChannel(name='server')
 
-    @server.raw.register
+    @server.register(scheme=schemes.RAW)
     @gen.coroutine
     def endpoint1(request):
-        yield server.raw(
+        yield server.call(
+            scheme=schemes.RAW,
             service='server',
-            endpoint='endpoint2',
-            headers='req headers',
-            body='req body',
+            arg1='endpoint2',
+            arg2='req headers',
+            arg3='req body',
             hostport=server.hostport,
         )
         context[0] = get_current_context()
         raise gen.Return(Response('resp body', 'resp headers'))
 
-    @server.raw.register
+    @server.register(scheme=schemes.RAW)
     def endpoint2(request):
         context[1] = get_current_context()
         return Response('resp body', 'resp headers')
@@ -57,11 +60,12 @@ def test_context():
 
     tchannel = TChannel(name='client')
 
-    yield tchannel.raw(
+    yield tchannel.call(
+        scheme=schemes.RAW,
         service='server',
-        endpoint='endpoint1',
-        headers='req headers',
-        body='req body',
+        arg1='endpoint1',
+        arg2='req headers',
+        arg3='req body',
         hostport=server.hostport,
     )
 
