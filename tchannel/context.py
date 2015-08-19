@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright (c) 2015 Uber Technologies, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,42 +20,45 @@
 
 from __future__ import absolute_import
 
-from tornado import ioloop
-from tchannel import TChannel
-from service import KeyValue
+import threading
+from tornado.stack_context import StackContext
 
 
-app = TChannel('thrift-benchmark', hostport='localhost:12345')
+class TChannelLocal(threading.local):
+    __slots__ = ('context',)
+
+    def __init__(self):
+        self.context = None
+
+_LOCAL = TChannelLocal()
 
 
-values = {'hello': 'world'}
+class RequestContext(object):
+    """RequestContext is used to save necessary context information related
+    to current running async thread.
+    """
+
+    __slots__ = ('parent_tracing', '_old_context',)
+
+    def __init__(self, parent_tracing=None):
+        self.parent_tracing = parent_tracing
+        self._old_context = None
+
+    def __enter__(self):
+        self._old_context = _LOCAL.context
+        _LOCAL.context = self
+
+    def __exit__(self, type, value, traceback):
+        _LOCAL.context = self._old_context
 
 
-@app.register(KeyValue)
-def getValue(request, response):
-    key = request.args.key
-    value = values.get(key)
+def get_current_context():
+    """
 
-    if value is None:
-        raise KeyValue.NotFoundError(key)
-
-    return value
+    :return: request context in current running aysnc thread.
+    """
+    return _LOCAL.context
 
 
-@app.register(KeyValue)
-def setValue(request, response):
-    key = request.args.key
-    value = request.args.value
-    values[key] = value
-
-
-def run():
-    app.listen()
-
-
-if __name__ == '__main__':
-    run()
-    try:
-        ioloop.IOLoop.current().start()
-    except KeyboardInterrupt:
-        pass
+def request_context(parent_tracing):
+    return StackContext(lambda: RequestContext(parent_tracing))

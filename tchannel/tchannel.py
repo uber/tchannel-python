@@ -24,7 +24,9 @@ from __future__ import (
 
 from tornado import gen
 
-from . import schemes, transport, retry
+from . import schemes
+from . import transport
+from . import retry
 from .glossary import DEFAULT_TIMEOUT
 from .response import Response, TransportHeaders
 from .tornado import TChannel as DeprecatedTChannel

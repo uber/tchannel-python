@@ -35,12 +35,12 @@ from tchannel.tornado.connection import StreamConnection
 
 
 @tornado.gen.coroutine
-def handler1(request, response, proxy):
+def handler1(request, response):
     raise Exception("application uncaught exception")
 
 
 @tornado.gen.coroutine
-def handler2(request, response, proxy):
+def handler2(request, response):
     response.set_header_s(request.get_header_s())
     response.set_body_s(request.get_body_s())
 

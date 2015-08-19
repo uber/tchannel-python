@@ -66,7 +66,7 @@ def test_advertise():
 
     @server.register('ad', 'json')
     @tornado.gen.coroutine
-    def ad(request, response, proxy):
+    def ad(request, response):
         body = yield request.get_body()
         response.write_body(body)
 

@@ -71,7 +71,7 @@ def sample_json():
 def register(tchannel):
     @tchannel.register("json_echo", "json")
     @tornado.gen.coroutine
-    def json_echo(request, response, proxy):
+    def json_echo(request, response):
         header = yield request.get_header()
         body = yield request.get_body()
 

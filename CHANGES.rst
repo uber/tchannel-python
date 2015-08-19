@@ -22,7 +22,9 @@ Changelog
 - **BREAKING** - error types have been reworked significantly. In particular,
   the all-encompassing ``ProtocolError`` has been replaced with more
   granualar/actionable exceptions. See the upgrade guide for more info.
-
+- **BREAKING** - Remove third ``proxy`` argument from the server handler
+  interface.
+- **BREAKING** - ``ZipkinTraceHook`` is not longer registered by default.
 
 
 0.15.2 (2015-08-07)

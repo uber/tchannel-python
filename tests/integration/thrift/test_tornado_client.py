@@ -21,7 +21,6 @@
 from __future__ import absolute_import
 
 import pytest
-from mock import patch
 
 from tchannel import errors
 from tchannel.thrift import client_for as thrift_client_for
@@ -65,14 +64,9 @@ def test_unexpected_error(mock_server, thrift_service):
     ).and_raise(ValueError("I was not defined in the IDL"))
 
     client = mk_client(thrift_service, mock_server.port, trace=False)
-    with pytest.raises(errors.UnexpectedError):
-        with patch(
-            'tchannel.zipkin.tracers.TChannelZipkinTracer.record',
-            autospec=True,
-        ) as mock_trace_record:
-            yield client.getItem("foo")
 
-    assert not mock_trace_record.called
+    with pytest.raises(errors.UnexpectedError):
+        yield client.getItem("foo")
 
 
 @pytest.mark.gen_test
@@ -82,19 +76,13 @@ def test_thrift_exception(mock_server, thrift_service):
         'thrift',
         method='getItem',
     ).and_raise(thrift_service.ItemDoesNotExist("stahp"))
+    client = mk_client(thrift_service, mock_server.port, trace=False)
 
-    client = mk_client(thrift_service, mock_server.port, trace=True)
+    with (
+        pytest.raises(thrift_service.ItemDoesNotExist)
+    ) as excinfo:
+        yield client.getItem("foo")
 
-    with patch(
-        'tchannel.zipkin.tracers.TChannelZipkinTracer.record',
-        autospec=True,
-    ) as mock_trace_record:
-        with (
-            pytest.raises(thrift_service.ItemDoesNotExist)
-        ) as excinfo:
-            yield client.getItem("foo")
-
-    assert mock_trace_record.called
     assert 'stahp' in str(excinfo.value)
 
 
@@ -105,7 +93,7 @@ def test_false_result(thrift_service):
     app = TChannel(name='app')
 
     @app.register(thrift_service)
-    def healthy(request, response, body):
+    def healthy(request, response):
         return False
 
     app.listen()

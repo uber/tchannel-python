@@ -84,7 +84,7 @@ class VCRProxyService(object):
         VCRProxy.VCRServiceError,
     ))
     @gen.coroutine
-    def send(self, request, response, channel):
+    def send(self, request, response):
         cassette = self.cassette
         request = request.args.request
 
@@ -114,7 +114,7 @@ class VCRProxyService(object):
             # TODO propagate other request and response parameters
             # TODO might make sense to tag all VCR requests with a protocol
             # header of some kind
-            response_future = channel.request(
+            response_future = self.tchannel.request(
                 service=request.serviceName,
                 arg_scheme=arg_scheme,
                 hostport=request.hostPort,

@@ -17,7 +17,7 @@ From 0.15 to 0.16
       from tchannel import TChannel
 
       @tchannel.register('endpoint', 'json')
-      def endpoint(request, response, proxy):
+      def endpoint(request, response):
           response.write({'resp': 'body'})
 
 
@@ -31,6 +31,7 @@ From 0.15 to 0.16
       def endpoint(request):
           return Response({'resp': 'body'})
 
+- `` from tchannel.tornado import TChannel`` is deprecated.
 
 - Remove ``retry_delay`` option from ``tchannel.tornado.peer.PeerClientOperation.send``
   method.
