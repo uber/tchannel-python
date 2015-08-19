@@ -22,22 +22,13 @@ from __future__ import absolute_import
 
 import pytest
 
+from tchannel import thrift_request_builder
 from tchannel.sync import TChannelSyncClient
-from tchannel.sync.thrift import client_for
-
-
-@pytest.fixture
-def thrift_sync_client(mock_server, thrift_service):
-    ServiceClient = client_for("service", thrift_service)
-    tchannel_sync = TChannelSyncClient('test-client')
-    thrift_sync_client = ServiceClient(
-        tchannel_sync, hostport=mock_server.hostport
-    )
-    return thrift_sync_client
 
 
 @pytest.mark.integration
-def test_call(mock_server, thrift_sync_client, thrift_service):
+def test_call(mock_server, thrift_service):
+
     expected = thrift_service.Item(
         key='foo', value=thrift_service.Value(integerValue=42)
     )
@@ -48,7 +39,17 @@ def test_call(mock_server, thrift_sync_client, thrift_service):
         method='getItem',
     ).and_result(expected)
 
-    future = thrift_sync_client.getItem('foo')
+    thrift_service = thrift_request_builder(
+        service='thrift-service',
+        thrift_module=thrift_service,
+        hostport=mock_server.hostport,
+    )
+
+    tchannel = TChannelSyncClient('test-client')
+
+    future = tchannel.thrift(
+        thrift_service.getItem('foo')
+    )
     result = future.result()
 
-    assert expected == result
+    assert expected == result.body

@@ -20,8 +20,6 @@
 
 from __future__ import absolute_import
 
-import json
-
 import pytest
 
 from tchannel.sync import TChannelSyncClient
@@ -36,15 +34,18 @@ def test_sync_client_should_get_raw_response(mock_server):
         headers="",
         body="OK"
     )
-    hostport = mock_server.tchannel.hostport
 
     client = TChannelSyncClient('test-client')
-    request = client.request(hostport)
 
-    future = request.send(endpoint, None, "")
+    future = client.raw(
+        service='foo',
+        hostport=mock_server.hostport,
+        endpoint=endpoint,
+    )
+
     response = future.result()
 
-    assert response.header == ""
+    assert response.headers == ""
     assert response.body == "OK"
 
 
@@ -63,12 +64,14 @@ def test_advertise_should_result_in_peer_connections(mock_server):
     ]
 
     client = TChannelSyncClient('test-client')
-    result = client.advertise(routers)
+    future = client.advertise(routers)
 
-    assert result.header == ""
-    # @todo https://github.com/uber/tchannel-python/issues/34
-    assert result.body == json.dumps(body)
-    assert client._async_client.peers.hosts == routers
+    result = future.result()
+
+    assert result.headers == {'as': 'json'}
+    # TODO: getting back a tornado.Request here?
+    #assert result.body == json.dumps(body)
+    assert client._dep_tchannel.peers.hosts == routers
 
 
 def test_failing_advertise_should_raise(mock_server):
@@ -81,12 +84,13 @@ def test_failing_advertise_should_raise(mock_server):
     client = TChannelSyncClient('test-client')
 
     with pytest.raises(AdvertiseError):
-        client.advertise(routers, timeout=0.1)
+        future = client.advertise(routers, timeout=0.1)
+        future.result()
 
 
 def test_should_discover_ip():
 
     client = TChannelSyncClient('test-client')
-    hostport = client._async_client.hostport
+    hostport = client.hostport
 
     assert '0.0.0.0:0' != hostport
