@@ -19,7 +19,9 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
+
 import threading
+from tornado.stack_context import StackContext
 
 
 class TChannelLocal(threading.local):
@@ -53,6 +55,10 @@ class RequestContext(object):
 def get_current_context():
     """
 
-    :return: stack context in current running aysnc thread.
+    :return: request context in current running aysnc thread.
     """
     return _LOCAL.context
+
+
+def request_context(parent_tracing):
+    return StackContext(lambda: RequestContext(parent_tracing))

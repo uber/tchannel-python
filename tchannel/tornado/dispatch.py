@@ -27,14 +27,13 @@ from collections import namedtuple
 import tornado
 import tornado.gen
 from tornado import gen
-from tornado.stack_context import StackContext
 
 from tchannel import transport
 from tchannel.request import Request
 from tchannel.request import TransportHeaders
 from tchannel.response import response_from_mixed
 
-from ..context import RequestContext
+from ..context import request_context
 from ..errors import InvalidChecksumError
 from ..errors import InvalidEndpointError
 from ..errors import StreamingError
@@ -184,7 +183,7 @@ class RequestDispatcher(object):
                 )
 
                 # get new top-level resp from controller
-                with StackContext(lambda: RequestContext(request.tracing)):
+                with request_context(request.tracing):
                     f = handler.endpoint(new_req)
 
                 new_resp = yield gen.maybe_future(f)
@@ -200,7 +199,7 @@ class RequestDispatcher(object):
 
             # Dep impl - the handler is provided with a req & resp writer
             else:
-                with StackContext(lambda: RequestContext(request.tracing)):
+                with request_context(request.tracing):
                     f = handler.endpoint(request, response)
 
                 yield gen.maybe_future(f)
