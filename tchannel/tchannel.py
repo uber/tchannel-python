@@ -87,7 +87,7 @@ class TChannel(object):
             Value for ``arg3`` as specified by the TChannel protocol - this
             varies by Arg Scheme, but is typically used for the request body.
         :param int timeout:
-            How long to wait before raising a ``TimeoutError`` - this
+            How long to wait before raising a ``TimeoutError``, in ms - this
             defaults to ``tchannel.glossary.DEFAULT_TIMEOUT``.
         :param string retry_on:
             What events to retry on - valid values can be found in
