@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import pytest
 from mock import MagicMock
 
-from tchannel.errors import ProtocolError
+from tchannel.errors import TChannelError
 from tchannel.errors import TimeoutError
 from tchannel.messages import ErrorCode
 from tchannel.statsd import StatsdHook
@@ -70,7 +70,7 @@ def test_after_receive_response(statsd_hook, request):
 
 
 def test_after_receive_system_error(statsd_hook, request):
-    error = ProtocolError(code=ErrorCode.bad_request, description="")
+    error = TChannelError.from_code(ErrorCode.bad_request)
     statsd_hook.after_receive_system_error(request, error)
     statsd_hook._statsd.count.assert_called_with(
         "tchannel.outbound.calls.system-errors.no-service." +
@@ -79,7 +79,7 @@ def test_after_receive_system_error(statsd_hook, request):
 
 
 def test_after_receive_system_error_per_attempt(statsd_hook, request):
-    error = ProtocolError(code=ErrorCode.bad_request, description="")
+    error = TChannelError.from_code(code=ErrorCode.bad_request)
     statsd_hook.after_receive_system_error_per_attempt(request, error)
     statsd_hook._statsd.count.assert_called_with(
         "tchannel.outbound.calls.per-attempt.system-errors.no-service." +

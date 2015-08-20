@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import pytest
 import tornado
 
-from tchannel.errors import ConnectionClosedError
+from tchannel.errors import NetworkError
 from tchannel.tornado import TChannel
 from tchannel.tornado import hyperbahn
 
@@ -51,7 +51,7 @@ def test_request():
 
     # Just want to make sure all the plumbing fits together.
 
-    with pytest.raises(ConnectionClosedError):
+    with pytest.raises(NetworkError):
         yield channel.request(service='bar').send(
             arg1='baz',
             arg2='bam',

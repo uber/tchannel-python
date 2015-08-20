@@ -28,7 +28,7 @@ import tornado.gen
 from mock import patch
 
 from tchannel import retry
-from tchannel.errors import ProtocolError
+from tchannel.errors import BusyError
 from tchannel.errors import TChannelError
 from tchannel.errors import TimeoutError
 from tchannel.messages import ErrorCode
@@ -113,7 +113,7 @@ def test_retry_on_error_fail():
         )
     ) as mock_should_retry_on_error:
         mock_should_retry_on_error.return_value = True
-        with pytest.raises(ProtocolError) as e:
+        with pytest.raises(BusyError) as e:
             yield tchannel.request(
                 score_threshold=0
             ).send(
@@ -210,5 +210,5 @@ def test_should_retry_on_error(retry_flag, error_code, result):
         headers={'re': retry_flag},
     )
 
-    error = ProtocolError(code=error_code, description="retry")
+    error = TChannelError.from_code(error_code, description="retry")
     assert request.should_retry_on_error(error) == result

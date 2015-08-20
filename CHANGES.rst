@@ -19,7 +19,11 @@ Changelog
   the new server API. See the upgrade guide for details.
 - **BREAKING** - remove ``retry_delay`` option in the ``tchannel.tornado.send``
   method.
-- **BREAKING** - remove third arugment ``proxy`` from the server handler interface.
+- **BREAKING** - error types have been reworked significantly. In particular,
+  the all-encompassing ``ProtocolError`` has been replaced with more
+  granualar/actionable exceptions. See the upgrade guide for more info.
+- **BREAKING** - Remove third ``proxy`` argument from the server handler
+  interface.
 - **BREAKING** - ``ZipkinTraceHook`` is not longer registered by default.
 
 

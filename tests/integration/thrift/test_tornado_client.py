@@ -56,7 +56,7 @@ def test_call(mock_server, thrift_service):
 
 
 @pytest.mark.gen_test
-def test_protocol_error(mock_server, thrift_service):
+def test_unexpected_error(mock_server, thrift_service):
     mock_server.expect_call(
         thrift_service,
         'thrift',
@@ -64,7 +64,8 @@ def test_protocol_error(mock_server, thrift_service):
     ).and_raise(ValueError("I was not defined in the IDL"))
 
     client = mk_client(thrift_service, mock_server.port, trace=False)
-    with pytest.raises(errors.ProtocolError):
+
+    with pytest.raises(errors.UnexpectedError):
         yield client.getItem("foo")
 
 

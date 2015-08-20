@@ -26,7 +26,7 @@ from doubles import InstanceDouble, allow, expect
 from contextlib2 import contextmanager
 
 from tchannel.thrift import client_for
-from tchannel.errors import ProtocolError
+from tchannel.errors import TChannelError
 from tchannel.tornado import TChannel
 from tchannel.tornado.stream import InMemStream
 from tchannel.testing.vcr.proxy import VCRProxy
@@ -162,7 +162,7 @@ def test_protocol_error(vcr_service, cassette, call, mock_server):
     expect(cassette).record.never()
 
     mock_server.expect_call('endpoint').and_error(
-        ProtocolError(code=1, description='great sadness')
+        TChannelError.from_code(1, description='great sadness')
     )
 
     with pytest.raises(VCRProxy.RemoteServiceError) as exc_info:
