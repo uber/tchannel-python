@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import pytest
 from tornado import gen
 
-from tchannel.errors import ProtocolError
+from tchannel.errors import UnexpectedError
 from tchannel.thrift import client_for
 from tchannel.tornado import TChannel
 from tchannel.testing import vcr
@@ -105,7 +105,7 @@ def test_protocol_exception(tmpdir, mock_server, call):
         Exception('great sadness')
     ).once()
 
-    with pytest.raises(ProtocolError):
+    with pytest.raises(UnexpectedError):
         with vcr.use_cassette(str(path)):
             yield call('hello', 'world')
 
@@ -163,7 +163,7 @@ def test_use_cassette_as_decorator_with_inject(tmpdir, mock_server, call):
     @gen.coroutine
     @vcr.use_cassette(str(path), inject=True)
     def f(cassette):
-        with pytest.raises(ProtocolError):
+        with pytest.raises(UnexpectedError):
             yield call('hello', 'world', service='hello_service')
 
         assert len(cassette.data) == 0

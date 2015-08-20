@@ -33,9 +33,9 @@ app = TChannel('thrift-benchmark', hostport='localhost:12345')
 values = {'hello': 'world'}
 
 
-@app.register(KeyValue)
-def getValue(request, response):
-    key = request.args.key
+@app.thrift.register(KeyValue)
+def getValue(request):
+    key = request.body.key
     value = values.get(key)
 
     if value is None:
@@ -44,10 +44,10 @@ def getValue(request, response):
     return value
 
 
-@app.register(KeyValue)
-def setValue(request, response):
-    key = request.args.key
-    value = request.args.value
+@app.thrift.register(KeyValue)
+def setValue(request):
+    key = request.body.key
+    value = request.body.value
     values[key] = value
 
 

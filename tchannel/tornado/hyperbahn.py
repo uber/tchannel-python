@@ -28,7 +28,7 @@ import time
 import tornado.gen
 import tornado.ioloop
 
-from ..errors import AdvertiseError
+from ..errors import TimeoutError
 from .response import StatusCode
 
 EXPO_BASE = 1.4  # try this first
@@ -85,7 +85,7 @@ def _advertise_with_backoff(tchannel, service, timeout=None):
 
     while True:
         if timeout and time.time() - start > timeout:
-            raise AdvertiseError("Failed to register with Hyperbahn.")
+            raise TimeoutError("Failed to register with Hyperbahn.")
 
         response = yield _advertise(tchannel, service)
 

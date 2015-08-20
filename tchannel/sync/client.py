@@ -20,8 +20,9 @@
 
 from __future__ import absolute_import
 
-from tchannel import TChannel
 from threadloop import ThreadLoop
+
+from tchannel import TChannel
 
 
 class TChannelSyncClient(TChannel):

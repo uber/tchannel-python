@@ -32,8 +32,8 @@ from .. import errors
 from .. import frame
 from .. import glossary
 from .. import messages
-from ..errors import ConnectionClosedError
-from ..errors import InvalidErrorCodeError
+from ..errors import NetworkError
+from ..errors import FatalProtocolError
 from ..errors import TChannelError
 from ..event import EventType
 from ..io import BytesIO
@@ -43,7 +43,6 @@ from ..messages.common import StreamState
 from ..messages.error import ErrorMessage
 from ..messages.types import Types
 from .message_factory import MessageFactory
-from .message_factory import build_protocol_exception
 from .util import chain
 
 try:
@@ -134,7 +133,7 @@ class TornadoConnection(object):
 
         for message_id, future in self._outstanding.iteritems():
             future.set_exception(
-                ConnectionClosedError(
+                NetworkError(
                     "canceling outstanding request %d" % message_id
                 )
             )
@@ -218,8 +217,11 @@ class TornadoConnection(object):
                 if message.message_type == Types.ERROR:
                     future = self._outstanding.pop(message.id)
                     if future.running():
-                        protocol_exception = build_protocol_exception(message)
-                        future.set_exception(protocol_exception)
+                        error = TChannelError.from_code(
+                            message.code,
+                            description=message.description,
+                        )
+                        future.set_exception(error)
                     else:
                         protocol_exception = (
                             self.response_message_factory.build(message)
@@ -422,7 +424,7 @@ class TornadoConnection(object):
             yield stream.connect((host, int(port)))
         except socket.error as e:
             log.exception("Couldn't connect to %s", hostport)
-            raise ConnectionClosedError(
+            raise NetworkError(
                 "Couldn't connect to %s" % hostport, e
             )
 
@@ -471,7 +473,7 @@ class TornadoConnection(object):
             Message in response to which this error is being sent
         """
         if code not in ErrorMessage.ERROR_CODES.keys():
-            raise InvalidErrorCodeError(code)
+            raise FatalProtocolError(code)
 
         return self._write(
             ErrorMessage(

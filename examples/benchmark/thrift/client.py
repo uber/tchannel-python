@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 
 import os
+import sys
 import threading
 
 from tornado import gen, ioloop
@@ -43,6 +44,7 @@ local.requests = 0
 
 def report_work():
     print local.requests
+    sys.stdout.flush()
     local.requests = 0
 
 

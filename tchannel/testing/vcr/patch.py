@@ -27,7 +27,7 @@ import contextlib2
 from tornado import gen
 
 from tchannel import schemes
-from tchannel.errors import ProtocolError
+from tchannel.errors import TChannelError
 from tchannel.tornado import TChannel
 from tchannel.tornado.response import Response
 from tchannel.tornado.stream import maybe_stream
@@ -100,8 +100,8 @@ class PatchedClientOperation(object):
         try:
             vcr_response = yield vcr_response_future
         except VCRProxy.RemoteServiceError as e:
-            raise ProtocolError(
-                code=e.code,
+            raise TChannelError.from_code(
+                e.code,
                 description=(
                     "The remote service threw a protocol error: %s" %
                     e.message

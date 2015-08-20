@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import pytest
 
 from tchannel.sync import TChannelSyncClient
-from tchannel.tornado.hyperbahn import AdvertiseError
+from tchannel.errors import TimeoutError
 
 
 @pytest.mark.integration
@@ -83,7 +83,7 @@ def test_failing_advertise_should_raise(mock_server):
     routers = [mock_server.tchannel.hostport]
     client = TChannelSyncClient('test-client')
 
-    with pytest.raises(AdvertiseError):
+    with pytest.raises(TimeoutError):
         future = client.advertise(routers, timeout=0.1)
         future.result()
 
