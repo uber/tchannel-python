@@ -59,6 +59,10 @@ class TChannel(object):
         self.json = schemes.JsonArgScheme(self)
         self.thrift = schemes.ThriftArgScheme(self)
 
+    @property
+    def hooks(self):
+        return self._dep_tchannel.hooks
+
     @gen.coroutine
     def call(self, scheme, service, arg1, arg2=None, arg3=None,
              timeout=None, retry_on=None, retry_limit=None, hostport=None):
