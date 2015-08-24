@@ -82,9 +82,9 @@ class TChannel(object):
             will see in their metrics.
 
         :param string hostport:
-            An optional host/port to serve on, e.g., ``"127.0.0.1:5555``. If not
-            provided an ephemeral port will be used. When advertising on Hyperbahn
-            you callers do not need to know your port.
+            An optional host/port to serve on, e.g., ``"127.0.0.1:5555``. If
+            not provided an ephemeral port will be used. When advertising on
+            Hyperbahn you callers do not need to know your port.
         """
 
         # until we move everything here,

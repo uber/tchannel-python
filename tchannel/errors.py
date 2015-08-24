@@ -57,7 +57,8 @@ class TChannelError(Exception):
         description of these codes.
     :vartype code:
 
-    .. _`Specification`: http://tchannel.readthedocs.org/en/latest/protocol/#code1_1
+    .. _`Specification`:
+            http://tchannel.readthedocs.org/en/latest/protocol/#code1_1
     """
 
     __slots__ = (
