@@ -25,11 +25,13 @@ from __future__ import unicode_literals
 
 import subprocess
 import textwrap
+from mock import MagicMock, patch
 
 import psutil
 import pytest
 
 from tchannel import TChannel, Request, Response, schemes, errors
+from tchannel.event import EventHook
 from tchannel.response import TransportHeaders
 
 # TODO - need integration tests for timeout and retries, use testing.vcr
@@ -243,3 +245,16 @@ def test_endpoint_not_found():
             hostport=server.hostport,
             endpoint='foo',
         )
+
+
+def test_event_hook_register():
+    server = TChannel(name='server')
+    mock_hook = MagicMock(spec=EventHook)
+    with (
+        patch(
+            'tchannel.event.EventRegistrar.register',
+            autospec=True,
+        )
+    ) as mock_register:
+        server.hooks.register(mock_hook)
+        mock_register.called
