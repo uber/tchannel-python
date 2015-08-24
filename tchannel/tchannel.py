@@ -39,7 +39,7 @@ class TChannel(object):
     """Make requests to TChannel services."""
 
     def __init__(self, name, hostport=None, process_name=None,
-                 known_peers=None, trace=False):
+                 known_peers=None, trace=True):
 
         # until we move everything here,
         # lets compose the old tchannel
@@ -64,8 +64,19 @@ class TChannel(object):
         return self._dep_tchannel.hooks
 
     @gen.coroutine
-    def call(self, scheme, service, arg1, arg2=None, arg3=None,
-             timeout=None, retry_on=None, retry_limit=None, hostport=None):
+    def call(
+        self,
+        scheme,
+        service,
+        arg1,
+        arg2=None,
+        arg3=None,
+        timeout=None,
+        retry_on=None,
+        retry_limit=None,
+        hostport=None,
+        shard_key=None,
+    ):
         """Make low-level requests to TChannel services.
 
         This method uses TChannel's protocol terminology for param naming.
@@ -135,6 +146,9 @@ class TChannel(object):
             transport.SCHEME: scheme,
             transport.CALLER_NAME: self.name,
         }
+        if shard_key:
+            transport_headers[transport.SHARD_KEY] = shard_key
+
         response = yield operation.send(
             arg1=arg1,
             arg2=arg2,

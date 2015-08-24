@@ -69,8 +69,7 @@ class Expectation(object):
     def and_result(self, result):
 
         def execute(request, response):
-            response.body = result
-            #response.write_result(result)
+            return result
 
         self.execute = execute
         return self
@@ -79,22 +78,6 @@ class Expectation(object):
 
         def execute(request, response):
             raise exc
-
-        self.execute = execute
-        return self
-
-    def and_error(self, protocoal_error):
-
-        def execute(request, response):
-            # send error message for test purpose only
-            connection = response.connection
-            connection.send_error(
-                protocoal_error.code,
-                protocoal_error.description,
-                response.id,
-            )
-            # stop normal response streams
-            response.set_exception(TChannelError("stop stream"))
 
         self.execute = execute
         return self
@@ -143,8 +126,11 @@ class MockServer(object):
             response = Response()
             return expectation.execute(request, response)
 
-        getattr(self.tchannel, scheme).register(endpoint, **kwargs)(
-            handle_expected_endpoint
+        self.tchannel.register(
+            scheme=scheme,
+            endpoint=endpoint,
+            handler=handle_expected_endpoint,
+            **kwargs
         )
 
         return expectation

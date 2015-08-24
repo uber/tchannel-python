@@ -33,9 +33,22 @@ class RawArgScheme(object):
     def __init__(self, tchannel):
         self._tchannel = tchannel
 
-    def __call__(self, service, endpoint, body=None, headers=None,
-                 timeout=None, retry_on=None, retry_limit=None, hostport=None):
+    def __call__(
+        self,
+        service,
+        endpoint,
+        body=None,
+        headers=None,
+        timeout=None,
+        retry_on=None,
+        retry_limit=None,
+        hostport=None,
+        shard_key=None,
+    ):
         """Make Raw TChannel Request.
+
+        The request's headers and body are treated as raw bytes and not
+        serialized/deserialized.
 
         .. code-block: python
 

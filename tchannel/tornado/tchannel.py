@@ -65,7 +65,7 @@ class TChannel(object):
     FALLBACK = RequestDispatcher.FALLBACK
 
     def __init__(self, name, hostport=None, process_name=None,
-                 known_peers=None, trace=False, dispatcher=None):
+                 known_peers=None, trace=True, dispatcher=None):
         """Build or re-use a TChannel.
 
         :param name:

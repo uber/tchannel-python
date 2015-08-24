@@ -38,8 +38,18 @@ class JsonArgScheme(object):
         self._tchannel = tchannel
 
     @gen.coroutine
-    def __call__(self, service, endpoint, body=None, headers=None,
-                 timeout=None, retry_on=None, retry_limit=None, hostport=None):
+    def __call__(
+        self,
+        service,
+        endpoint,
+        body=None,
+        headers=None,
+        timeout=None,
+        retry_on=None,
+        retry_limit=None,
+        hostport=None,
+        shard_key=None,
+    ):
         """Make JSON TChannel Request.
 
         .. code-block: python
@@ -93,6 +103,7 @@ class JsonArgScheme(object):
             retry_on=retry_on,
             retry_limit=retry_limit,
             hostport=hostport,
+            shard_key=shard_key,
         )
 
         # deserialize
