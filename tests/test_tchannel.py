@@ -25,11 +25,13 @@ from __future__ import unicode_literals
 
 import subprocess
 import textwrap
+from mock import MagicMock, patch
 
 import psutil
 import pytest
 
 from tchannel import TChannel, Request, Response, schemes
+from tchannel.event import EventHook
 from tchannel.response import TransportHeaders
 
 # TODO - need integration tests for timeout and retries, use testing.vcr
@@ -227,3 +229,16 @@ def test_endpoint_can_be_called_as_a_pure_func():
     assert isinstance(resp, Response)
     assert resp.headers == 'resp headers'
     assert resp.body == 'resp body'
+
+
+def test_event_hook_register():
+    server = TChannel(name='server')
+    mock_hook = MagicMock(spec=EventHook)
+    with (
+        patch(
+            'tchannel.event.EventRegistrar.register',
+            autospec=True,
+        )
+    ) as mock_register:
+        server.hooks.register(mock_hook)
+        mock_register.called
