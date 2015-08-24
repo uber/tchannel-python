@@ -77,7 +77,7 @@ class TChannel(AsyncTChannel):
             trace=trace,
 
         )
-        self._threadloop = ThreadLoop()
+        self._threadloop = threadloop or ThreadLoop()
         self._threadloop.start()
 
         self.advertise = self._wrap(self.advertise)
