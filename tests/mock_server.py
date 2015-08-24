@@ -134,6 +134,9 @@ class MockServer(object):
     def expect_call(self, endpoint, scheme='raw', **kwargs):
         assert isinstance(scheme, basestring)
 
+        if not isinstance(endpoint, basestring):
+            scheme = 'thrift'
+
         expectation = Expectation()
 
         def handle_expected_endpoint(request):
