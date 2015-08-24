@@ -65,11 +65,8 @@ class RequestDispatcher(object):
     FALLBACK = object()
 
     def __init__(self, _handler_returns_response=False):
-        self.handlers = {
-            self.FALLBACK: Handler(
-                self.not_found, RawSerializer(), RawSerializer()
-            )
-        }
+        self.handlers = {}
+        self.register(self.FALLBACK, self.not_found)
         self._handler_returns_response = _handler_returns_response
 
     _HANDLER_NAMES = {
@@ -181,6 +178,7 @@ class RequestDispatcher(object):
                     body=b,
                     headers=he,
                     transport=t,
+                    endpoint=request.endpoint,
                 )
 
                 # Not safe to have coroutine yields statement within
@@ -271,11 +269,10 @@ class RequestDispatcher(object):
         self.handlers[rule] = Handler(handler, req_serializer, resp_serializer)
 
     @staticmethod
-    def not_found(request, response):
+    def not_found(request, response=None):
         """Default behavior for requests to unrecognized endpoints."""
         raise BadRequestError(
-            description="Endpoint '%s' for service '%s' is not defined" % (
+            description="Endpoint '%s' is not defined" % (
                 request.endpoint,
-                request.service,
             ),
         )

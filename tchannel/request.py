@@ -35,13 +35,21 @@ class Request(object):
     __slots__ = (
         'body',
         'headers',
-        'transport'
+        'transport',
+        'endpoint',
     )
 
-    def __init__(self, body=None, headers=None, transport=None):
+    def __init__(
+        self,
+        body=None,
+        headers=None,
+        transport=None,
+        endpoint=None,
+    ):
         self.body = body
         self.headers = headers
         self.transport = transport
+        self.endpoint = endpoint
 
 
 class TransportHeaders(object):

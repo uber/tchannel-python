@@ -29,7 +29,7 @@ import textwrap
 import psutil
 import pytest
 
-from tchannel import TChannel, Request, Response, schemes
+from tchannel import TChannel, Request, Response, schemes, errors
 from tchannel.response import TransportHeaders
 
 # TODO - need integration tests for timeout and retries, use testing.vcr
@@ -227,3 +227,19 @@ def test_endpoint_can_be_called_as_a_pure_func():
     assert isinstance(resp, Response)
     assert resp.headers == 'resp headers'
     assert resp.body == 'resp body'
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_endpoint_not_found():
+    server = TChannel(name='server')
+    server.listen()
+
+    tchannel = TChannel(name='client')
+
+    with pytest.raises(errors.BadRequestError):
+        yield tchannel.raw(
+            service='server',
+            hostport=server.hostport,
+            endpoint='foo',
+        )
