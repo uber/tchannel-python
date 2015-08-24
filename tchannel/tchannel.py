@@ -22,6 +22,8 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals
 )
 
+import json
+
 from tornado import gen
 
 from . import schemes
@@ -199,6 +201,7 @@ class TChannel(object):
         else:
             return decorator(handler)
 
+    @gen.coroutine
     def advertise(self, routers, name=None, timeout=None):
         """Advertise with Hyperbahn.
 
@@ -233,8 +236,14 @@ class TChannel(object):
             When unable to make our first advertise request to Hyperbahn.
             Subsequent requests may fail but will be ignored.
         """
-        return self._dep_tchannel.advertise(
+        dep_result = yield self._dep_tchannel.advertise(
             routers=routers,
             name=name,
             timeout=timeout
         )
+
+        body = yield dep_result.get_body()
+        headers = yield dep_result.get_header()
+        response = Response(json.loads(body), headers or {})
+
+        raise gen.Return(response)
