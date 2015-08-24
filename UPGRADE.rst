@@ -34,9 +34,10 @@ From 0.15 to 0.16
 - ``TChannelSyncClient`` has been replaced with ``tchannel.sync.TChannel``.
   This new synchronous client has been significantly re-worked to more closely
   match the asynchronous ``TChannel`` API. ``tchannel.sync.thrift.client_for``
-  has been removed and ``tchannel.thrift.client_for`` should be used instead.
-  This new API allows specifying headers, timeouts, and retry behavior with
-  Thrift requests.
+  has been removed and ``tchannel.thrift_request_builder`` should be used
+  instead (``tchannel.thrift.client_for`` still exists for backwards
+  compatibility but is not recommended). This new API allows specifying
+  headers, timeouts, and retry behavior with Thrift requests.
 
   Before:
 
