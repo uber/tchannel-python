@@ -1,5 +1,5 @@
-Changelog
-=========
+Changes by Version
+==================
 
 
 0.16.0 (unreleased)
@@ -25,6 +25,8 @@ Changelog
 - **BREAKING** - Remove third ``proxy`` argument from the server handler
   interface.
 - **BREAKING** - ``ZipkinTraceHook`` is not longer registered by default.
+- **BREAKING** - ``tchannel.sync.client.TChannelSyncClient`` replaced with
+  ``tchannel.sync.TChannel``.
 
 
 0.15.2 (2015-08-07)

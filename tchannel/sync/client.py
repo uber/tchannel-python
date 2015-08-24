@@ -22,28 +22,37 @@ from __future__ import absolute_import
 
 from threadloop import ThreadLoop
 
-from tchannel import TChannel
+from tchannel import TChannel as AsyncTChannel
 
 
-class TChannelSyncClient(TChannel):
+class TChannel(AsyncTChannel):
     """Make synchronous TChannel requests.
 
-    This client does not support incoming connections or requests- this is
-    a uni-directional client only.
+    This client does not support incoming requests -- it is a uni-directional
+    client only.
 
     The client is implemented on top of the Tornado-based implementation and
-    starts and stops IOLoops on-demand.
+    offloads IO to a thread running an ``IOLoop`` next to your process.
+
+    Usage mirrors the :py:class:`TChannel` class.
 
     .. code-block:: python
 
-        client = TChannelSyncClient()
-        response = client.request(
-            hostport='localhost:4040',
-            service='HelloService',
-        ).send(
-            'hello', None, json.dumps({"name": "World"})
+        tchannel = TChannel(name='my-synchronous-service')
+
+        # Advertise with Hyperbahn.
+        # This returns a future. You may want to block on its result,
+        # particularly if you want you app to die on unsuccessful
+        # advertisement.
+        tchannel.advertise(routers)
+
+        # thrift_service is the result of a call to ``thrift_request_builder``
+        future = tchannel.thrift(
+            thrift_service.getItem('foo'),
+            timeout=1000,
         )
 
+        result = future.result()
     """
 
     def __init__(
@@ -60,7 +69,7 @@ class TChannelSyncClient(TChannel):
         :param process_name:
             Name of the calling process. Used for logging purposes only.
         """
-        super(TChannelSyncClient, self).__init__(
+        super(TChannel, self).__init__(
             name,
             hostport=hostport,
             process_name=process_name,

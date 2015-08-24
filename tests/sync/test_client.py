@@ -22,7 +22,7 @@ from __future__ import absolute_import
 
 import pytest
 
-from tchannel.sync import TChannelSyncClient
+from tchannel.sync import TChannel
 from tchannel.errors import TimeoutError
 
 
@@ -35,7 +35,7 @@ def test_sync_client_should_get_raw_response(mock_server):
         body="OK"
     )
 
-    client = TChannelSyncClient('test-client')
+    client = TChannel('test-client')
 
     future = client.raw(
         service='foo',
@@ -63,7 +63,7 @@ def test_advertise_should_result_in_peer_connections(mock_server):
         mock_server.tchannel.hostport
     ]
 
-    client = TChannelSyncClient('test-client')
+    client = TChannel('test-client')
     future = client.advertise(routers)
 
     result = future.result()
@@ -81,7 +81,7 @@ def test_failing_advertise_should_raise(mock_server):
     )
 
     routers = [mock_server.tchannel.hostport]
-    client = TChannelSyncClient('test-client')
+    client = TChannel('test-client')
 
     with pytest.raises(TimeoutError):
         future = client.advertise(routers, timeout=0.1)
@@ -90,7 +90,7 @@ def test_failing_advertise_should_raise(mock_server):
 
 def test_should_discover_ip():
 
-    client = TChannelSyncClient('test-client')
+    client = TChannel('test-client')
     hostport = client.hostport
 
     assert '0.0.0.0:0' != hostport

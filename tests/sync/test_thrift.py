@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import pytest
 
 from tchannel import thrift_request_builder
-from tchannel.sync import TChannelSyncClient
+from tchannel.sync import TChannel
 
 
 @pytest.mark.integration
@@ -45,7 +45,7 @@ def test_call(mock_server, thrift_service):
         hostport=mock_server.hostport,
     )
 
-    tchannel = TChannelSyncClient('test-client')
+    tchannel = TChannel('test-client')
 
     future = tchannel.thrift(
         thrift_service.getItem('foo')

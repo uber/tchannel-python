@@ -28,7 +28,22 @@ __all__ = ['Response']
 
 
 class Response(object):
-    """TChannel Response"""
+    """A TChannel response.
+
+    This is sent by handlers and received by callers.
+
+    :ivar body:
+        The payload of this response. The type of this attribute depends on the
+        scheme being used (e.g., JSON, Thrift, etc.).
+
+    :ivar headers:
+        A dictionary of application headers. This should be a mapping of
+        strings to strings.
+
+    :ivar transport:
+        Protocol-level transport headers. These are used for routing over
+        Hyperbahn.
+    """
 
     # TODO implement __repr__
 
