@@ -102,22 +102,9 @@ def _advertise_with_backoff(tchannel, service, timeout=None):
 
 @tornado.gen.coroutine
 def advertise(tchannel, service, routers, timeout=None):
-    """Advertise the given TChannel to Hyperbahn using the given name.
+    """Advertise with Hyperbahn.
 
-    This informs Hyperbahn that the given service is hosted at this TChannel
-    at a fixed rate.
-
-    It also tells the TChannel about the given Hyperbahn routers.
-
-    :param tchannel:
-        TChannel to register with Hyperbahn
-    :param service:
-        Name of the service behind this TChannel
-    :param routers:
-        Seed list of addresses of Hyperbahn routers
-    :returns:
-        A future that resolves to the remote server's response after the first
-        advertise finishes.
+    See :py:class:`tchannel.TChannel.advertise`.
     """
     timeout = timeout or FIRST_ADVERTISE_TIME
 

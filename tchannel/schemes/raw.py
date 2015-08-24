@@ -35,7 +35,10 @@ class RawArgScheme(object):
 
     def __call__(self, service, endpoint, body=None, headers=None,
                  timeout=None, retry_on=None, retry_limit=None, hostport=None):
-        """Make Raw TChannel Request.
+        """Make a raw TChannel request.
+
+        The request's headers and body are treated as raw bytes and not
+        serialized/deserialized.
 
         .. code-block: python
 
@@ -67,7 +70,8 @@ class RawArgScheme(object):
         :param string hostport:
             A 'host:port' value to use when making a request directly to a
             TChannel service, bypassing Hyperbahn.
-        :return Response:
+
+        :rtype: Response
         """
 
         return self._tchannel.call(

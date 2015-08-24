@@ -75,7 +75,8 @@ class JsonArgScheme(object):
         :param string hostport:
             A 'host:port' value to use when making a request directly to a
             TChannel service, bypassing Hyperbahn.
-        :return Response:
+
+        :rtype: Response
         """
 
         # serialize

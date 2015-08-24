@@ -20,11 +20,9 @@
 
 from __future__ import absolute_import
 
-import json
-
 import pytest
 
-from tchannel.sync import TChannelSyncClient
+from tchannel.sync import TChannel
 from tchannel.errors import TimeoutError
 
 
@@ -36,15 +34,18 @@ def test_sync_client_should_get_raw_response(mock_server):
         headers="",
         body="OK"
     )
-    hostport = mock_server.tchannel.hostport
 
-    client = TChannelSyncClient('test-client')
-    request = client.request(hostport)
+    client = TChannel('test-client')
 
-    future = request.send(endpoint, None, "")
+    future = client.raw(
+        service='foo',
+        hostport=mock_server.hostport,
+        endpoint=endpoint,
+    )
+
     response = future.result()
 
-    assert response.header == ""
+    assert response.headers == ""
     assert response.body == "OK"
 
 
@@ -62,13 +63,14 @@ def test_advertise_should_result_in_peer_connections(mock_server):
         mock_server.tchannel.hostport
     ]
 
-    client = TChannelSyncClient('test-client')
-    result = client.advertise(routers)
+    client = TChannel('test-client')
+    future = client.advertise(routers)
 
-    assert result.header == ""
-    # @todo https://github.com/uber/tchannel-python/issues/34
-    assert result.body == json.dumps(body)
-    assert client._async_client.peers.hosts == routers
+    result = future.result()
+
+    assert result.headers == {}
+    assert result.body == body
+    assert client._dep_tchannel.peers.hosts == routers
 
 
 def test_failing_advertise_should_raise(mock_server):
@@ -78,15 +80,16 @@ def test_failing_advertise_should_raise(mock_server):
     )
 
     routers = [mock_server.tchannel.hostport]
-    client = TChannelSyncClient('test-client')
+    client = TChannel('test-client')
 
     with pytest.raises(TimeoutError):
-        client.advertise(routers, timeout=0.1)
+        future = client.advertise(routers, timeout=0.1)
+        future.result()
 
 
 def test_should_discover_ip():
 
-    client = TChannelSyncClient('test-client')
-    hostport = client._async_client.hostport
+    client = TChannel('test-client')
+    hostport = client.hostport
 
     assert '0.0.0.0:0' != hostport

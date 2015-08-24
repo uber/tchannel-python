@@ -28,7 +28,26 @@ __all__ = ['Request']
 
 
 class Request(object):
-    """TChannel Request"""
+    """A TChannel request.
+
+    This is sent by callers and received by registered handlers.
+
+    :ivar body:
+        The payload of this request. The type of this attribute depends on the
+        scheme being used (e.g., JSON, Thrift, etc.).
+
+    :ivar headers:
+        A dictionary of application headers. This should be a mapping of
+        strings to strings.
+
+    :ivar transport:
+        Protocol-level transport headers. These are used for routing over
+        Hyperbahn.
+
+        The most useful piece of information here is probably
+        ``request.transport.caller_name``, which is the identity of the
+        application that created this request.
+    """
 
     # TODO move over other props from tchannel.tornado.request
 

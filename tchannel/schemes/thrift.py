@@ -32,7 +32,30 @@ from . import THRIFT
 
 
 class ThriftArgScheme(object):
-    """Semantic params and serialization for Thrift."""
+    """Handler registration and serialization for Thrift.
+
+    To register a Thrift handler:
+
+    .. code:: python
+
+        @tchannel.thrift(GeneratedThriftModule)
+        def method(request):
+            print request.body.some_arg
+
+    When calling a remote service, generated Thrift types need to be wrapped
+    with :py:func:`thrift_request_builder` to provide TChannel compatibility:
+
+    .. code:: python
+
+        thrift_service = thrift_request_builder(
+            service='service-identifier',
+            thrift_module=GeneratedThriftModule,
+        )
+
+        response = yield tchannel.thrift(
+            thrift_service.method(some_arg='foo'),
+        )
+    """
 
     NAME = THRIFT
 

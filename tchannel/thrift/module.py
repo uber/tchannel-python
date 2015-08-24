@@ -31,7 +31,7 @@ from .reflection import get_service_methods, get_module_name
 
 def thrift_request_builder(service, thrift_module, hostport=None,
                            thrift_class_name=None):
-    """Create a ThriftRequestMaker from a Thrift generated module.
+    """Provide TChannel compatibility with Thrift-generated modules.
 
     The service this creates is meant to be used with TChannel like so:
 
@@ -54,12 +54,15 @@ def thrift_request_builder(service, thrift_module, hostport=None,
     :param string service:
         Name of Thrift service to call. This is used internally for
         grouping and stats, but also to route requests over Hyperbahn.
+
     :param thrift_module:
         The top-level module of the Apache Thrift generated code for
         the service that will be called.
+
     :param string hostport:
         When calling the Thrift service directly, and not over Hyperbahn,
         this 'host:port' value should be provided.
+
     :param string thrift_class_name:
         When the Apache Thrift generated Iface class name does not match
         thrift_module, then this should be provided.
