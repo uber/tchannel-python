@@ -27,7 +27,6 @@ from tchannel.errors import NetworkError
 from tchannel.errors import BadRequestError
 from tchannel import TChannel
 from tchannel.tornado.connection import StreamConnection
-from tchannel.tornado.stream import InMemStream
 from tests.util import big_arg
 
 

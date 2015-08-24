@@ -69,7 +69,6 @@ class TransportHeaders(object):
         'shard_key',
     )
 
-
     def __init__(self,
                  caller_name=None,
                  claim_at_start=None,

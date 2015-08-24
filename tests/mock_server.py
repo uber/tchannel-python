@@ -26,7 +26,6 @@ import tornado.ioloop
 
 from tchannel import TChannel
 from tchannel import Response
-from tchannel.errors import TChannelError
 
 
 class UnexpectedCallException(Exception):
