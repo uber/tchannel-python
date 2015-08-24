@@ -24,7 +24,8 @@ import threading
 
 import tornado.ioloop
 
-import tchannel.tornado.tchannel as tornado_tchannel
+from tchannel import TChannel
+from tchannel import Response
 from tchannel.errors import TChannelError
 
 
@@ -58,8 +59,9 @@ class Expectation(object):
 
         def execute(request, response):
             if headers:
-                response.write_header(headers)
-            response.write_body(body)
+                response.headers = headers
+            response.body = body
+            return response
 
         self.execute = execute
         return self
@@ -67,7 +69,8 @@ class Expectation(object):
     def and_result(self, result):
 
         def execute(request, response):
-            response.write_result(result)
+            response.body = result
+            #response.write_result(result)
 
         self.execute = execute
         return self
@@ -110,7 +113,7 @@ class MockServer(object):
     def __init__(self, port=None, timeout=None):
         port = port or 0
 
-        self.tchannel = tornado_tchannel.TChannel(
+        self.tchannel = TChannel(
             name='test',
             hostport="localhost:%s" % str(port),
         )
@@ -128,17 +131,19 @@ class MockServer(object):
     def hostport(self):
         return self.tchannel.hostport
 
-    def expect_call(self, endpoint, scheme=None, **kwargs):
-        assert scheme is None or isinstance(scheme, basestring)
+    def expect_call(self, endpoint, scheme='raw', **kwargs):
+        assert isinstance(scheme, basestring)
 
         expectation = Expectation()
 
-        def handle_expected_endpoint(request, response):
-            expectation.execute(request, response)
+        def handle_expected_endpoint(request):
+            response = Response()
+            return expectation.execute(request, response)
 
-        self.tchannel.register(
-            endpoint, scheme, handle_expected_endpoint, **kwargs
+        getattr(self.tchannel, scheme).register(endpoint, **kwargs)(
+            handle_expected_endpoint
         )
+
         return expectation
 
     def __enter__(self):
