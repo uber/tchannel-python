@@ -14,6 +14,7 @@ Changelog
   before. Note the breaking change to the top-level TChannel on the next line.
 - Fixed a crash that would occur when forking with an unitialized ``TChannel``
   instance.
+- Add ``hooks`` property in the ``tchannel.TChannel`` class.
 - **BREAKING** - ``tchannel.TChannel.register`` no longer has the same
   functionality as ``tchannel.tornado.TChannel.register``, instead it exposes
   the new server API. See the upgrade guide for details.
