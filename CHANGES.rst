@@ -2,7 +2,7 @@ Changes by Version
 ==================
 
 
-0.16.0 (unreleased)
+0.16.0 (2015-08-25)
 -------------------
 
 - Introduced new server API through methods
