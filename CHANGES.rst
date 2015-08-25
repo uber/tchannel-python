@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.15.3 (unreleased)
+0.15.3 (2015-08-25)
 -------------------
 
 - Backported unhandled exception logging from 0.16.
