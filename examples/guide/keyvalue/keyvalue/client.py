@@ -19,29 +19,37 @@
 # THE SOFTWARE.
 from tornado import gen
 from tornado import ioloop
-from tchannel.thrift import client_for
-from tchannel.tornado import TChannel
+from tchannel import TChannel
+from tchannel import thrift_request_builder
 
 from service import KeyValue
 
 
-KeyValueClient = client_for('keyvalue-server', KeyValue)
+# Note: When using Hyperbahn this `hostport` option is *NOT NEEDED*.
+KeyValueClient = thrift_request_builder(
+    service='keyvalue-server',
+    thrift_module=KeyValue,
+    hostport='localhost:8889',
+)
 
 
 @gen.coroutine
 def run():
     app_name = 'keyvalue-client'
 
-    app = TChannel(app_name)
+    tchannel = TChannel(app_name)
 
-    # Note: When using Hyperbahn this `hostport` option is *NOT NEEDED*.
-    client = KeyValueClient(app, hostport='localhost:8889')
+    KeyValueClient.setValue("foo", "Hello, world!"),
 
-    yield client.setValue("foo", "Hello, world!")
+    yield tchannel.thrift(
+        KeyValueClient.setValue("foo", "Hello, world!"),
+    )
 
-    response = yield client.getValue("foo")
+    response = yield tchannel.thrift(
+        KeyValueClient.getValue("foo"),
+    )
 
-    print response
+    print response.body
 
 
 if __name__ == '__main__':
