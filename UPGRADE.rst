@@ -7,17 +7,20 @@ what broke and how to safely migrate to newer versions.
 From 0.15 to 0.16
 -----------------
 
-- ``tchannel.TChannel.register`` no longer mimicks ``tchannel.tornado.TChannel.register``,
-  instead it exposes the new server API like so:
+- ``tchannel.TChannel.register`` no longer mimicks
+  ``tchannel.tornado.TChannel.register``, instead it exposes the new server API
+  like so:
 
   Before:
 
   .. code:: python
 
-      from tchannel import TChannel
+      from tchannel.tornado import TChannel
+
+      tchannel = TChannel('my-service-name')
 
       @tchannel.register('endpoint', 'json')
-      def endpoint(request, response):
+      def endpoint(request, response, proxy):
           response.write({'resp': 'body'})
 
 
@@ -25,16 +28,22 @@ From 0.15 to 0.16
 
   .. code:: python
 
-      from tchannel import TChannel, Response
+      from tchannel import TChannel
+
+      tchannel = TChannel('my-service-name')
 
       @tchannel.json.register
       def endpoint(request):
-          return Response({'resp': 'body'})
+          return {'resp': 'body'}
 
-- `` from tchannel.tornado import TChannel`` is deprecated.
+          # Or, if you need to return headers with your response:
+          from tchannel import Response
+          return Response({'resp': 'body'}, {'header': 'foo'})
 
-- Remove ``retry_delay`` option from ``tchannel.tornado.peer.PeerClientOperation.send``
-  method.
+- ``from tchannel.tornado import TChannel`` is deprecated.
+
+- Removed ``retry_delay`` option from
+  ``tchannel.tornado.peer.PeerClientOperation.send`` method.
 
   Before: ``tchannel.tornado.TChannel.request.send(retry_delay=300)``
 
@@ -49,16 +58,16 @@ From 0.15 to 0.16
 
 - If you were catching ``BadRequest``, it may have been masking checksum errors
   and fatal streaming errors. These are now raised as ``FatalProtocolError``,
-  but in practive should not need to be handled when interacting with a
+  but in practice should not need to be handled when interacting with a
   well-behaved TChannel implementation.
 
 - ``TChannelApplicationError`` was unused and removed.
 
 - Three error types have been introduced to simplify retry handling:
-  ``NotRetryableError`` (for requests should never be retried),
-  ``RetryableError`` (for requests that are always safe to retry), and
-  ``MaybeRetryableError`` (for requests that are safe to retry on idempotent
-  endpoints).
+  - ``NotRetryableError`` (for requests should never be retried),
+  - ``RetryableError`` (for requests that are always safe to retry), and
+  - ``MaybeRetryableError`` (for requests that are safe to retry on idempotent
+    endpoints).
 
 
 From 0.14 to 0.15
