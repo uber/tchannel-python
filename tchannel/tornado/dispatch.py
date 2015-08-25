@@ -20,6 +20,7 @@
 
 from __future__ import absolute_import
 
+import logging
 from collections import defaultdict
 
 import tornado
@@ -34,6 +35,9 @@ from ..handler import BaseRequestHandler
 from ..messages.error import ErrorCode
 from .broker import ArgSchemeBroker
 from .response import Response
+
+
+log = logging.getLogger('tchannel')
 
 
 class RequestDispatcher(BaseRequestHandler):
@@ -74,6 +78,8 @@ class RequestDispatcher(BaseRequestHandler):
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
 
+        log.info('Received a call to %s.', request.endpoint)
+
         # event: receive_request
         request.tracing.name = request.endpoint
 
@@ -107,6 +113,8 @@ class RequestDispatcher(BaseRequestHandler):
             )
             response.flush()
         except (InvalidMessageError, InvalidEndpointError) as e:
+            log.warn('Received a bad request.')
+
             response.set_exception(e)
             connection.request_message_factory.remove_buffer(response.id)
             connection.send_error(
@@ -115,13 +123,13 @@ class RequestDispatcher(BaseRequestHandler):
                 response.id,
             )
         except Exception as e:
+            msg = "An unexpected error has occurred from the handler"
+            log.exception(msg)
+
             response.set_exception(TChannelError(e.message))
             connection.request_message_factory.remove_buffer(response.id)
-            connection.send_error(
-                ErrorCode.unexpected,
-                "An unexpected error has occurred from the handler",
-                response.id,
-            )
+            connection.send_error(ErrorCode.unexpected, msg, response.id)
+
             connection.tchannel.event_emitter.fire(
                 EventType.on_application_error,
                 request,
