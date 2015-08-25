@@ -138,19 +138,6 @@ Here we have created a TChannel instance and registered two no-op handlers with
 it. The name of these handlers map directly to the Thrift service we defined
 earlier.
 
-**NOTE:** Method handlers do not need to be declared at import-time, since this
-can become unwieldy in complex applications. We could also define them like
-so:
-
-.. code-block:: python
-
-    def run():
-        tchannel = TChannel('keyvalue-server')
-        tchannel.thrift.register(KeyValue, handler=Get)
-        tchannel.thrift.register(KeyValue, handler=Set)
-        tchannel.listen()
-        ioloop.IOLoop.current().start()
-
 A TChannel server only has one requirement: a name for itself. By default an
 ephemeral port will be chosen to listen on (although an explicit port can be
 provided).
