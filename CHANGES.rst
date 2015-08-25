@@ -2,6 +2,7 @@ Changelog
 =========
 
 0.15.3 (unreleased)
+-------------------
 
 - Backported unhandled exception logging from 0.16.
 
