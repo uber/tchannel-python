@@ -1,5 +1,5 @@
-Version Upgrade Guide
-=====================
+Upgrade Guide
+=============
 
 Migrating to a version of TChannel with breaking changes? This guide documents
 what broke and how to safely migrate to newer versions.
@@ -39,6 +39,58 @@ From 0.15 to 0.16
           # Or, if you need to return headers with your response:
           from tchannel import Response
           return Response({'resp': 'body'}, {'header': 'foo'})
+
+- ``TChannelSyncClient`` has been replaced with ``tchannel.sync.TChannel``.
+  This new synchronous client has been significantly re-worked to more closely
+  match the asynchronous ``TChannel`` API. ``tchannel.sync.thrift.client_for``
+  has been removed and ``tchannel.thrift_request_builder`` should be used
+  instead (``tchannel.thrift.client_for`` still exists for backwards
+  compatibility but is not recommended). This new API allows specifying
+  headers, timeouts, and retry behavior with Thrift requests.
+
+  Before:
+
+  .. code:: python
+
+      from tchannel.sync import TChannelSyncClient
+      from tchannel.sync.thrift import client_for
+
+      from generated.thrift.code import MyThriftService
+
+      tchannel_thrift_client = client_for('foo', MyThriftService)
+
+      tchannel = TChannelSyncClient(name='bar')
+
+      future = tchannel_thrift_client.someMethod(...)
+
+      result = future.result()
+
+
+  After:
+
+  .. code:: python
+
+      from tchannel import thrift_request_builder
+      from tchannel.sync import TChannel
+      from tchannel.retry import CONNECTION_ERROR_AND_TIMEOUT
+
+      from generated.thrift.code import MyThriftService
+
+      tchannel_thrift_client = thrift_request_builder(
+          service='foo',
+          thrift_module=MyThriftService,
+      )
+
+      tchannel = TChannel(name='bar')
+
+      future = tchannel.thrift(
+          tchannel_thrift_client.someMethod(...)
+          headers={'foo': 'bar'},
+          retry_on=CONNECTION_ERROR_AND_TIMEOUT,
+          timeout=1000,
+      )
+
+      result = future.result()
 
 - ``from tchannel.tornado import TChannel`` is deprecated.
 

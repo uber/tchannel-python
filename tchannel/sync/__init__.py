@@ -20,4 +20,4 @@
 
 from __future__ import absolute_import
 
-from .client import TChannelSyncClient  # noqa
+from .client import TChannel  # noqa

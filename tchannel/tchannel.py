@@ -22,6 +22,8 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals
 )
 
+import json
+
 from tornado import gen
 
 from . import schemes
@@ -36,10 +38,56 @@ __all__ = ['TChannel']
 
 
 class TChannel(object):
-    """Make requests to TChannel services."""
+    """Manages connections and requests to other TChannel services.
+
+    Usage for a JSON client/server:
+
+    .. code:: python
+
+        tchannel = TChannel(name='foo')
+
+        @tchannel.json.register
+        def handler(request):
+            return {'foo': 'bar'}
+
+        response = yield tchannel.json(
+            service='some-service',
+            endpoint='endpoint',
+            headers={'req': 'headers'},
+            body={'req': 'body'},
+        )
+
+    :cvar thrift:
+        Make Thrift requests over TChannel and register Thrift handlers.
+    :vartype thrift: ThriftArgScheme
+
+    :cvar json:
+        Make JSON requests over TChannel and register JSON handlers.
+    :vartype json: JsonArgScheme
+
+    :cvar raw:
+        Make requests and register handles that pass raw bytes.
+    :vartype raw: RawArgScheme
+
+    """
 
     def __init__(self, name, hostport=None, process_name=None,
                  known_peers=None, trace=False):
+        """
+        **Note:** In general only one ``TChannel`` instance should be used at a
+        time. Multiple ``TChannel`` instances are not advisable and could
+        result in undefined behavior.
+
+        :param string name:
+            How this application identifies itself. This is the name callers
+            will use to make contact, it is also what your downstream services
+            will see in their metrics.
+
+        :param string hostport:
+            An optional host/port to serve on, e.g., ``"127.0.0.1:5555``. If
+            not provided an ephemeral port will be used. When advertising on
+            Hyperbahn you callers do not need to know your port.
+        """
 
         # until we move everything here,
         # lets compose the old tchannel
@@ -68,39 +116,9 @@ class TChannel(object):
              timeout=None, retry_on=None, retry_limit=None, hostport=None):
         """Make low-level requests to TChannel services.
 
-        This method uses TChannel's protocol terminology for param naming.
-
-        For high level requests with automatic serialization and semantic
-        param names, use ``raw``, ``json``, and ``thrift`` methods instead.
-
-        :param string scheme:
-            Name of the Arg Scheme to be sent as the Transport Header ``as``;
-            eg. 'raw', 'json', 'thrift' are all valid values.
-        :param string service:
-            Name of the service that is being called. This is used
-            internally to route requests through Hyperbahn, and for grouping
-            of connection, and labelling stats. Note that when hostport is
-            provided, requests are not routed through Hyperbahn.
-        :param string arg1:
-            Value for ``arg1`` as specified by the TChannel protocol - this
-            varies by Arg Scheme, but is typically used for endpoint name.
-        :param string arg2:
-            Value for ``arg2`` as specified by the TChannel protocol - this
-            varies by Arg Scheme, but is typically used for app-level headers.
-        :param string arg3:
-            Value for ``arg3`` as specified by the TChannel protocol - this
-            varies by Arg Scheme, but is typically used for the request body.
-        :param int timeout:
-            How long to wait before raising a ``TimeoutError``, in ms - this
-            defaults to ``tchannel.glossary.DEFAULT_TIMEOUT``.
-        :param string retry_on:
-            What events to retry on - valid values can be found in
-            ``tchannel.retry``.
-        :param string retry_limit:
-            How many times to retry before
-        :param string hostport:
-            A 'host:port' value to use when making a request directly to a
-            TChannel service, bypassing Hyperbahn.
+        **Note:** Usually you would interact with a higher-level arg scheme
+        like :py:class:`tchannel.schemes.JsonArgScheme` or
+        :py:class:`tchannel.schemes.ThriftArgScheme`.
         """
 
         # TODO - dont use asserts for public API
@@ -187,9 +205,49 @@ class TChannel(object):
         else:
             return decorator(handler)
 
+    @gen.coroutine
     def advertise(self, routers, name=None, timeout=None):
-        return self._dep_tchannel.advertise(
+        """Advertise with Hyperbahn.
+
+        After a successful advertisement, Hyperbahn will establish long-lived
+        connections with your application. These connections are used to load
+        balance inbound and outbound requests to other applications on the
+        Hyperbahn network.
+
+        Re-advertisement happens periodically after calling this method (every
+        minute). Hyperbahn will eject us from the network if it doesn't get a
+        re-advertise from us after 5 minutes.
+
+        :param list routers:
+            A seed list of known Hyperbahn addresses to attempt contact with.
+            Entries should be of the form ``"host:port"``.
+
+        :param string name:
+            The name your application identifies itself as. This is usually
+            unneeded because in the common case it will match the ``name`` you
+            initialized the ``TChannel`` instance with. This is the identifier
+            other services will use to make contact with you.
+
+        :param timeout:
+            The timeout (in seconds) for the initial advertise attempt.
+            Defaults to 30 seconds.
+
+        :returns:
+            A future that resolves to the remote server's response after the
+            first advertise finishes.
+
+        :raises TimeoutError:
+            When unable to make our first advertise request to Hyperbahn.
+            Subsequent requests may fail but will be ignored.
+        """
+        dep_result = yield self._dep_tchannel.advertise(
             routers=routers,
             name=name,
             timeout=timeout
         )
+
+        body = yield dep_result.get_body()
+        headers = yield dep_result.get_header()
+        response = Response(json.loads(body), headers or {})
+
+        raise gen.Return(response)
