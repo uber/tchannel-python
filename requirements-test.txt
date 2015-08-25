@@ -34,7 +34,8 @@ mock==1.0.1
 doubles
 
 # for releases
-zest.releaser
+zest.releaser[recommended]
+twine
 
 # for debugging
 ipdb
