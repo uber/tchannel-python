@@ -26,6 +26,7 @@ from collections import namedtuple
 from thrift import Thrift
 from tornado import gen
 
+from tchannel import schemes
 from tchannel.errors import OneWayNotSupportedError
 
 from ..serializer.thrift import ThriftSerializer
@@ -166,17 +167,34 @@ def generate_method(service_module, service_name, method_name):
 
         body = serializer.serialize_body(call_args)
         header = serializer.serialize_header({})
-        response = yield self.tchannel.request(
-            hostport=self.hostport, service=self.service
-        ).send(
-            arg1=endpoint,
-            arg2=header,
-            arg3=body,  # body
-            headers=self.protocol_headers,
-            traceflag=self.trace
-        )
-        body = yield response.get_body()
+
+        # Glue for old API.
+        if hasattr(self.tchannel, 'request'):
+            response = yield self.tchannel.request(
+                hostport=self.hostport, service=self.service
+            ).send(
+                arg1=endpoint,
+                arg2=header,
+                arg3=body,  # body
+                headers=self.protocol_headers,
+                traceflag=self.trace
+            )
+            body = yield response.get_body()
+        else:
+            response = yield self.tchannel.call(
+                scheme=schemes.THRIFT,
+                service=self.service,
+                arg1=endpoint,
+                arg2=header,
+                arg3=body,
+                hostport=self.hostport,
+                #headers=self.protocol_headers,
+                #traceflag=self.trace,
+            )
+            body = response.body
+
         call_result = serializer.deserialize_body(body)
+
         if not result_spec:
             # void return type and no exceptions allowed
             raise gen.Return(None)

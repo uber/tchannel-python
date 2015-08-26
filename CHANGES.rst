@@ -7,6 +7,7 @@ Changes by Version
 
 - Fixed a bug where the 'not found' handler would incorrectly return
   serialization mismatch errors..
+- Made ``client_for`` compatible with ``tchannel.TChannel``.
 
 
 0.16.0 (2015-08-25)
