@@ -188,6 +188,7 @@ def generate_method(service_module, service_name, method_name):
                 arg2=header,
                 arg3=body,
                 hostport=self.hostport,
+                # TODO: Need to handle these!
                 #headers=self.protocol_headers,
                 #traceflag=self.trace,
             )
