@@ -7,6 +7,7 @@ Changes by Version
 
 - Fixed a bug where the 'not found' handler would incorrectly return
   serialization mismatch errors..
+- Fixed a bug which prevented VCR support from working with the sync client.
 - Made ``client_for`` compatible with ``tchannel.TChannel``.
 - Brought back ``tchannel.sync.client_for`` for backwards compatibility.
 
