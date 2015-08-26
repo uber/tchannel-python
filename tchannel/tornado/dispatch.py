@@ -141,13 +141,20 @@ class RequestDispatcher(object):
         tchannel.event_emitter.fire(EventType.before_receive_request, request)
 
         handler = self.handlers.get(request.endpoint)
+
         if handler is None:
             handler = self.handlers[self.FALLBACK]
 
-        if request.headers.get('as', None) != handler.req_serializer.name:
+        requested_as = request.headers.get('as', None)
+        expected_as = handler.req_serializer.name
+
+        if request.endpoint in self.handlers and requested_as != expected_as:
             connection.send_error(
                 ErrorCode.bad_request,
-                "Invalid arg scheme in request header",
+                "Your serialization was '%s' but the server expected '%s'" % (
+                    requested_as,
+                    expected_as,
+                ),
                 request.id,
             )
             raise gen.Return(None)

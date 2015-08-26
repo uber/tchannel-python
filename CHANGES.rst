@@ -5,7 +5,8 @@ Changes by Version
 0.16.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed a bug where the 'not found' handler would incorrectly return
+  serialization mismatch errors..
 
 
 0.16.0 (2015-08-25)

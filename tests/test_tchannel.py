@@ -233,18 +233,38 @@ def test_endpoint_can_be_called_as_a_pure_func():
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_endpoint_not_found():
+def test_endpoint_not_found_with_raw_request():
     server = TChannel(name='server')
     server.listen()
 
     tchannel = TChannel(name='client')
 
-    with pytest.raises(errors.BadRequestError):
+    with pytest.raises(errors.BadRequestError) as e:
         yield tchannel.raw(
             service='server',
             hostport=server.hostport,
             endpoint='foo',
         )
+
+    assert "Endpoint 'foo' is not defined" in e.value
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_endpoint_not_found_with_json_request():
+    server = TChannel(name='server')
+    server.listen()
+
+    tchannel = TChannel(name='client')
+
+    with pytest.raises(errors.BadRequestError) as e:
+        yield tchannel.json(
+            service='server',
+            hostport=server.hostport,
+            endpoint='foo',
+        )
+
+    assert "Endpoint 'foo' is not defined" in e.value
 
 
 def test_event_hook_register():
