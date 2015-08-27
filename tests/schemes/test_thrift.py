@@ -26,6 +26,7 @@ from __future__ import unicode_literals
 import mock
 import pytest
 from tornado import gen
+from tornado import concurrent
 
 from tchannel import (
     TChannel, Request, Response,
@@ -35,8 +36,12 @@ from tchannel.response import TransportHeaders
 from tchannel.errors import OneWayNotSupportedError
 from tchannel.errors import UnexpectedError
 from tchannel.errors import ValueExpectedError
+from tchannel.sync import TChannel as SyncTChannel
+from tchannel.sync.thrift import client_for as sync_client_for
+from tchannel.thrift import client_for
 from tchannel.testing.data.generated.ThriftTest import SecondService
 from tchannel.testing.data.generated.ThriftTest import ThriftTest
+from tchannel.tornado import TChannel as DeprecatedTChannel
 
 
 # TODO - where possible, in req/res style test, create parameterized tests,
@@ -1183,3 +1188,58 @@ def test_headers_should_be_a_map_of_strings(headers):
             request=mock.MagicMock(),
             headers=headers,
         )
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+@pytest.mark.parametrize('ClientTChannel', [TChannel, DeprecatedTChannel])
+def test_client_for(ClientTChannel):
+    server = TChannel(name='server')
+
+    @server.thrift.register(ThriftTest)
+    def testString(request):
+        return request.body.thing.encode('rot13')
+
+    server.listen()
+
+    tchannel = ClientTChannel(name='client')
+
+    client = client_for('server', ThriftTest)(
+        tchannel=tchannel,
+        hostport=server.hostport,
+    )
+
+    resp = yield client.testString(thing='foo')
+    assert resp == 'sbb'
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_client_for_with_sync_tchannel():
+    server = TChannel(name='server')
+
+    @server.thrift.register(ThriftTest)
+    def testString(request):
+        return request.body.thing.encode('rot13')
+
+    server.listen()
+
+    tchannel = SyncTChannel(name='client')
+
+    client = sync_client_for('server', ThriftTest)(
+        tchannel=tchannel,
+        hostport=server.hostport,
+    )
+
+    future = client.testString(thing='foo')
+
+    assert not isinstance(future, concurrent.Future)
+
+    # Our server is sharing our IO loop so let it handle the
+    # request.
+    while not future.done():
+        yield gen.moment
+
+    resp = future.result()
+
+    assert resp == 'sbb'
