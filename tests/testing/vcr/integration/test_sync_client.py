@@ -61,6 +61,65 @@ def test_record_success(tmpdir, mock_server):
 
 
 @pytest.mark.gen_test
+def test_record_success_no_hostport(tmpdir, mock_server):
+    path = tmpdir.join('data.yaml')
+    mock_server.expect_call('hello').and_write('world').once()
+    client = TChannel('test', known_peers=[mock_server.hostport])
+
+    with vcr.use_cassette(str(path)) as cass:
+        response = client.raw(
+            'hello_service',
+            'hello',
+            'world',
+        ).result(timeout=1)
+
+        assert 'world' == response.body
+
+    assert cass.play_count == 0
+    assert path.check(file=True)
+
+    with vcr.use_cassette(str(path)) as cass:
+        response = client.raw(
+            'hello_service',
+            'hello',
+            'world',
+        ).result(timeout=1)
+        assert 'world' == response.body
+
+    assert cass.play_count == 1
+
+
+@pytest.mark.gen_test
+def test_record_success_no_hostport_new_channels(tmpdir, mock_server):
+    path = tmpdir.join('data.yaml')
+    mock_server.expect_call('hello').and_write('world').once()
+
+    with vcr.use_cassette(str(path)) as cass:
+        client = TChannel('test', known_peers=[mock_server.hostport])
+        response = client.raw(
+            'hello_service',
+            'hello',
+            'world',
+        ).result(timeout=1)
+
+        assert 'world' == response.body
+
+    assert cass.play_count == 0
+    assert path.check(file=True)
+
+    with vcr.use_cassette(str(path)) as cass:
+        client = TChannel('test', known_peers=[mock_server.hostport])
+        response = client.raw(
+            'hello_service',
+            'hello',
+            'world',
+        ).result(timeout=1)
+        assert 'world' == response.body
+
+    assert cass.play_count == 1
+
+
+@pytest.mark.gen_test
 def test_record_success_new_channels(tmpdir, mock_server):
     path = tmpdir.join('data.yaml')
     mock_server.expect_call(

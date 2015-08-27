@@ -134,6 +134,8 @@ class Client(Iface):
       raise result.remoteServiceError
     if result.serviceError is not None:
       raise result.serviceError
+    if result.noPeersAvailable is not None:
+      raise result.noPeersAvailable
     raise TApplicationException(TApplicationException.MISSING_RESULT, "send failed: unknown result");
 
 
@@ -171,6 +173,8 @@ class Processor(Iface, TProcessor):
       result.remoteServiceError = remoteServiceError
     except VCRServiceError, serviceError:
       result.serviceError = serviceError
+    except NoPeersAvailableError, noPeersAvailable:
+      result.noPeersAvailable = noPeersAvailable
     oprot.writeMessageBegin("send", TMessageType.REPLY, seqid)
     result.write(oprot)
     oprot.writeMessageEnd()
@@ -211,6 +215,7 @@ class send_result(VCRThriftBase):
   current cassette disallows recording new interactions.
    - remoteServiceError
    - serviceError
+   - noPeersAvailable
   """
 
   __slots__ = [ 
@@ -218,6 +223,7 @@ class send_result(VCRThriftBase):
     'cannotRecord',
     'remoteServiceError',
     'serviceError',
+    'noPeersAvailable',
    ]
 
   thrift_spec = (
@@ -225,13 +231,15 @@ class send_result(VCRThriftBase):
     (1, TType.STRUCT, 'cannotRecord', (CannotRecordInteractionsError, CannotRecordInteractionsError.thrift_spec), None, ), # 1
     (2, TType.STRUCT, 'remoteServiceError', (RemoteServiceError, RemoteServiceError.thrift_spec), None, ), # 2
     (3, TType.STRUCT, 'serviceError', (VCRServiceError, VCRServiceError.thrift_spec), None, ), # 3
+    (4, TType.STRUCT, 'noPeersAvailable', (NoPeersAvailableError, NoPeersAvailableError.thrift_spec), None, ), # 4
   )
 
-  def __init__(self, success=None, cannotRecord=None, remoteServiceError=None, serviceError=None,):
+  def __init__(self, success=None, cannotRecord=None, remoteServiceError=None, serviceError=None, noPeersAvailable=None,):
     self.success = success
     self.cannotRecord = cannotRecord
     self.remoteServiceError = remoteServiceError
     self.serviceError = serviceError
+    self.noPeersAvailable = noPeersAvailable
 
   def __hash__(self):
     value = 17
@@ -239,5 +247,6 @@ class send_result(VCRThriftBase):
     value = (value * 31) ^ hash(self.cannotRecord)
     value = (value * 31) ^ hash(self.remoteServiceError)
     value = (value * 31) ^ hash(self.serviceError)
+    value = (value * 31) ^ hash(self.noPeersAvailable)
     return value
 
