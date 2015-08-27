@@ -53,6 +53,7 @@ class PatchedClientOperation(object):
     def __init__(
         self,
         vcr_client,
+        original_tchannel,
         hostport=None,
         service=None,
         arg_scheme=None,
@@ -64,6 +65,7 @@ class PatchedClientOperation(object):
         self.hostport = hostport
         self.service = service or ''
         self.arg_scheme = arg_scheme or schemes.DEFAULT
+        self.original_tchannel = original_tchannel
 
         # TODO what to do with retry, parent_tracing and score_threshold
 
@@ -83,6 +85,7 @@ class PatchedClientOperation(object):
         vcr_request = VCRProxy.Request(
             serviceName=self.service.encode('utf-8'),
             hostPort=self.hostport,
+            knownPeers=self.original_tchannel.peers.hosts,
             endpoint=endpoint,
             headers=(yield read_full(arg2)),
             body=(yield read_full(arg3)),
@@ -135,7 +138,9 @@ class Patcher(object):
 
         @wraps(_TChannel_request)
         def request(channel, *args, **kwargs):
-            return PatchedClientOperation(self.vcr_client, *args, **kwargs)
+            return PatchedClientOperation(
+                self.vcr_client, channel, *args, **kwargs
+            )
 
         return mock.patch.object(TChannel, 'request', request)
 

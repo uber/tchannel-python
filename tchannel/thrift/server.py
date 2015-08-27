@@ -109,7 +109,6 @@ def build_handler(result_type, f):
 
         try:
             response = yield gen.maybe_future(f(request))
-
         except Exception:
             result.write_exc_info(sys.exc_info())
         else:

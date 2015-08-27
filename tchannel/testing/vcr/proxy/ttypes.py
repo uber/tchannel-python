@@ -98,9 +98,15 @@ class Request(VCRThriftBase):
    - endpoint
    - headers
    - body
-   - hostPort
+   - hostPort: Remote hostport to which the request will be sent.
+
+  If specified, the request will be made to this host only.
    - argScheme
    - transportHeaders
+   - knownPeers: List of known peers of the TChannel at the time the request was made.
+
+  This MUST be specified if hostPort wasn't. The request will be sent to
+  a random peer from the list.
   """
 
   __slots__ = [ 
@@ -111,6 +117,7 @@ class Request(VCRThriftBase):
     'hostPort',
     'argScheme',
     'transportHeaders',
+    'knownPeers',
    ]
 
   thrift_spec = (
@@ -123,9 +130,11 @@ class Request(VCRThriftBase):
     (6, TType.I32, 'argScheme', None,     0, ), # 6
     (7, TType.LIST, 'transportHeaders', (TType.STRUCT,(TransportHeader, TransportHeader.thrift_spec)), [
     ], ), # 7
+    (8, TType.LIST, 'knownPeers', (TType.STRING,None), [
+    ], ), # 8
   )
 
-  def __init__(self, serviceName=None, endpoint=None, headers=thrift_spec[3][4], body=None, hostPort=thrift_spec[5][4], argScheme=thrift_spec[6][4], transportHeaders=thrift_spec[7][4],):
+  def __init__(self, serviceName=None, endpoint=None, headers=thrift_spec[3][4], body=None, hostPort=thrift_spec[5][4], argScheme=thrift_spec[6][4], transportHeaders=thrift_spec[7][4], knownPeers=thrift_spec[8][4],):
     self.serviceName = serviceName
     self.endpoint = endpoint
     self.headers = headers
@@ -136,6 +145,10 @@ class Request(VCRThriftBase):
       transportHeaders = [
     ]
     self.transportHeaders = transportHeaders
+    if knownPeers is self.thrift_spec[8][4]:
+      knownPeers = [
+    ]
+    self.knownPeers = knownPeers
 
   def __hash__(self):
     value = 17
@@ -146,6 +159,7 @@ class Request(VCRThriftBase):
     value = (value * 31) ^ hash(self.hostPort)
     value = (value * 31) ^ hash(self.argScheme)
     value = (value * 31) ^ hash(self.transportHeaders)
+    value = (value * 31) ^ hash(self.knownPeers)
     return value
 
 
@@ -243,6 +257,36 @@ class RemoteServiceError(VCRThriftError):
   def __hash__(self):
     value = 17
     value = (value * 31) ^ hash(self.code)
+    value = (value * 31) ^ hash(self.message)
+    return value
+
+
+class NoPeersAvailableError(VCRThriftError):
+  """
+  Raised when both, hostPort and knownPeers were empty so the system couldn't
+  make a request.
+
+  Attributes:
+   - message
+  """
+
+  __slots__ = [ 
+    'message',
+   ]
+
+  thrift_spec = (
+    None, # 0
+    (1, TType.STRING, 'message', None, None, ), # 1
+  )
+
+  def __init__(self, message=None,):
+    self.message = message
+
+  def __str__(self):
+    return repr(self)
+
+  def __hash__(self):
+    value = 17
     value = (value * 31) ^ hash(self.message)
     return value
 
