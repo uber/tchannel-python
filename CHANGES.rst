@@ -2,7 +2,7 @@ Changes by Version
 ==================
 
 
-0.16.1 (unreleased)
+0.16.1 (2015-08-27)
 -------------------
 
 - Fixed a bug where the 'not found' handler would incorrectly return
