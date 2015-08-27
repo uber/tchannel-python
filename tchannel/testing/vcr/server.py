@@ -111,7 +111,7 @@ class VCRProxyService(object):
             raise VCRProxy.CannotRecordInteractionsError(
                 'Could not find a matching response for request %s and the '
                 'record mode %s prevents new interactions from being '
-                'recorded. Your test may be performing an uenxpected '
+                'recorded. Your test may be performing an unexpected '
                 'request.' % (str(request), cassette.record_mode)
             )
 
