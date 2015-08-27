@@ -20,6 +20,7 @@
 
 from __future__ import absolute_import
 
+import random
 import threading
 from functools import wraps
 
@@ -85,6 +86,7 @@ class VCRProxyService(object):
 
     @wrap_uncaught(reraise=(
         VCRProxy.CannotRecordInteractionsError,
+        VCRProxy.NoPeersAvailableError,
         VCRProxy.RemoteServiceError,
         VCRProxy.VCRServiceError,
     ))
@@ -113,6 +115,18 @@ class VCRProxyService(object):
                 'request.' % (str(request), cassette.record_mode)
             )
 
+        peers = []
+        if request.hostPort:
+            peers = [request.hostPort]
+        else:
+            peers = request.knownPeers
+
+        if not peers:
+            raise VCRProxy.NoPeersAvailableError(
+                'Both, hostPort and knownPeers were empty or unset. '
+                'One of them must be specified and non-empty.'
+            )
+
         arg_scheme = VCRProxy.ArgScheme.to_name(request.argScheme).lower()
 
         with self.unpatch():
@@ -122,7 +136,7 @@ class VCRProxyService(object):
             response_future = self.tchannel.request(
                 service=request.serviceName,
                 arg_scheme=arg_scheme,
-                hostport=request.hostPort,
+                hostport=random.choice(peers),
             ).send(
                 request.endpoint,
                 request.headers,

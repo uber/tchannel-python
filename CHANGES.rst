@@ -6,8 +6,9 @@ Changes by Version
 -------------------
 
 - Fixed a bug where the 'not found' handler would incorrectly return
-  serialization mismatch errors..
-- Fixed a bug which prevented VCR support from working with the sync client.
+  serialization mismatch errors.
+- Fixed a bug in VCR that prevented it from recording requests made by the sync
+  client, and requests made with ``hostport=None``.
 
 
 0.16.0 (2015-08-25)
