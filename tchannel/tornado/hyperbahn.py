@@ -101,12 +101,17 @@ def _advertise_with_backoff(tchannel, service, timeout=None):
 
 
 @tornado.gen.coroutine
-def advertise(tchannel, service, routers, timeout=None):
+def advertise(tchannel, service, routers, timeout=None, router_file=None):
     """Advertise with Hyperbahn.
 
     See :py:class:`tchannel.TChannel.advertise`.
     """
     timeout = timeout or FIRST_ADVERTISE_TIME
+    if routers is None and router_file is not None:
+        # should just let the exceptions fly
+        with open(router_file, 'r') as json_data:
+            routers = json.load(json_data)
+            json_data.close()
 
     for router in routers:
         # We use .get here instead of .add because we don't want to fail if a

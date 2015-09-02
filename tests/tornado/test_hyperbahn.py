@@ -20,6 +20,8 @@
 
 from __future__ import absolute_import
 
+import os
+import json
 import pytest
 import tornado
 
@@ -43,6 +45,29 @@ def test_new_client_establishes_peers():
     for router in routers:
         assert channel.peers.lookup(router)
 
+def test_new_client_establishes_peers_from_file():
+
+    host_path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        '../data/hosts.json',
+    )
+
+    # TChannel knows about one of the peers already.
+    channel = TChannel('test', known_peers=['127.0.0.1:23002'])
+
+    hyperbahn.advertise(
+        channel,
+        'baz',
+        None,
+        None,
+        host_path
+    )
+
+    with open(host_path, 'r') as json_data:
+        routers = json.load(json_data)
+        json_data.close()
+    for router in routers:
+        assert channel.peers.lookup(router)
 
 @pytest.mark.gen_test
 def test_request():

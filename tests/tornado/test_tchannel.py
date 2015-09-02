@@ -21,6 +21,8 @@
 from __future__ import absolute_import
 
 import pytest
+import os
+import json
 
 from tchannel.errors import AlreadyListeningError
 from tchannel.tornado import TChannel
@@ -85,6 +87,26 @@ def test_advertise_should_listen_if_not_called_yet(tchannel, mock_server):
 
     tchannel.advertise(
         routers=routers
+    )
+
+    assert tchannel.is_listening() is True
+
+
+def test_advertise_should_take_a_router_file(tchannel, mock_server):
+
+    mock_server.expect_call('ad', 'json').and_write(
+        headers="",
+        body={"hello": "world"},
+    )
+
+    host_path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        '../data/hosts.json',
+    )
+
+    tchannel.advertise(
+        routers=None,
+        router_file=host_path
     )
 
     assert tchannel.is_listening() is True

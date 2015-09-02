@@ -206,7 +206,7 @@ class TChannel(object):
             return decorator(handler)
 
     @gen.coroutine
-    def advertise(self, routers, name=None, timeout=None):
+    def advertise(self, routers, name=None, timeout=None, router_file=None):
         """Advertise with Hyperbahn.
 
         After a successful advertisement, Hyperbahn will establish long-lived
@@ -232,6 +232,9 @@ class TChannel(object):
             The timeout (in seconds) for the initial advertise attempt.
             Defaults to 30 seconds.
 
+        :param router_file:
+            The host file that contains the routers information.
+
         :returns:
             A future that resolves to the remote server's response after the
             first advertise finishes.
@@ -240,6 +243,12 @@ class TChannel(object):
             When unable to make our first advertise request to Hyperbahn.
             Subsequent requests may fail but will be ignored.
         """
+        if routers is None and router_file is not None:
+            # should just let the exceptions fly
+            with open(host_path, 'r') as json_data:
+                routers = json.load(json_data)
+                json_data.close()
+
         dep_result = yield self._dep_tchannel.advertise(
             routers=routers,
             name=name,
