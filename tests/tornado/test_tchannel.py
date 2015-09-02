@@ -22,7 +22,6 @@ from __future__ import absolute_import
 
 import pytest
 import os
-import json
 
 from tchannel.errors import AlreadyListeningError
 from tchannel.tornado import TChannel

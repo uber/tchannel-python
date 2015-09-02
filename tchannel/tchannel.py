@@ -245,7 +245,7 @@ class TChannel(object):
         """
         if routers is None and router_file is not None:
             # should just let the exceptions fly
-            with open(host_path, 'r') as json_data:
+            with open(router_file, 'r') as json_data:
                 routers = json.load(json_data)
                 json_data.close()
 

@@ -45,6 +45,7 @@ def test_new_client_establishes_peers():
     for router in routers:
         assert channel.peers.lookup(router)
 
+
 def test_new_client_establishes_peers_from_file():
 
     host_path = os.path.join(
@@ -68,6 +69,7 @@ def test_new_client_establishes_peers_from_file():
         json_data.close()
     for router in routers:
         assert channel.peers.lookup(router)
+
 
 @pytest.mark.gen_test
 def test_request():
