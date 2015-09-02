@@ -198,3 +198,4 @@ Changes by Version
 ------------------
 
 - Initial release.
+- Accept host file in advertise
