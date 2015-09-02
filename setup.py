@@ -5,7 +5,7 @@ setup(
     name='tchannel',
     version='0.16.2.dev0',
     author='Abhinav Gupta, Aiden Scandella, Bryce Lampe, Grayson Koonce, Junchao Wu',
-    author_email='dev@uber.com',
+    author_email='abg@uber.com',
     description='Network multiplexing and framing protocol for RPC',
     license='MIT',
     url='https://github.com/uber/tchannel-python',
