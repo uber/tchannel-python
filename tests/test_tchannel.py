@@ -309,4 +309,5 @@ def test_advertise_should_take_a_router_file():
             router_file=host_path
         )
 
-        mock_advertise.assert_called_once_with(ANY, routers=routers, name=ANY, timeout=ANY)
+        mock_advertise.assert_called_once_with(ANY, routers=routers,
+                                               name=ANY, timeout=ANY)

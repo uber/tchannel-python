@@ -23,6 +23,7 @@ from __future__ import (
 )
 
 import json
+import logging
 
 from tornado import gen
 
@@ -33,6 +34,8 @@ from .glossary import DEFAULT_TIMEOUT
 from .response import Response, TransportHeaders
 from .tornado import TChannel as DeprecatedTChannel
 from .tornado.dispatch import RequestDispatcher as DeprecatedDispatcher
+
+log = logging.getLogger('tchannel')
 
 __all__ = ['TChannel']
 
@@ -206,7 +209,8 @@ class TChannel(object):
             return decorator(handler)
 
     @gen.coroutine
-    def advertise(self, routers=None, name=None, timeout=None, router_file=None):
+    def advertise(self, routers=None, name=None, timeout=None,
+                  router_file=None):
         """Advertise with Hyperbahn.
 
         After a successful advertisement, Hyperbahn will establish long-lived
@@ -233,10 +237,10 @@ class TChannel(object):
             Defaults to 30 seconds.
 
         :param router_file:
-            The host file that contains the routers information. The file should
-            contain a JSON stringified format of the routers parameter. Either
-            routers or router_file should be provided. If both provided, routers
-            will be used.
+            The host file that contains the routers information. The file
+            should contain a JSON stringified format of the routers parameter.
+            Either routers or router_file should be provided. If both provided,
+            routers will be used.
 
         :returns:
             A future that resolves to the remote server's response after the
@@ -252,7 +256,7 @@ class TChannel(object):
                 try:
                     routers = json.load(json_data)
                 except (IOError, OSError, ValueError):
-                    logger.exception('Failed to read seed routers list.')
+                    log.exception('Failed to read seed routers list.')
                     raise
 
         dep_result = yield self._dep_tchannel.advertise(

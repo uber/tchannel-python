@@ -113,7 +113,7 @@ def advertise(tchannel, service, routers, timeout=None, router_file=None):
             try:
                 routers = json.load(json_data)
             except (IOError, OSError, ValueError):
-                logger.exception('Failed to read seed routers list.')
+                log.exception('Failed to read seed routers list.')
                 raise
 
     for router in routers:
