@@ -25,10 +25,13 @@ from __future__ import unicode_literals
 
 import subprocess
 import textwrap
-from mock import MagicMock, patch
+from mock import MagicMock, patch, ANY
 
+import json
+import os
 import psutil
 import pytest
+from tornado import gen
 
 from tchannel import TChannel, Request, Response, schemes, errors
 from tchannel.event import EventHook
@@ -278,3 +281,32 @@ def test_event_hook_register():
     ) as mock_register:
         server.hooks.register(mock_hook)
         mock_register.called
+
+
+@pytest.mark.gen_test
+def test_advertise_should_take_a_router_file():
+
+    host_path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        'data/hosts.json',
+    )
+
+    tchannel = TChannel(name='client')
+    with open(host_path, 'r') as json_data:
+        routers = json.load(json_data)
+
+    with (
+        patch(
+            'tchannel.tornado.TChannel.advertise',
+            autospec=True,
+        )
+    ) as mock_advertise:
+        f = gen.Future()
+        mock_advertise.return_value = f
+        f.set_result(Response())
+        tchannel.advertise(
+            None,
+            router_file=host_path
+        )
+
+        mock_advertise.assert_called_once_with(ANY, routers=routers, name=ANY, timeout=ANY)

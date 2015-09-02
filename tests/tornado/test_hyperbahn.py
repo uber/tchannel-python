@@ -66,7 +66,6 @@ def test_new_client_establishes_peers_from_file():
 
     with open(host_path, 'r') as json_data:
         routers = json.load(json_data)
-        json_data.close()
     for router in routers:
         assert channel.peers.lookup(router)
 
