@@ -304,10 +304,18 @@ def test_advertise_should_take_a_router_file():
         f = gen.Future()
         mock_advertise.return_value = f
         f.set_result(Response())
-        tchannel.advertise(
-            None,
-            router_file=host_path
-        )
+        tchannel.advertise(router_file=host_path)
 
         mock_advertise.assert_called_once_with(ANY, routers=routers,
                                                name=ANY, timeout=ANY)
+
+
+@pytest.mark.gen_test
+def test_advertise_should_raise_on_invalid_router_file():
+
+    tchannel = TChannel(name='client')
+    with pytest.raises(IOError):
+        yield tchannel.advertise(router_file='?~~lala')
+
+    with pytest.raises(ValueError):
+        yield tchannel.advertise(routers='lala', router_file='?~~lala')

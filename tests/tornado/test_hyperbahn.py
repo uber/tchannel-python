@@ -71,6 +71,27 @@ def test_new_client_establishes_peers_from_file():
 
 
 @pytest.mark.gen_test
+def test_advertise_should_raise_on_invalid_router_file():
+
+    channel = TChannel(name='client')
+    with pytest.raises(IOError):
+        yield hyperbahn.advertise(
+            channel,
+            'baz',
+            None,
+            None,
+            '?~~lala')
+
+    with pytest.raises(ValueError):
+        yield hyperbahn.advertise(
+            channel,
+            'baz',
+            '?~~lala',
+            None,
+            '?~~lala')
+
+
+@pytest.mark.gen_test
 def test_request():
     channel = TChannel(name='test')
     hyperbahn.advertise(channel, 'foo', ['127.0.0.1:23000'])
