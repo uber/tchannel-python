@@ -8,6 +8,8 @@ Changes by Version
 - Accept host file in advertise: ``TChannel.advertise()`` now accepts
   a parameter, ``router_file`` that contains a JSON stringified format
   of the router list.
+- Add ``TChannel.is_listening`` method to return whether the tchannel instance
+  is listening or not.
 
 
 0.16.1 (2015-08-27)
