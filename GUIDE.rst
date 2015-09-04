@@ -294,7 +294,7 @@ Let's make a client call from Python in ``keyvalue/client.py``:
     from tornado import gen
     from tornado import ioloop
     from tchannel import TChannel
-    from tchannel import thrift_request_buidler
+    from tchannel import thrift_request_builder
 
     from service import KeyValue
 
