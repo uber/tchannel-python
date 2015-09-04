@@ -526,7 +526,10 @@ class PeerClientOperation(object):
             maybe_stream(arg1), maybe_stream(arg2), maybe_stream(arg3)
         )
 
-        retry_limit = retry_limit or DEFAULT_RETRY_LIMIT
+        # set retry_limit to default if none passed in
+        if retry_limit is None:
+            retry_limit = DEFAULT_RETRY_LIMIT
+
         ttl = ttl or DEFAULT_TIMEOUT
         # hack to get endpoint from arg_1 for trace name
         arg1.close()

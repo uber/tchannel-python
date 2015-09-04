@@ -8,6 +8,7 @@ Changes by Version
 - Accept host file in advertise: ``TChannel.advertise()`` now accepts
   a parameter, ``router_file`` that contains a JSON stringified format
   of the router list.
+- Allow ``retry_limit`` to be 0 when calling ``TChannel.call()``.
 
 
 0.16.1 (2015-08-27)
