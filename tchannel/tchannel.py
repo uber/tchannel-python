@@ -23,6 +23,7 @@ from __future__ import (
 )
 
 import json
+import logging
 
 from tornado import gen
 
@@ -33,6 +34,8 @@ from .glossary import DEFAULT_TIMEOUT
 from .response import Response, TransportHeaders
 from .tornado import TChannel as DeprecatedTChannel
 from .tornado.dispatch import RequestDispatcher as DeprecatedDispatcher
+
+log = logging.getLogger('tchannel')
 
 __all__ = ['TChannel']
 
@@ -206,7 +209,8 @@ class TChannel(object):
             return decorator(handler)
 
     @gen.coroutine
-    def advertise(self, routers, name=None, timeout=None):
+    def advertise(self, routers=None, name=None, timeout=None,
+                  router_file=None):
         """Advertise with Hyperbahn.
 
         After a successful advertisement, Hyperbahn will establish long-lived
@@ -232,6 +236,12 @@ class TChannel(object):
             The timeout (in seconds) for the initial advertise attempt.
             Defaults to 30 seconds.
 
+        :param router_file:
+            The host file that contains the routers information. The file
+            should contain a JSON stringified format of the routers parameter.
+            Either routers or router_file should be provided. If both provided,
+            a ValueError will be raised.
+
         :returns:
             A future that resolves to the remote server's response after the
             first advertise finishes.
@@ -240,6 +250,19 @@ class TChannel(object):
             When unable to make our first advertise request to Hyperbahn.
             Subsequent requests may fail but will be ignored.
         """
+        if routers is not None and router_file is not None:
+            raise ValueError(
+                'Only one of routers and router_file can be provided.')
+
+        if routers is None and router_file is not None:
+            # should just let the exceptions fly
+            try:
+                with open(router_file, 'r') as json_data:
+                    routers = json.load(json_data)
+            except (IOError, OSError, ValueError):
+                log.exception('Failed to read seed routers list.')
+                raise
+
         dep_result = yield self._dep_tchannel.advertise(
             routers=routers,
             name=name,

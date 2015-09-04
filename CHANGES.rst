@@ -5,7 +5,9 @@ Changes by Version
 0.16.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Accept host file in advertise: ``TChannel.advertise()`` now accepts
+  a parameter, ``router_file`` that contains a JSON stringified format
+  of the router list.
 
 
 0.16.1 (2015-08-27)
