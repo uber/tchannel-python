@@ -2,7 +2,7 @@ Changes by Version
 ==================
 
 
-0.16.2 (unreleased)
+0.16.2 (2015-09-04)
 -------------------
 
 - Fix `retry_limit` in `TChannel.call` not allowing 0 retries.
