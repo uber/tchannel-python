@@ -110,6 +110,9 @@ class TChannel(object):
         self.json = schemes.JsonArgScheme(self)
         self.thrift = schemes.ThriftArgScheme(self)
 
+    def is_listening(self):
+        return self._dep_tchannel.is_listening()
+
     @property
     def hooks(self):
         return self._dep_tchannel.hooks
