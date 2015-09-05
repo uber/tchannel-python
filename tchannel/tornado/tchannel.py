@@ -135,7 +135,7 @@ class TChannel(object):
         else:
             return self._trace
 
-    def advertise(self, routers, name=None, timeout=None, router_file=None):
+    def advertise(self, routers, name=None, timeout=None, router_file=None, backlog=2048):
         """Make a service available on the Hyperbahn routing mesh.
 
         This will make contact with a Hyperbahn host from a list of known
@@ -162,7 +162,7 @@ class TChannel(object):
         name = name or self.name
 
         if not self.is_listening():
-            self.listen()
+            self.listen(backlog=backlog)
 
         return hyperbahn.advertise(self, name, routers, timeout, router_file)
 
@@ -221,7 +221,7 @@ class TChannel(object):
                                   retry=retry,
                                   **kwargs)
 
-    def listen(self, port=None):
+    def listen(self, port=None, backlog=2048):
         """Start listening for incoming connections.
 
         A request handler must have already been specified with
@@ -250,7 +250,7 @@ class TChannel(object):
         assert self._handler, "Call .host with a RequestHandler first"
         server = TChannelServer(self)
 
-        sockets = bind_sockets(self._port)
+        sockets = bind_sockets(self._port, backlog=backlog)
         assert sockets, "No sockets bound for port %d" % self._port
 
         # If port was 0, the OS probably assigned something better.
@@ -399,6 +399,7 @@ class TChannelServer(tornado.tcpserver.TCPServer):
     @tornado.gen.coroutine
     def handle_stream(self, stream, address):
         log.debug("New incoming connection from %s:%d" % address)
+        stream.set_nodelay(True)
 
         conn = StreamConnection(connection=stream, tchannel=self.tchannel)
 

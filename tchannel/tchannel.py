@@ -181,8 +181,8 @@ class TChannel(object):
 
         raise gen.Return(result)
 
-    def listen(self, port=None):
-        return self._dep_tchannel.listen(port)
+    def listen(self, port=None, backlog=2048):
+        return self._dep_tchannel.listen(port, backlog)
 
     @property
     def hostport(self):

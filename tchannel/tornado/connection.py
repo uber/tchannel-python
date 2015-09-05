@@ -418,6 +418,7 @@ class TornadoConnection(object):
         stream = tornado.iostream.IOStream(
             socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         )
+        stream.set_nodelay(True)
 
         log.debug("Connecting to %s", hostport)
         try:
