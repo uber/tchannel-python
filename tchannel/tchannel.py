@@ -179,20 +179,18 @@ class TChannel(object):
         raise gen.Return(result)
 
     def listen(self, port=None):
-        self._listen_lock.acquire()
-        if self._dep_tchannel.is_listening():
-            listening_port = int(self._dep_tchannel.hostport.rsplit(":")[1])
-            self._listen_lock.release()
-            if port and port != listening_port:
-                raise AlreadyListeningError(
-                    "TChannel server is already listening on port: %d"
-                    % listening_port
-                )
-            else:
-                return
+        with self._listen_lock:
+            if self._dep_tchannel.is_listening():
+                listening_port = int(self._dep_tchannel.hostport.rsplit(":")[1])
+                if port and port != listening_port:
+                    raise AlreadyListeningError(
+                        "TChannel server is already listening on port: %d"
+                        % listening_port
+                    )
+                else:
+                    return
 
-        self._dep_tchannel.listen(port)
-        self._listen_lock.release()
+            return self._dep_tchannel.listen(port)
 
     @property
     def hostport(self):
