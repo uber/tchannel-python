@@ -5,8 +5,7 @@ Changes by Version
 0.16.3 (unreleased)
 -------------------
 
-- Fix ``TChannel.listen`` to be thread safe. It won't allow to listen on
-  different port if instance is already listening.
+- Make ``TChannel.listen`` thread-safe and idempotent.
 
 
 0.16.2 (2015-09-04)
