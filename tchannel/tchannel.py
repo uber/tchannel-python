@@ -23,6 +23,7 @@ from __future__ import (
 )
 
 import json
+from tchannel.errors import AlreadyListeningError
 
 from tornado import gen
 
@@ -176,6 +177,16 @@ class TChannel(object):
         raise gen.Return(result)
 
     def listen(self, port=None):
+        if self._dep_tchannel.is_listening():
+            listening_port = int(self._dep_tchannel.hostport.rsplit(":")[1])
+            if port and port != listening_port:
+                raise AlreadyListeningError(
+                    "TChannel server is already listening on port: %d"
+                    % listening_port
+                )
+            else:
+                return
+
         return self._dep_tchannel.listen(port)
 
     @property
