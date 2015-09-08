@@ -135,7 +135,7 @@ class TChannel(object):
         else:
             return self._trace
 
-    def advertise(self, routers, name=None, timeout=None, router_file=None):
+    def advertise(self, routers=None, name=None, timeout=None, router_file=None):
         """Make a service available on the Hyperbahn routing mesh.
 
         This will make contact with a Hyperbahn host from a list of known
