@@ -1,9 +1,11 @@
 Changes by Version
 ==================
 
-0.16.6 (unreleased)
+0.17.0 (unreleased)
 -------------------
 
+- Add ``tchannel.thrift.load`` to read and compile Thrift files at startup.
+  This eliminates manual code generation completely.
 - Accept host file in advertise: ``TChannel.advertise()`` now accepts
   a parameter, ``router_file`` that contains a JSON stringified format
   of the router list.

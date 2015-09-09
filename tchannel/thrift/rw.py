@@ -47,15 +47,15 @@ def load(service, path, hostport=None, module_name=None):
         donuts = tchannel.thrift.load('donuts', 'donuts.thrift')
         coffee = tchannel.thrift.load('coffee', 'coffee.thrift')
 
-        app = TChannel('myservice')
+        tchannel = TChannel('myservice')
 
-        @app.thrift.register(donuts.DonutsService)
+        @tchannel.thrift.register(donuts.DonutsService)
         @tornado.gen.coroutine
         def submitOrder(request):
             args = request.body
 
             if args.coffee:
-                yield app.thrift(
+                yield tchannel.thrift(
                     coffee.CoffeeService.order(args.coffee)
                 )
 
@@ -87,6 +87,37 @@ def load(service, path, hostport=None, module_name=None):
             os.path.dirname(__file__), '../myservice.thrift'
         )
 
+    The returned value is a valid Python module. You can install the module by
+    adding it to the ``sys.modules`` dictionary. This will allow importing
+    items from this module directly. You can use the ``__name__`` magic
+    variable to make the generated module a submodule of the current module.
+    For example,
+
+    .. code-block:: python
+
+        # foo/bar.py
+
+        import sys
+        from tchannel import thrift
+
+        donuts = = thrift.load('donuts', 'donuts.thrift')
+        sys.modules[__name__ + '.donuts'] = donuts
+
+    This installs the module generated for ``donuts.thrift`` as the module
+    ``foo.bar.donuts``. Callers can then import items from that module
+    directly. For example,
+
+    .. code-block:: python
+
+        # foo/baz.py
+
+        from foo.bar.donuts import DonutsService, Order
+
+        def baz():
+            return tchannel.thrift(
+                DonutsService.submitOrder(Order(..))
+            )
+
     :param str service:
         Name of the service that the Thrift file represents. This name will be
         used to route requests through Hyperbahn.
@@ -103,7 +134,6 @@ def load(service, path, hostport=None, module_name=None):
     """
     assert service, 'service is required'
     assert path, 'path is required'
-    # TODO add instructions on sys.modules[name] = load(...)
     module = thriftrw.load(path=path, name=module_name)
     return TChannelThriftModule(service, module, hostport)
 
