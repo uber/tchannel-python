@@ -15,6 +15,7 @@ setup(
         'crcmod',
         'tornado>=4.0,<5.0',
         'toro>=0.8,<0.9',
+        'thriftrw>=0.2,<0.3',
         'threadloop>=0.5,<0.6',
         'futures',
     ],

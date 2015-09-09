@@ -246,6 +246,3 @@ class ThriftResponse(object):
 
         # Re-raise the exception (with the same traceback) if it didn't match.
         raise exc_info[0], exc_info[1], exc_info[2]
-        # TODO for unrecognized exceptions, do we want to send back a
-        # Thrift-level TApplicationException instead? Currently this will send
-        # a TChannel-level protocol error.

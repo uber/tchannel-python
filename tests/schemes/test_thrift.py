@@ -23,7 +23,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import mock
 import pytest
 from tornado import gen
 from tornado import concurrent
@@ -1186,9 +1185,14 @@ def test_headers_should_be_a_map_of_strings(headers):
 
     tchannel = TChannel('client')
 
+    service = thrift_request_builder(
+        service='server',
+        thrift_module=ThriftTest,
+    )
+
     with pytest.raises(ValueError):
         yield tchannel.thrift(
-            request=mock.MagicMock(),
+            request=service.testString('howdy'),
             headers=headers,
         )
 

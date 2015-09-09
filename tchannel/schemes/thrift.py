@@ -25,9 +25,6 @@ from __future__ import unicode_literals
 
 from tornado import gen
 
-from tchannel.errors import ValueExpectedError
-from tchannel.serializer.thrift import ThriftSerializer
-
 from . import THRIFT
 
 
@@ -65,11 +62,11 @@ class ThriftArgScheme(object):
     @gen.coroutine
     def __call__(self, request, headers=None, timeout=None,
                  retry_on=None, retry_limit=None):
-
         if not headers:
             headers = {}
 
-        serializer = ThriftSerializer(request.result_type)
+        serializer = request.get_serializer()
+
         # serialize
         try:
             headers = serializer.serialize_header(headers=headers)
@@ -79,7 +76,9 @@ class ThriftArgScheme(object):
                 ' where keys and values are strings)'
             )
 
-        body = serializer.serialize_body(call_args=request.call_args)
+        body = serializer.serialize_body(request.call_args)
+
+        # TODO There's only one yield. Drop in favor of future+callback.
         response = yield self._tchannel.call(
             scheme=self.NAME,
             service=request.service,
@@ -92,43 +91,29 @@ class ThriftArgScheme(object):
             hostport=request.hostport
         )
 
-        # deserialize...
         response.headers = serializer.deserialize_header(
             headers=response.headers
         )
         body = serializer.deserialize_body(body=response.body)
-        result_spec = request.result_type.thrift_spec
 
-        # raise application exception, if present
-        for exc_spec in result_spec[1:]:
-            exc = getattr(body, exc_spec[2])
-            if exc is not None:
-                raise exc
-
-        # success - non-void
-        if len(result_spec) >= 1 and result_spec[0] is not None:
-
-            # value expected, but got none
-            # TODO - server side should use this same logic
-            if body.success is None:
-                raise ValueExpectedError(
-                    'Expected a value to be returned for %s, '
-                    'but recieved None - only void procedures can'
-                    'return None.' % request.endpoint
-                )
-
-            response.body = body.success
-            raise gen.Return(response)
-
-        # success - void
-        else:
-            response.body = None
-            raise gen.Return(response)
+        response.body = request.read_body(body)
+        raise gen.Return(response)
 
     def register(self, thrift_module, **kwargs):
+        # dat circular import
+        from tchannel.thrift import rw as thriftrw
 
-        return self._tchannel.register(
-            scheme=self.NAME,
-            endpoint=thrift_module,
-            **kwargs
-        )
+        if isinstance(thrift_module, thriftrw.Service):
+            # Dirty hack to support thriftrw and old API
+            return thriftrw.register(
+                # TODO drop deprecated tchannel
+                self._tchannel._dep_tchannel._handler,
+                thrift_module,
+                **kwargs
+            )
+        else:
+            return self._tchannel.register(
+                scheme=self.NAME,
+                endpoint=thrift_module,
+                **kwargs
+            )
