@@ -23,6 +23,7 @@ from __future__ import (
 )
 
 from . import schemes
+from .status import OK
 
 __all__ = ['Response']
 
@@ -49,12 +50,16 @@ class Response(object):
 
     __slots__ = (
         'body',
+        'status',
         'headers',
         'transport',
     )
 
-    def __init__(self, body=None, headers=None, transport=None):
+    def __init__(self, body=None, headers=None, transport=None, status=None):
+        if status is None:
+            status = OK
         self.body = body
+        self.status = status
         self.headers = headers
         self.transport = transport
 
