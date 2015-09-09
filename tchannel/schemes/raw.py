@@ -45,7 +45,10 @@ class RawArgScheme(object):
         hostport=None,
         shard_key=None,
     ):
-        """Make Raw TChannel Request.
+        """Make a raw TChannel request.
+
+        The request's headers and body are treated as raw bytes and not
+        serialized/deserialized.
 
         The request's headers and body are treated as raw bytes and not
         serialized/deserialized.
@@ -70,7 +73,7 @@ class RawArgScheme(object):
         :param string headers:
             A raw headers block to provide to the endpoint.
         :param int timeout:
-            How long to wait before raising a ``TimeoutError`` - this
+            How long to wait (in ms) before raising a ``TimeoutError`` - this
             defaults to ``tchannel.glossary.DEFAULT_TIMEOUT``.
         :param string retry_on:
             What events to retry on - valid values can be found in
@@ -80,7 +83,8 @@ class RawArgScheme(object):
         :param string hostport:
             A 'host:port' value to use when making a request directly to a
             TChannel service, bypassing Hyperbahn.
-        :return Response:
+
+        :rtype: Response
         """
 
         return self._tchannel.call(

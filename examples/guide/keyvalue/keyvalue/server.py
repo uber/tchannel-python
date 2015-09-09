@@ -22,18 +22,18 @@ from __future__ import absolute_import
 from tornado import ioloop
 
 from service import KeyValue
-from tchannel.tornado import TChannel
+from tchannel import TChannel
 
 
-app = TChannel('keyvalue-server', hostport='localhost:8889')
+tchannel = TChannel('keyvalue-server', hostport='localhost:8889')
 
 
 values = {'hello': 'world'}
 
 
-@app.register(KeyValue)
-def getValue(request, response):
-    key = request.args.key
+@tchannel.thrift.register(KeyValue)
+def getValue(request):
+    key = request.body.key
     value = values.get(key)
 
     if value is None:
@@ -42,15 +42,15 @@ def getValue(request, response):
     return value
 
 
-@app.register(KeyValue)
-def setValue(request, response):
-    key = request.args.key
-    value = request.args.value
+@tchannel.thrift.register(KeyValue)
+def setValue(request):
+    key = request.body.key
+    value = request.body.value
     values[key] = value
 
 
 def run():
-    app.listen()
+    tchannel.listen()
 
 
 if __name__ == '__main__':

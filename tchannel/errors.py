@@ -21,19 +21,45 @@
 from __future__ import absolute_import
 
 
+#: The request timed out.
 TIMEOUT = 0x01
+
+#: The request was canceled.
 CANCELED = 0x02
+
+#: The server was busy.
 BUSY = 0x03
+
+# The server declined the request.
 DECLINED = 0x04
+
+# The server's handler raised an unexpected exception.
 UNEXPECTED_ERROR = 0x05
+
+#: The request was bad.
 BAD_REQUEST = 0x06
+
+#: There was a network error when sending the request.
 NETWORK_ERROR = 0x07
+
+#: The server handling the request is unhealthy.
 UNHEALTHY = 0x08
+
+#: There was a fatal protocol-level error.
 FATAL = 0xFF
 
 
 class TChannelError(Exception):
-    """Represent a TChannel-generated exception."""
+    """A TChannel-generated exception.
+
+    :ivar code:
+        The error code for this error. See the `Specification`_ for a
+        description of these codes.
+    :vartype code:
+
+    .. _`Specification`:
+            http://tchannel.readthedocs.org/en/latest/protocol/#code1_1
+    """
 
     __slots__ = (
         'code',
@@ -57,6 +83,10 @@ class TChannelError(Exception):
 
     @classmethod
     def from_code(cls, code, **kw):
+        """Construct a ``TChannelError`` instance from an error code.
+
+        This will return the appropriate class type for the given code.
+        """
         return {
             TIMEOUT: TimeoutError,
             CANCELED: CanceledError,
@@ -71,15 +101,30 @@ class TChannelError(Exception):
 
 
 class RetryableError(TChannelError):
-    pass
+    """An error where the original request is always safe to retry.
+
+    It is always safe to retry a request with this category of errors. The
+    original request was never handled.
+    """
 
 
 class MaybeRetryableError(TChannelError):
-    pass
+    """An error where the original request may be safe to retry.
+
+    The original request may have reached the intended service. Hence, the
+    request should only be retried if it is known to be `idempotent`_.
+
+    .. _`idempotent`:
+        https://en.wikipedia.org/wiki/Idempotence#Computer_science_meaning
+    """
 
 
 class NotRetryableError(TChannelError):
-    pass
+    """An error where the original request should not be re-sent.
+
+    Something was fundamentally wrong with the request and it should not be
+    retried.
+    """
 
 
 class TimeoutError(MaybeRetryableError):
@@ -134,12 +179,12 @@ class NoAvailablePeerError(RetryableError):
 
 
 class AlreadyListeningError(FatalProtocolError):
-    """Represents exception from attempting to listen multiple times."""
+    """Raised when attempting to listen multiple times."""
     pass
 
 
 class OneWayNotSupportedError(BadRequestError):
-    """Raised when oneway Thrift procedure is called."""
+    """Raised when a one-way Thrift procedure is called."""
     pass
 
 

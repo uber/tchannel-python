@@ -22,9 +22,22 @@ struct Request {
     3: optional binary headers = ""
     4: required binary body
 
+    /**
+     * Remote hostport to which the request will be sent.
+     *
+     * If specified, the request will be made to this host only.
+     */
     5: optional binary hostPort = ""
     6: optional ArgScheme argScheme = ArgScheme.RAW
     7: optional list<TransportHeader> transportHeaders = {}
+
+    /**
+     * List of known peers of the TChannel at the time the request was made.
+     *
+     * This MUST be specified if hostPort wasn't. The request will be sent to
+     * a random peer from the list.
+     */
+    8: optional list<binary> knownPeers = []
     // TODO: retry flags
     // TODO: timeout
     // TODO: tracing information
@@ -50,6 +63,14 @@ exception CannotRecordInteractionsError {
 exception RemoteServiceError {
     1: required byte code
     2: required string message
+}
+
+/**
+ * Raised when both, hostPort and knownPeers were empty so the system couldn't
+ * make a request.
+ */
+exception NoPeersAvailableError {
+    1: required string message
 }
 
 /**
@@ -80,7 +101,8 @@ service VCRProxy {
          * current cassette disallows recording new interactions.
          */
         1: CannotRecordInteractionsError cannotRecord,
-        2: RemoteServiceError remoteServiceError
-        3: VCRServiceError serviceError
+        2: RemoteServiceError remoteServiceError,
+        3: VCRServiceError serviceError,
+        4: NoPeersAvailableError noPeersAvailable,
     );
 }

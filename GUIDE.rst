@@ -3,7 +3,7 @@ Getting Started
 ===============
 
 The code matching this guide is `here
-<https://github.com/uber/tchannel-python/tree/master/examples/keyvalue>`_.
+<https://github.com/uber/tchannel-python/tree/master/examples/guide>`_.
 
 
 -------------
@@ -109,24 +109,25 @@ something like this:
     from tornado import gen
 
     from service import KeyValue
-    from tchannel.tornado import TChannel
+    from tchannel import TChannel
 
 
-    app = TChannel('keyvalue-server')
+    tchannel = TChannel('keyvalue-server')
 
 
-    @app.register(KeyValue)
-    def getValue(request, response):
+    @tchannel.thrift.register(KeyValue)
+    def getValue(request):
         pass
 
 
-    @app.register(KeyValue)
-    def setValue(request, response):
+    @tchannel.thrift.register(KeyValue)
+    def setValue(request):
         pass
 
 
     def run():
-        app.listen()
+        tchannel.listen()
+        print('Listening on %s' % tchannel.hostport)
 
 
     if __name__ == '__main__':
@@ -136,19 +137,6 @@ something like this:
 Here we have created a TChannel instance and registered two no-op handlers with
 it. The name of these handlers map directly to the Thrift service we defined
 earlier.
-
-**NOTE:** Method handlers do not need to be declared at import-time, since this
-can become unwieldy in complex applications. We could also define them like
-so:
-
-.. code-block:: python
-
-    def run():
-        app = TChannel('keyvalue-server')
-        app.register(KeyValue, handler=Get)
-        app.register(KeyValue, handler=Set)
-        app.listen()
-        ioloop.IOLoop.current().start()
 
 A TChannel server only has one requirement: a name for itself. By default an
 ephemeral port will be chosen to listen on (although an explicit port can be
@@ -163,6 +151,7 @@ Let's make sure this server is in a working state:
 .. code-block:: bash
 
     python keyvalue/server.py
+    Listening on localhost:54143
     ^C
 
 The process should hang until you kill it, since it's listening for requests to
@@ -181,9 +170,9 @@ our endpoints will manipulate:
     values = {}
 
 
-    @app.register(KeyValue)
-    def getValue(request, response):
-        key = request.args.key
+    @tchannel.thrift.register(KeyValue)
+    def getValue(request):
+        key = request.body.key
         value = values.get(key)
 
         if value is None:
@@ -192,15 +181,15 @@ our endpoints will manipulate:
         return value
 
 
-    @app.register(KeyValue)
-    def setValue(request, response):
-        key = request.args.key
-        value = request.args.value
+    @tchannel.thrift.register(KeyValue)
+    def setValue(request):
+        key = request.body.key
+        value = request.body.value
         values[key] = value
 
-You can see that the return value of ``Get`` will be coerced into the expected
-Thrift shape. If we needed to return an additional field, we could accomplish
-this by returning a dictionary.
+You can see that the return value of ``getValue`` will be coerced into the
+expected Thrift shape. If we needed to return an additional field, we could
+accomplish this by returning a dictionary.
 
 This example service doesn't do any network IO work. If we wanted to take
 advantage of Tornado's `asynchronous
@@ -209,26 +198,17 @@ define our handlers as coroutines and yield to IO operations:
 
 .. code-block:: python
 
-    @app.register(KeyValue)
+    @tchannel.register(KeyValue)
     @gen.coroutine
-    def setValue(request, response):
-        key = request.args.key
-        value = request.args.value
+    def setValue(request):
+        key = request.body.key
+        value = request.body.value
 
         # Simulate some non-blocking IO work.
         yield gen.sleep(1.0)
 
         values[key] = value
 
-You have probably noticed that all of these handlers are passed ``response`` and
-`tchannel` objects, in addition to a ``request``. The ``response`` object is
-available for advanced use cases where it doesn't make sense to return one
-object as a response body -- for example, long-lived connections that gradually
-stream the response back to the caller.
-
-The `tchannel` object contains context about the current request (such as
-Zipkin tracing information) and should be used to make requests to other
-TChannel services. (Note that this API may change in the future.)
 
 ~~~~~~~~~~~~~~~~~
 Transport Headers
@@ -247,6 +227,7 @@ provides some additional information about the current request under the
     headers check the
     `Transport Headers <https://github.com/uber/tchannel/blob/master/docs/protocol.md#transport-headers>`_
     section of the protocol document.
+
 
 ---------
 Hyperbahn
@@ -267,13 +248,13 @@ instance:
     @gen.coroutine
     def run():
 
-        app.listen()
-        print 'Listening on', app.hostport
+        tchannel.listen()
+        print('Listening on %s' % app.hostport)
 
         if os.path.exists('/path/to/hyperbahn_hostlist.json'):
             with open('/path/to/hyperbahn_hostlist.json', 'r') as f:
                 hyperbahn_hostlist = json.load(f)
-            yield app.advertise(routers=hyperbahn_hostlist)
+            yield tchannel.advertise(routers=hyperbahn_hostlist)
 
 The `advertise` method takes a seed list of Hyperbahn routers and the name of
 the service that clients will call into. After advertising, the Hyperbahn will
@@ -312,25 +293,30 @@ Let's make a client call from Python in ``keyvalue/client.py``:
 
     from tornado import gen
     from tornado import ioloop
-    from tchannel.thrift import client_for
-    from tchannel.tornado import TChannel
+    from tchannel import TChannel
+    from tchannel import thrift_request_builder
 
     from service import KeyValue
 
-    KeyValueClient = client_for('keyvalue-server', KeyValue)
+    KeyValueClient = thrift_request_builder(
+        service='keyvalue-server',
+        thrift_module=KeyValue,
+    )
 
     @gen.coroutine
     def run():
         app_name = 'keyvalue-client'
 
-        app = TChannel(app_name)
-        app.advertise(routers=['127.0.0.1:21300'])
+        tchannel = TChannel(app_name)
+        tchannel.advertise(routers=['127.0.0.1:21300'])
 
-        client = KeyValueClient(app)
+        yield tchannel.thrift(
+            KeyValueClient.setValue("foo", "Hello, world!"),
+        )
 
-        yield client.setValue("foo", "bar")
-
-        response = yield client.getValue("foo")
+        response = yield tchannel.thrift(
+            KeyValueClient.getValue("foo"),
+        )
 
         print response
 

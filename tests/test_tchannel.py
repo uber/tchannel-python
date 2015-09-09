@@ -25,12 +25,16 @@ from __future__ import unicode_literals
 
 import subprocess
 import textwrap
-from mock import MagicMock, patch
+from mock import MagicMock, patch, ANY
 
+import json
+import os
 import psutil
 import pytest
+from tornado import gen
 
 from tchannel import TChannel, Request, Response, schemes, errors
+from tchannel.errors import AlreadyListeningError
 from tchannel.event import EventHook
 from tchannel.response import TransportHeaders
 
@@ -233,18 +237,38 @@ def test_endpoint_can_be_called_as_a_pure_func():
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_endpoint_not_found():
+def test_endpoint_not_found_with_raw_request():
     server = TChannel(name='server')
     server.listen()
 
     tchannel = TChannel(name='client')
 
-    with pytest.raises(errors.BadRequestError):
+    with pytest.raises(errors.BadRequestError) as e:
         yield tchannel.raw(
             service='server',
             hostport=server.hostport,
             endpoint='foo',
         )
+
+    assert "Endpoint 'foo' is not defined" in e.value
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_endpoint_not_found_with_json_request():
+    server = TChannel(name='server')
+    server.listen()
+
+    tchannel = TChannel(name='client')
+
+    with pytest.raises(errors.BadRequestError) as e:
+        yield tchannel.json(
+            service='server',
+            hostport=server.hostport,
+            endpoint='foo',
+        )
+
+    assert "Endpoint 'foo' is not defined" in e.value
 
 
 def test_event_hook_register():
@@ -258,3 +282,58 @@ def test_event_hook_register():
     ) as mock_register:
         server.hooks.register(mock_hook)
         mock_register.called
+
+
+@pytest.mark.gen_test
+def test_advertise_should_take_a_router_file():
+
+    host_path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        'data/hosts.json',
+    )
+
+    tchannel = TChannel(name='client')
+    with open(host_path, 'r') as json_data:
+        routers = json.load(json_data)
+
+    with (
+        patch(
+            'tchannel.tornado.TChannel.advertise',
+            autospec=True,
+        )
+    ) as mock_advertise:
+        f = gen.Future()
+        mock_advertise.return_value = f
+        f.set_result(Response())
+        tchannel.advertise(router_file=host_path)
+
+        mock_advertise.assert_called_once_with(ANY, routers=routers,
+                                               name=ANY, timeout=ANY)
+
+
+@pytest.mark.gen_test
+def test_advertise_should_raise_on_invalid_router_file():
+
+    tchannel = TChannel(name='client')
+    with pytest.raises(IOError):
+        yield tchannel.advertise(router_file='?~~lala')
+
+    with pytest.raises(ValueError):
+        yield tchannel.advertise(routers='lala', router_file='?~~lala')
+
+
+def test_listen_different_ports():
+    server = TChannel(name='test_server')
+    server.listen()
+    port = int(server.hostport.rsplit(":")[1])
+    with pytest.raises(AlreadyListeningError):
+        server.listen(port + 1)
+
+
+def test_listen_duplicate_ports():
+    server = TChannel(name='test_server')
+    server.listen()
+    server.listen()
+    port = int(server.hostport.rsplit(":")[1])
+    server.listen(port)
+    server.listen()

@@ -3,9 +3,9 @@ from setuptools import find_packages, setup
 
 setup(
     name='tchannel',
-    version='0.15.3.dev0',
+    version='0.16.4.dev0',
     author='Abhinav Gupta, Aiden Scandella, Bryce Lampe, Grayson Koonce, Junchao Wu',
-    author_email='dev@uber.com',
+    author_email='abg@uber.com',
     description='Network multiplexing and framing protocol for RPC',
     license='MIT',
     url='https://github.com/uber/tchannel-python',
@@ -15,7 +15,7 @@ setup(
         'crcmod',
         'tornado>=4.0,<5.0',
         'toro>=0.8,<0.9',
-        'threadloop>=0.4,<0.5',
+        'threadloop>=0.5,<0.6',
         'futures',
     ],
     extras_require={

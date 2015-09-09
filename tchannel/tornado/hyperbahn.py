@@ -101,25 +101,24 @@ def _advertise_with_backoff(tchannel, service, timeout=None):
 
 
 @tornado.gen.coroutine
-def advertise(tchannel, service, routers, timeout=None):
-    """Advertise the given TChannel to Hyperbahn using the given name.
+def advertise(tchannel, service, routers=None, timeout=None, router_file=None):
+    """Advertise with Hyperbahn.
 
-    This informs Hyperbahn that the given service is hosted at this TChannel
-    at a fixed rate.
-
-    It also tells the TChannel about the given Hyperbahn routers.
-
-    :param tchannel:
-        TChannel to register with Hyperbahn
-    :param service:
-        Name of the service behind this TChannel
-    :param routers:
-        Seed list of addresses of Hyperbahn routers
-    :returns:
-        A future that resolves to the remote server's response after the first
-        advertise finishes.
+    See :py:class:`tchannel.TChannel.advertise`.
     """
     timeout = timeout or FIRST_ADVERTISE_TIME
+    if routers is not None and router_file is not None:
+        raise ValueError(
+            'Only one of routers and router_file can be provided.')
+
+    if routers is None and router_file is not None:
+        # should just let the exceptions fly
+        try:
+            with open(router_file, 'r') as json_data:
+                routers = json.load(json_data)
+        except (IOError, OSError, ValueError):
+            log.exception('Failed to read seed routers list.')
+            raise
 
     for router in routers:
         # We use .get here instead of .add because we don't want to fail if a

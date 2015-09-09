@@ -20,8 +20,8 @@
 
 from __future__ import absolute_import
 
-from tchannel.thrift.client import client_for as async_client_for
 from tchannel.thrift.reflection import get_service_methods
+from tchannel.thrift.client import client_for as async_client_for
 
 
 def client_for(service, service_module, thrift_service_name=None):
@@ -64,31 +64,37 @@ def client_for(service, service_module, thrift_service_name=None):
         with TChannelSyncClient.
     """
     assert service_module, 'service_module is required'
+
     service = service or ''  # may be blank for non-hyperbahn use cases
+
     if not thrift_service_name:
         thrift_service_name = service_module.__name__.rsplit('.', 1)[-1]
 
     method_names = get_service_methods(service_module.Iface)
 
-    def init(self, tchannel_sync,
-             hostport=None,
-             trace=False,
-             protocol_headers=None):
+    def init(
+        self,
+        tchannel,
+        hostport=None,
+        trace=False,
+        protocol_headers=None,
+    ):
         self.async_thrift = self.__async_client_class__(
-            tchannel=tchannel_sync._async_client,
+            tchannel=tchannel,
             hostport=hostport,
             trace=trace,
             protocol_headers=protocol_headers,
         )
-        self.threadloop = tchannel_sync._threadloop
+        self.threadloop = tchannel._threadloop
 
     init.__name__ = '__init__'
+
     methods = {
         '__init__': init,
         '__async_client_class__': async_client_for(
-            service,
-            service_module,
-            thrift_service_name,
+            service=service,
+            service_module=service_module,
+            thrift_service_name=thrift_service_name,
         )
     }
 
@@ -110,7 +116,7 @@ def generate_method(method_name):
     :return: A method that invokes the RPC using TChannelSyncClient
     """
 
-    def send(self, *args, **kwargs):
+    def call(self, *args, **kwargs):
         """Forward RPC call to TChannelSyncClient
 
         :return concurrent.futures.Future:
@@ -119,4 +125,4 @@ def generate_method(method_name):
             getattr(self.async_thrift, method_name), *args, **kwargs
         )
 
-    return send
+    return call

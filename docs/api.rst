@@ -6,40 +6,64 @@ TChannel
 --------
 
 .. autoclass:: tchannel.TChannel
+    :special-members: __init__
     :members:
 
 .. autoclass:: tchannel.Request
     :members:
 
 .. autoclass:: tchannel.Response
-
-.. autoclass:: tchannel.schemes.RawArgScheme
     :members:
 
-.. autoclass:: tchannel.schemes.JsonArgScheme
-    :members:
+
+Serialization Schemes
+---------------------
+
+Thrift
+~~~~~~
 
 .. autoclass:: tchannel.schemes.ThriftArgScheme
-    :members:
+    :members: __call__, register
 
 .. autofunction:: tchannel.thrift_request_builder
 
 
-Exceptions
-----------
+JSON
+~~~~
 
+.. autoclass:: tchannel.schemes.JsonArgScheme
+    :members: __call__, register
+
+Raw
+~~~
+.. autoclass:: tchannel.schemes.RawArgScheme
+    :members: __call__, register
+
+
+Exception Handling
+------------------
+
+Errors
+~~~~~~
 .. automodule:: tchannel.errors
     :members:
+    :show-inheritance:
 
+Retry Behavior
+~~~~~~~~~~~~~~
+
+These values can be passed as the ``retry_on`` behavior to
+:py:meth:`tchannel.TChannel.call`.
+
+.. automodule:: tchannel.retry
+    :members:
 
 
 Synchronous Client
 ------------------
 
-.. automodule:: tchannel.sync.client
-    :members:
-
-.. automodule:: tchannel.sync.thrift
+.. autoclass:: tchannel.sync.TChannel
+    :inherited-members:
     :members:
 
 
@@ -52,20 +76,4 @@ Testing
     This automodule directive intentionally doesn't include :members: because
     the module documentation for it explicitly calls out members that should be
     documented.
-
-
-Deprecated
-----------
-
-.. autoclass:: tchannel.tornado.TChannel
-
-.. autoclass:: tchannel.tornado.Request
-    :members:
-
-.. autoclass:: tchannel.tornado.Response
-    :members:
-
-.. automodule:: tchannel.thrift.client
-    :members:
-
 

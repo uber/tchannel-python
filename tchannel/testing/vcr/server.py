@@ -20,9 +20,12 @@
 
 from __future__ import absolute_import
 
+import random
+import threading
 from functools import wraps
 
 from tornado import gen
+from tornado.ioloop import IOLoop
 
 from tchannel.errors import TChannelError
 from tchannel.tornado import TChannel
@@ -75,11 +78,15 @@ class VCRProxyService(object):
         self.unpatch = unpatch
         self.cassette = cassette
 
-        self.tchannel = TChannel('proxy-server')
-        self.tchannel.register(VCRProxy, handler=self.send)
+        self.io_loop = None
+        self.thread = None
+        self.tchannel = None
+
+        self._running = threading.Event()
 
     @wrap_uncaught(reraise=(
         VCRProxy.CannotRecordInteractionsError,
+        VCRProxy.NoPeersAvailableError,
         VCRProxy.RemoteServiceError,
         VCRProxy.VCRServiceError,
     ))
@@ -104,8 +111,20 @@ class VCRProxyService(object):
             raise VCRProxy.CannotRecordInteractionsError(
                 'Could not find a matching response for request %s and the '
                 'record mode %s prevents new interactions from being '
-                'recorded. Your test may be performing an uenxpected '
+                'recorded. Your test may be performing an unexpected '
                 'request.' % (str(request), cassette.record_mode)
+            )
+
+        peers = []
+        if request.hostPort:
+            peers = [request.hostPort]
+        else:
+            peers = request.knownPeers
+
+        if not peers:
+            raise VCRProxy.NoPeersAvailableError(
+                'Both, hostPort and knownPeers were empty or unset. '
+                'One of them must be specified and non-empty.'
             )
 
         arg_scheme = VCRProxy.ArgScheme.to_name(request.argScheme).lower()
@@ -117,7 +136,7 @@ class VCRProxyService(object):
             response_future = self.tchannel.request(
                 service=request.serviceName,
                 arg_scheme=arg_scheme,
-                hostport=request.hostPort,
+                hostport=random.choice(peers),
             ).send(
                 request.endpoint,
                 request.headers,
@@ -148,11 +167,32 @@ class VCRProxyService(object):
     def hostport(self):
         return self.tchannel.hostport
 
-    def start(self):
+    def _run(self):
+        self.io_loop = IOLoop()
+        self.io_loop.make_current()
+
+        self.tchannel = TChannel('proxy-server')
+        self.tchannel.register(VCRProxy, handler=self.send)
+
         self.tchannel.listen()
+        self._running.set()
+        self.io_loop.start()
+
+    def start(self):
+        self.thread = threading.Thread(target=self._run)
+        self.thread.start()
+
+        self._running.wait(1)
 
     def stop(self):
         self.tchannel.close()
+        self.tchannel = None
+
+        self.io_loop.stop()
+        self.io_loop = None
+
+        self.thread.join(1)  # seconds
+        self.thread = None
 
     def __enter__(self):
         self.start()

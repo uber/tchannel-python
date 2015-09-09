@@ -1,8 +1,42 @@
-Changelog
-=========
+Changes by Version
+==================
 
 
-0.16.0 (unreleased)
+0.16.4 (unreleased)
+-------------------
+
+- Accept host file in advertise: ``TChannel.advertise()`` now accepts
+  a parameter, ``router_file`` that contains a JSON stringified format
+  of the router list.
+- Add ``TChannel.is_listening`` method to return whether the tchannel instance
+  is listening or not.
+
+
+0.16.3 (2015-09-09)
+-------------------
+
+- Make ``TChannel.listen`` thread-safe and idempotent.
+
+
+0.16.2 (2015-09-04)
+-------------------
+
+- Fix `retry_limit` in `TChannel.call` not allowing 0 retries.
+
+
+0.16.1 (2015-08-27)
+-------------------
+
+- Fixed a bug where the 'not found' handler would incorrectly return
+  serialization mismatch errors..
+- Fixed a bug which prevented VCR support from working with the sync client.
+- Fixed a bug in VCR that prevented it from recording requests made by the sync
+  client, and requests made with ``hostport=None``.
+- Made ``client_for`` compatible with ``tchannel.TChannel``.
+- Brought back ``tchannel.sync.client_for`` for backwards compatibility.
+
+
+0.16.0 (2015-08-25)
 -------------------
 
 - Introduced new server API through methods
@@ -26,6 +60,8 @@ Changelog
 - **BREAKING** - Remove third ``proxy`` argument from the server handler
   interface.
 - **BREAKING** - ``ZipkinTraceHook`` is not longer registered by default.
+- **BREAKING** - ``tchannel.sync.client.TChannelSyncClient`` replaced with
+  ``tchannel.sync.TChannel``.
 
 
 0.15.2 (2015-08-07)

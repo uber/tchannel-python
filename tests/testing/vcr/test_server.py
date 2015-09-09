@@ -67,25 +67,27 @@ def client(vcr_service):
     )
 
 
+@pytest.fixture(params=[True, False], ids=['hostPort', 'knownPeers'])
+def use_known_peers(request):
+    return request.param
+
+
 @pytest.fixture
-def call(client, mock_server):
+def call(client, mock_server, use_known_peers):
     """A fixture that returns a function to send a call through the system."""
 
     def f(endpoint, body, headers=None, service=None):
         kwargs = {
             'serviceName': service or '',
             'endpoint': endpoint,
+            'headers': headers or '',
             'body': body,
         }
-        if headers is not None:
-            kwargs['headers'] = headers
-        vcr_request = VCRProxy.Request(
-            serviceName=service or '',
-            endpoint=endpoint,
-            headers=headers or '',
-            body=body,
-            hostPort=mock_server.hostport,
-        )
+        if use_known_peers:
+            kwargs['knownPeers'] = [mock_server.hostport]
+        else:
+            kwargs['hostPort'] = mock_server.hostport
+        vcr_request = VCRProxy.Request(**kwargs)
         return client.send(vcr_request)
 
     return f
@@ -107,7 +109,7 @@ def test_replay(cassette, call):
 
 
 @pytest.mark.gen_test
-def test_record(vcr_service, cassette, call, mock_server):
+def test_record(vcr_service, cassette, call, mock_server, use_known_peers):
     allow(cassette).can_replay.and_return(False)
     expect(cassette).record.with_args(
         VCRProxy.Request(
@@ -115,7 +117,8 @@ def test_record(vcr_service, cassette, call, mock_server):
             endpoint='endpoint',
             headers='headers',
             body='body',
-            hostPort=mock_server.hostport,
+            knownPeers=[mock_server.hostport] if use_known_peers else [],
+            hostPort='' if use_known_peers else mock_server.hostport,
         ),
         VCRProxy.Response(0, 'response headers', 'response body'),
     )
@@ -144,6 +147,19 @@ def test_write_protected(vcr_service, cassette, call):
 
     with pytest.raises(VCRProxy.CannotRecordInteractionsError):
         yield call('endpoint', 'request body')
+
+
+@pytest.mark.gen_test
+def test_no_peers(vcr_service, cassette, client):
+    allow(cassette).can_replay.and_return(False)
+    vcr_request = VCRProxy.Request(
+        serviceName='hello_service',
+        endpoint='hello',
+        headers='',
+        body='body',
+    )
+    with pytest.raises(VCRProxy.NoPeersAvailableError):
+        yield client.send(vcr_request)
 
 
 @pytest.mark.gen_test

@@ -1,5 +1,5 @@
-Version Upgrade Guide
-=====================
+Upgrade Guide
+=============
 
 Migrating to a version of TChannel with breaking changes? This guide documents
 what broke and how to safely migrate to newer versions.
@@ -7,17 +7,20 @@ what broke and how to safely migrate to newer versions.
 From 0.15 to 0.16
 -----------------
 
-- ``tchannel.TChannel.register`` no longer mimicks ``tchannel.tornado.TChannel.register``,
-  instead it exposes the new server API like so:
+- ``tchannel.TChannel.register`` no longer mimicks
+  ``tchannel.tornado.TChannel.register``, instead it exposes the new server API
+  like so:
 
   Before:
 
   .. code:: python
 
-      from tchannel import TChannel
+      from tchannel.tornado import TChannel
+
+      tchannel = TChannel('my-service-name')
 
       @tchannel.register('endpoint', 'json')
-      def endpoint(request, response):
+      def endpoint(request, response, proxy):
           response.write({'resp': 'body'})
 
 
@@ -25,16 +28,74 @@ From 0.15 to 0.16
 
   .. code:: python
 
-      from tchannel import TChannel, Response
+      from tchannel import TChannel
+
+      tchannel = TChannel('my-service-name')
 
       @tchannel.json.register
       def endpoint(request):
-          return Response({'resp': 'body'})
+          return {'resp': 'body'}
 
-- `` from tchannel.tornado import TChannel`` is deprecated.
+          # Or, if you need to return headers with your response:
+          from tchannel import Response
+          return Response({'resp': 'body'}, {'header': 'foo'})
 
-- Remove ``retry_delay`` option from ``tchannel.tornado.peer.PeerClientOperation.send``
-  method.
+- ``TChannelSyncClient`` has been replaced with ``tchannel.sync.TChannel``.
+  This new synchronous client has been significantly re-worked to more closely
+  match the asynchronous ``TChannel`` API. ``tchannel.sync.thrift.client_for``
+  has been removed and ``tchannel.thrift_request_builder`` should be used
+  instead (``tchannel.thrift.client_for`` still exists for backwards
+  compatibility but is not recommended). This new API allows specifying
+  headers, timeouts, and retry behavior with Thrift requests.
+
+  Before:
+
+  .. code:: python
+
+      from tchannel.sync import TChannelSyncClient
+      from tchannel.sync.thrift import client_for
+
+      from generated.thrift.code import MyThriftService
+
+      tchannel_thrift_client = client_for('foo', MyThriftService)
+
+      tchannel = TChannelSyncClient(name='bar')
+
+      future = tchannel_thrift_client.someMethod(...)
+
+      result = future.result()
+
+
+  After:
+
+  .. code:: python
+
+      from tchannel import thrift_request_builder
+      from tchannel.sync import TChannel
+      from tchannel.retry import CONNECTION_ERROR_AND_TIMEOUT
+
+      from generated.thrift.code import MyThriftService
+
+      tchannel_thrift_client = thrift_request_builder(
+          service='foo',
+          thrift_module=MyThriftService,
+      )
+
+      tchannel = TChannel(name='bar')
+
+      future = tchannel.thrift(
+          tchannel_thrift_client.someMethod(...)
+          headers={'foo': 'bar'},
+          retry_on=CONNECTION_ERROR_AND_TIMEOUT,
+          timeout=1000,
+      )
+
+      result = future.result()
+
+- ``from tchannel.tornado import TChannel`` is deprecated.
+
+- Removed ``retry_delay`` option from
+  ``tchannel.tornado.peer.PeerClientOperation.send`` method.
 
   Before: ``tchannel.tornado.TChannel.request.send(retry_delay=300)``
 
@@ -49,16 +110,16 @@ From 0.15 to 0.16
 
 - If you were catching ``BadRequest``, it may have been masking checksum errors
   and fatal streaming errors. These are now raised as ``FatalProtocolError``,
-  but in practive should not need to be handled when interacting with a
+  but in practice should not need to be handled when interacting with a
   well-behaved TChannel implementation.
 
 - ``TChannelApplicationError`` was unused and removed.
 
 - Three error types have been introduced to simplify retry handling:
-  ``NotRetryableError`` (for requests should never be retried),
-  ``RetryableError`` (for requests that are always safe to retry), and
-  ``MaybeRetryableError`` (for requests that are safe to retry on idempotent
-  endpoints).
+  - ``NotRetryableError`` (for requests should never be retried),
+  - ``RetryableError`` (for requests that are always safe to retry), and
+  - ``MaybeRetryableError`` (for requests that are safe to retry on idempotent
+    endpoints).
 
 
 From 0.14 to 0.15

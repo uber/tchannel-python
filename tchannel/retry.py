@@ -22,10 +22,21 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals
 )
 
-NEVER = 'n'
+#: Retry the request on failures to connect to a remote host. This is the
+#: default retry behavior.
 CONNECTION_ERROR = 'c'
+
+#: Never retry the request.
+NEVER = 'n'
+
+#: Retry the request on timeouts waiting for a response.
 TIMEOUT = 't'
+
+#: Retry the request on failures to connect and timeouts after connecting.
 CONNECTION_ERROR_AND_TIMEOUT = 'ct'
+
 DEFAULT = CONNECTION_ERROR
 
+#: The default number of times to retry a request. This is in addition to the
+#: original request.
 DEFAULT_RETRY_LIMIT = 4

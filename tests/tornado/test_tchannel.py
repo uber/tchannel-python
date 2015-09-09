@@ -70,21 +70,3 @@ def test_should_error_if_call_listen_twice(tchannel):
 
     with pytest.raises(AlreadyListeningError):
         tchannel.listen()
-
-
-def test_advertise_should_listen_if_not_called_yet(tchannel, mock_server):
-
-    assert tchannel.is_listening() is False
-
-    mock_server.expect_call('ad', 'json').and_write(
-        headers="",
-        body={"hello": "world"},
-    )
-
-    routers = [mock_server.tchannel.hostport]
-
-    tchannel.advertise(
-        routers=routers
-    )
-
-    assert tchannel.is_listening() is True
