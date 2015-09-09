@@ -25,11 +25,13 @@ from __future__ import (
 import json
 import logging
 
+from threading import Lock
 from tornado import gen
 
 from . import schemes
 from . import transport
 from . import retry
+from .errors import AlreadyListeningError
 from .glossary import DEFAULT_TIMEOUT
 from .response import Response, TransportHeaders
 from .tornado import TChannel as DeprecatedTChannel
@@ -109,6 +111,7 @@ class TChannel(object):
         self.raw = schemes.RawArgScheme(self)
         self.json = schemes.JsonArgScheme(self)
         self.thrift = schemes.ThriftArgScheme(self)
+        self._listen_lock = Lock()
 
     def is_listening(self):
         return self._dep_tchannel.is_listening()
@@ -182,7 +185,18 @@ class TChannel(object):
         raise gen.Return(result)
 
     def listen(self, port=None):
-        return self._dep_tchannel.listen(port)
+        with self._listen_lock:
+            if self._dep_tchannel.is_listening():
+                listening_port = int(self.hostport.rsplit(":")[1])
+                if port and port != listening_port:
+                    raise AlreadyListeningError(
+                        "TChannel server is already listening on port: %d"
+                        % listening_port
+                    )
+                else:
+                    return
+
+            return self._dep_tchannel.listen(port)
 
     @property
     def hostport(self):

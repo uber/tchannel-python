@@ -2,7 +2,7 @@ Changes by Version
 ==================
 
 
-0.16.3 (unreleased)
+0.16.4 (unreleased)
 -------------------
 
 - Accept host file in advertise: ``TChannel.advertise()`` now accepts
@@ -10,6 +10,12 @@ Changes by Version
   of the router list.
 - Add ``TChannel.is_listening`` method to return whether the tchannel instance
   is listening or not.
+
+
+0.16.3 (2015-09-09)
+-------------------
+
+- Make ``TChannel.listen`` thread-safe and idempotent.
 
 
 0.16.2 (2015-09-04)

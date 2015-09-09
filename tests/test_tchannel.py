@@ -34,6 +34,7 @@ import pytest
 from tornado import gen
 
 from tchannel import TChannel, Request, Response, schemes, errors
+from tchannel.errors import AlreadyListeningError
 from tchannel.event import EventHook
 from tchannel.response import TransportHeaders
 
@@ -319,3 +320,20 @@ def test_advertise_should_raise_on_invalid_router_file():
 
     with pytest.raises(ValueError):
         yield tchannel.advertise(routers='lala', router_file='?~~lala')
+
+
+def test_listen_different_ports():
+    server = TChannel(name='test_server')
+    server.listen()
+    port = int(server.hostport.rsplit(":")[1])
+    with pytest.raises(AlreadyListeningError):
+        server.listen(port + 1)
+
+
+def test_listen_duplicate_ports():
+    server = TChannel(name='test_server')
+    server.listen()
+    server.listen()
+    port = int(server.hostport.rsplit(":")[1])
+    server.listen(port)
+    server.listen()
