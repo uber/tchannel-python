@@ -2,7 +2,7 @@ Changes by Version
 ==================
 
 
-0.16.3 (unreleased)
+0.16.3 (2015-09-09)
 -------------------
 
 - Make ``TChannel.listen`` thread-safe and idempotent.
