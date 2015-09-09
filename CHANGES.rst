@@ -1,6 +1,12 @@
 Changes by Version
 ==================
 
+0.16.4 (unreleased)
+-------------------
+
+- Fix bug where status code was not being set correctly on call responses for
+  application errors when using the Thrift scheme.
+
 
 0.16.3 (2015-09-09)
 -------------------
