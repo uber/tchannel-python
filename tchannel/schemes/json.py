@@ -49,6 +49,7 @@ class JsonArgScheme(object):
         retry_limit=None,
         hostport=None,
         shard_key=None,
+        trace=None,
     ):
         """Make JSON TChannel Request.
 
@@ -105,6 +106,7 @@ class JsonArgScheme(object):
             retry_limit=retry_limit,
             hostport=hostport,
             shard_key=shard_key,
+            trace=trace,
         )
 
         # deserialize

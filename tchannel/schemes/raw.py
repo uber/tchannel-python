@@ -44,6 +44,7 @@ class RawArgScheme(object):
         retry_limit=None,
         hostport=None,
         shard_key=None,
+        trace=None,
     ):
         """Make a raw TChannel request.
 
@@ -97,6 +98,8 @@ class RawArgScheme(object):
             retry_on=retry_on,
             retry_limit=retry_limit,
             hostport=hostport,
+            shard_key=shard_key,
+            trace=trace,
         )
 
     def register(self, endpoint, **kwargs):

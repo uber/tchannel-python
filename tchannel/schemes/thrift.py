@@ -71,6 +71,7 @@ class ThriftArgScheme(object):
         retry_on=None,
         retry_limit=None,
         shard_key=None,
+        trace=None,
     ):
 
         if not headers:
@@ -98,6 +99,7 @@ class ThriftArgScheme(object):
             retry_limit=retry_limit,
             hostport=request.hostport,
             shard_key=shard_key,
+            trace=trace,
         )
 
         # deserialize...

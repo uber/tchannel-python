@@ -102,6 +102,7 @@ def test_zipkin_trace(trace_server):
         hostport=hostport,
         endpoint=endpoint,
         headers=hostport,
+        trace=True,
     )
 
     header = response.headers
@@ -113,7 +114,11 @@ def test_zipkin_trace(trace_server):
         if trace:
             traces.append(json.loads(trace))
 
+    parent_span_id = object()
     trace_id = traces[0][0][u'trace_id']
+
+    assert traces
+
     for trace in traces:
         assert trace_id == trace[0][u'trace_id']
         if trace[0][u'name'] == u'endpoint2':
