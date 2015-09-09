@@ -28,6 +28,7 @@ import thriftrw
 from tornado import gen
 from tornado.util import raise_exc_info
 
+from tchannel.status import OK, FAILED
 from tchannel.errors import OneWayNotSupportedError
 from tchannel.errors import ValueExpectedError
 from tchannel.response import Response, response_from_mixed
@@ -304,6 +305,7 @@ def build_handler(function, handler):
     def handle(request):
         # kwargs for this function's response_cls constructor
         response_kwargs = {}
+        status = OK
 
         try:
             response = yield gen.maybe_future(handler(request))
@@ -316,6 +318,7 @@ def build_handler(function, handler):
                 # and the surface on the TypeSpec is the exception class.
                 exc_cls = exc_spec.spec.surface
                 if isinstance(e, exc_cls):
+                    status = FAILED
                     response_kwargs[exc_spec.name] = e
                     break
             else:
@@ -331,6 +334,7 @@ def build_handler(function, handler):
                 )
                 response_kwargs['success'] = response.body
 
+        response.status = status
         response.body = response_cls(**response_kwargs)
         raise gen.Return(response)
 
