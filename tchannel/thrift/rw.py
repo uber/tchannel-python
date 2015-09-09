@@ -40,6 +40,11 @@ from .module import ThriftRequest
 def load(service, path, hostport=None, module_name=None):
     """Loads the Thrift file at the specified path.
 
+    .. note::
+
+        This functionality is experimental and subject to change. We expect to
+        mark it as stable in a future version.
+
     The file is compiled in-memory and a Python module containing the result
     is returned. It may be used with ``TChannel.thrift``. For example,
 
