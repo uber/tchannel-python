@@ -28,8 +28,12 @@ from tornado import gen
 from tornado import concurrent
 
 from tchannel import (
-    TChannel, Request, Response,
-    thrift_request_builder, schemes,
+    TChannel,
+    Request,
+    Response,
+    thrift,
+    thrift_request_builder,
+    schemes,
 )
 from tchannel.response import TransportHeaders
 from tchannel.errors import OneWayNotSupportedError
@@ -56,43 +60,108 @@ from tchannel.messages.call_request import CallRequestMessage
 
 
 @pytest.fixture
-def ThriftTest():
-    return _ThriftTest
-
-
-@pytest.fixture
-def SecondService():
-    return _SecondService
-
-
-@pytest.fixture
-def ttypes():
-    return _ttypes
-
-
-@pytest.fixture
 def server(io_loop):  # need io_loop fixture for listen() to work
     server = TChannel(name='server')
     server.listen()
     return server
 
 
-@pytest.fixture
-def service(server, ThriftTest):
-    return thrift_request_builder(
-        service='server',
-        thrift_module=ThriftTest,
-        hostport=server.hostport,
-    )
+@pytest.fixture(params=[False, True], ids=['server_thrift', 'server_thriftrw'])
+def use_thriftrw_server(request):
+    return request.param
+
+
+@pytest.fixture(params=[False, True], ids=['client_thrift', 'client_thriftrw'])
+def use_thriftrw_client(request):
+    return request.param
 
 
 @pytest.fixture
-def second_service(server, SecondService):
-    return thrift_request_builder(
-        service='server',
-        thrift_module=SecondService,
-        hostport=server.hostport,
-    )
+def ThriftTest(use_thriftrw_server):
+    """Used by servers to register endpoints for ThriftTest."""
+
+    if use_thriftrw_server:
+        return thrift.load(
+            'server',
+            'tests/data/idls/ThriftTest.thrift',
+        ).ThriftTest
+    else:
+        return _ThriftTest
+
+
+@pytest.fixture
+def SecondService(use_thriftrw_server):
+    """Used by servers to register endpoints for SecondService."""
+
+    if use_thriftrw_server:
+        return thrift.load(
+            'server',
+            'tests/data/idls/ThriftTest.thrift',
+        ).SecondService
+    else:
+        return _SecondService
+
+
+@pytest.fixture
+def server_ttypes(use_thriftrw_server):
+    """Provides access to generated types for the server."""
+
+    if use_thriftrw_server:
+        return thrift.load(
+            'server',
+            'tests/data/idls/ThriftTest.thrift',
+        )
+    else:
+        return _ttypes
+
+
+@pytest.fixture
+def client_ttypes(use_thriftrw_client):
+    """Provides access to generated types for the server."""
+
+    if use_thriftrw_client:
+        return thrift.load(
+            'server',
+            'tests/data/idls/ThriftTest.thrift',
+        )
+    else:
+        return _ttypes
+
+
+@pytest.fixture
+def service(server, use_thriftrw_client):
+    """Used by clients to build requests to ThriftTest."""
+
+    if use_thriftrw_client:
+        return thrift.load(
+            'server',
+            'tests/data/idls/ThriftTest.thrift',
+            hostport=server.hostport,
+        ).ThriftTest
+    else:
+        return thrift_request_builder(
+            service='server',
+            thrift_module=_ThriftTest,
+            hostport=server.hostport,
+        )
+
+
+@pytest.fixture
+def second_service(server, use_thriftrw_client):
+    """Used by clients to build requests to SecondService."""
+
+    if use_thriftrw_client:
+        return thrift.load(
+            'server',
+            'tests/data/idls/ThriftTest.thrift',
+            hostport=server.hostport,
+        ).SecondService
+    else:
+        return thrift_request_builder(
+            service='server',
+            thrift_module=_SecondService,
+            hostport=server.hostport,
+        )
 
 
 @pytest.mark.gen_test
@@ -260,7 +329,7 @@ def test_double(server, service, ThriftTest):
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_binary(server, service, ThriftTest, ttypes):
+def test_binary(server, service, ThriftTest):
 
     # Given this test server:
 
@@ -275,20 +344,20 @@ def test_binary(server, service, ThriftTest, ttypes):
     resp = yield tchannel.thrift(
         service.testBinary(
             # this is ThriftTest.Xtruct(string_thing='hi')
-            '\x0c\x00\x00\x0b\x00\x01\x00\x00\x00\x0bhi\x00\x00'
+            b'\x0c\x00\x00\x0b\x00\x01\x00\x00\x00\x0bhi\x00\x00'
         )
     )
 
     assert resp.headers == {}
     assert (
         resp.body ==
-        '\x0c\x00\x00\x0b\x00\x01\x00\x00\x00\x0bhi\x00\x00'
+        b'\x0c\x00\x00\x0b\x00\x01\x00\x00\x00\x0bhi\x00\x00'
     )
 
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_struct(server, service, ThriftTest, ttypes):
+def test_struct(server, service, ThriftTest, server_ttypes, client_ttypes):
 
     # Given this test server:
 
@@ -297,7 +366,7 @@ def test_struct(server, service, ThriftTest, ttypes):
 
         assert request.body.thing.string_thing == 'req string'
 
-        return ttypes.Xtruct(
+        return server_ttypes.Xtruct(
             string_thing="resp string"
         )
 
@@ -306,18 +375,20 @@ def test_struct(server, service, ThriftTest, ttypes):
     tchannel = TChannel(name='client')
 
     resp = yield tchannel.thrift(
-        service.testStruct(ttypes.Xtruct("req string"))
+        service.testStruct(client_ttypes.Xtruct("req string"))
     )
 
     # verify response
     assert isinstance(resp, Response)
     assert resp.headers == {}
-    assert resp.body == ttypes.Xtruct("resp string")
+    assert resp.body == client_ttypes.Xtruct("resp string")
 
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_struct_with_headers(server, service, ThriftTest, ttypes):
+def test_struct_with_headers(
+    server, service, ThriftTest, server_ttypes, client_ttypes
+):
 
     # Given this test server:
 
@@ -329,7 +400,7 @@ def test_struct_with_headers(server, service, ThriftTest, ttypes):
         assert request.body.thing.string_thing == 'req string'
 
         return Response(
-            ttypes.Xtruct(
+            server_ttypes.Xtruct(
                 string_thing="resp string"
             ),
             headers={'resp': 'header'},
@@ -340,19 +411,19 @@ def test_struct_with_headers(server, service, ThriftTest, ttypes):
     tchannel = TChannel(name='client')
 
     resp = yield tchannel.thrift(
-        service.testStruct(ttypes.Xtruct("req string")),
+        service.testStruct(client_ttypes.Xtruct("req string")),
         headers={'req': 'header'},
     )
 
     # verify response
     assert isinstance(resp, Response)
     assert resp.headers == {'resp': 'header'}
-    assert resp.body == ttypes.Xtruct("resp string")
+    assert resp.body == client_ttypes.Xtruct("resp string")
 
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_nest(server, service, ThriftTest, ttypes):
+def test_nest(server, service, ThriftTest, client_ttypes):
 
     # Given this test server:
 
@@ -364,13 +435,13 @@ def test_nest(server, service, ThriftTest, ttypes):
 
     tchannel = TChannel(name='client')
 
-    xstruct = ttypes.Xtruct(
+    xstruct = client_ttypes.Xtruct(
         string_thing='hi',
         byte_thing=1,
         i32_thing=-1,
         i64_thing=-34359738368,
     )
-    xstruct2 = ttypes.Xtruct2(
+    xstruct2 = client_ttypes.Xtruct2(
         byte_thing=1,
         struct_thing=xstruct,
         i32_thing=1,
@@ -492,7 +563,7 @@ def test_list(server, service, ThriftTest):
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_enum(server, service, ThriftTest, ttypes):
+def test_enum(server, service, ThriftTest, client_ttypes):
 
     # Given this test server:
 
@@ -504,7 +575,7 @@ def test_enum(server, service, ThriftTest, ttypes):
 
     tchannel = TChannel(name='client')
 
-    x = ttypes.Numberz.FIVE
+    x = client_ttypes.Numberz.FIVE
 
     resp = yield tchannel.thrift(
         service.testEnum(thing=x)
@@ -577,7 +648,7 @@ def test_map_map(server, service, ThriftTest):
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_insanity(server, service, ThriftTest, ttypes):
+def test_insanity(server, service, ThriftTest, server_ttypes, client_ttypes):
 
     # Given this test server:
 
@@ -589,7 +660,7 @@ def test_insanity(server, service, ThriftTest, ttypes):
                 3: request.body.argument,
             },
             2: {
-                6: ttypes.Insanity(),
+                6: server_ttypes.Insanity(),
             },
         }
         return result
@@ -598,12 +669,12 @@ def test_insanity(server, service, ThriftTest, ttypes):
 
     tchannel = TChannel(name='client')
 
-    x = ttypes.Insanity(
+    x = client_ttypes.Insanity(
         userMap={
-            ttypes.Numberz.EIGHT: 0xffffffffffffff,
+            client_ttypes.Numberz.EIGHT: 0xffffffffffffff,
         },
         xtructs=[
-            ttypes.Xtruct(
+            client_ttypes.Xtruct(
                 string_thing='Hello2',
                 byte_thing=74,
                 i32_thing=0xff00ff,
@@ -623,20 +694,20 @@ def test_insanity(server, service, ThriftTest, ttypes):
             3: x,
         },
         2: {
-            6: ttypes.Insanity(),
+            6: client_ttypes.Insanity(),
         },
     }
 
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_multi(server, service, ThriftTest, ttypes):
+def test_multi(server, service, ThriftTest, server_ttypes, client_ttypes):
 
     # Given this test server:
 
     @server.thrift.register(ThriftTest)
     def testMulti(request):
-        return ttypes.Xtruct(
+        return server_ttypes.Xtruct(
             string_thing='Hello2',
             byte_thing=request.body.arg0,
             i32_thing=request.body.arg1,
@@ -647,7 +718,7 @@ def test_multi(server, service, ThriftTest, ttypes):
 
     tchannel = TChannel(name='client')
 
-    x = ttypes.Xtruct(
+    x = client_ttypes.Xtruct(
         string_thing='Hello2',
         byte_thing=74,
         i32_thing=0xff00ff,
@@ -660,7 +731,7 @@ def test_multi(server, service, ThriftTest, ttypes):
             arg1=x.i32_thing,
             arg2=x.i64_thing,
             arg3={0: 'abc'},
-            arg4=ttypes.Numberz.FIVE,
+            arg4=client_ttypes.Numberz.FIVE,
             arg5=0xf0f0f0,
         )
     )
@@ -671,7 +742,7 @@ def test_multi(server, service, ThriftTest, ttypes):
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_exception(server, service, ThriftTest, ttypes):
+def test_exception(server, service, ThriftTest, server_ttypes, client_ttypes):
 
     # Given this test server:
 
@@ -679,7 +750,7 @@ def test_exception(server, service, ThriftTest, ttypes):
     def testException(request):
 
         if request.body.arg == 'Xception':
-            raise ttypes.Xception(
+            raise server_ttypes.Xception(
                 errorCode=1001,
                 message=request.body.arg
             )
@@ -693,7 +764,7 @@ def test_exception(server, service, ThriftTest, ttypes):
     tchannel = TChannel(name='client')
 
     # case #1
-    with pytest.raises(ttypes.Xception) as e:
+    with pytest.raises(client_ttypes.Xception) as e:
         yield tchannel.thrift(
             service.testException(arg='Xception')
         )
@@ -717,7 +788,9 @@ def test_exception(server, service, ThriftTest, ttypes):
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_multi_exception(server, service, ThriftTest, ttypes):
+def test_multi_exception(
+    server, service, ThriftTest, server_ttypes, client_ttypes
+):
 
     # Given this test server:
 
@@ -725,23 +798,23 @@ def test_multi_exception(server, service, ThriftTest, ttypes):
     def testMultiException(request):
 
         if request.body.arg0 == 'Xception':
-            raise ttypes.Xception(
+            raise server_ttypes.Xception(
                 errorCode=1001,
                 message='This is an Xception',
             )
         elif request.body.arg0 == 'Xception2':
-            raise ttypes.Xception2(
+            raise server_ttypes.Xception2(
                 errorCode=2002
             )
 
-        return ttypes.Xtruct(string_thing=request.body.arg1)
+        return server_ttypes.Xtruct(string_thing=request.body.arg1)
 
     # Make a call:
 
     tchannel = TChannel(name='client')
 
     # case #1
-    with pytest.raises(ttypes.Xception) as e:
+    with pytest.raises(client_ttypes.Xception) as e:
         yield tchannel.thrift(
             service.testMultiException(arg0='Xception', arg1='thingy')
         )
@@ -749,7 +822,7 @@ def test_multi_exception(server, service, ThriftTest, ttypes):
         assert e.value.message == 'This is an Xception'
 
     # case #2
-    with pytest.raises(ttypes.Xception2) as e:
+    with pytest.raises(client_ttypes.Xception2) as e:
         yield tchannel.thrift(
             service.testMultiException(arg0='Xception2', arg1='thingy')
         )
@@ -761,7 +834,7 @@ def test_multi_exception(server, service, ThriftTest, ttypes):
     )
     assert isinstance(resp, Response)
     assert resp.headers == {}
-    assert resp.body == ttypes.Xtruct('thingy')
+    assert resp.body == client_ttypes.Xtruct('thingy')
 
 
 @pytest.mark.gen_test
@@ -832,10 +905,9 @@ def test_second_service_second_test_string(
     @server.thrift.register(SecondService)
     @gen.coroutine
     def secondtestString(request):
-
         service = thrift_request_builder(
             service='server',
-            thrift_module=ThriftTest,
+            thrift_module=_ThriftTest,
             hostport=server.hostport,
         )
         resp = yield tchannel.thrift(
@@ -917,7 +989,7 @@ def test_call_unexpected_error_should_result_in_unexpected_error(
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_value_expected_but_none_returned_should_error(
-    server, service, ThriftTest
+    server, service, ThriftTest, use_thriftrw_server
 ):
 
     # Given this test server:
@@ -930,10 +1002,22 @@ def test_value_expected_but_none_returned_should_error(
 
     tchannel = TChannel(name='client')
 
-    with pytest.raises(ValueExpectedError):
+    if use_thriftrw_server:
+        # With thirftrw the client only sees an unexpected error because
+        # thriftrw always disallows None results for functions that return
+        # values.
+        exc = UnexpectedError
+    else:
+        exc = ValueExpectedError
+
+    with pytest.raises(exc) as exc_info:
         yield tchannel.thrift(
             service.testString('no return!?')
         )
+
+    if not use_thriftrw_server:
+        assert 'Expected a value to be returned' in str(exc_info)
+        assert 'ThriftTest::testString' in str(exc_info)
 
 
 @pytest.mark.gen_test
@@ -971,7 +1055,7 @@ def test_client_for(ClientTChannel, server, ThriftTest):
 
     tchannel = ClientTChannel(name='client')
 
-    client = client_for('server', ThriftTest)(
+    client = client_for('server', _ThriftTest)(
         tchannel=tchannel,
         hostport=server.hostport,
     )
@@ -990,7 +1074,7 @@ def test_client_for_with_sync_tchannel(server, ThriftTest):
 
     tchannel = SyncTChannel(name='client')
 
-    client = sync_client_for('server', ThriftTest)(
+    client = sync_client_for('server', _ThriftTest)(
         tchannel=tchannel,
         hostport=server.hostport,
     )

@@ -111,7 +111,8 @@ class ThriftRequestMaker(object):
 
         if result_type is None:
             raise OneWayNotSupportedError(
-                'TChannel+Thrift does not currently support oneway procedues'
+                'TChannel+Thrift does not currently support oneway '
+                'procedures.'
             )
 
         endpoint = self._get_endpoint(method_name)
@@ -215,7 +216,7 @@ class ThriftRequest(object):
             if body.success is None:
                 raise ValueExpectedError(
                     'Expected a value to be returned for %s, '
-                    'but recieved None - only void procedures can'
+                    'but recieved None - only void procedures can '
                     'return None.' % self.endpoint
                 )
 

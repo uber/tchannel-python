@@ -28,6 +28,7 @@ import thriftrw
 from tornado import gen
 from tornado.util import raise_exc_info
 
+from tchannel.errors import OneWayNotSupportedError
 from tchannel.errors import ValueExpectedError
 from tchannel.response import Response, response_from_mixed
 from tchannel.serializer.thrift import ThriftRWSerializer
@@ -176,10 +177,11 @@ class Function(object):
     """
 
     __slots__ = (
-        'func', 'service', 'request_cls', 'response_cls'
+        'spec', 'func', 'service', 'request_cls', 'response_cls'
     )
 
     def __init__(self, func_spec, service):
+        self.spec = func_spec
         self.func = func_spec.surface
         self.service = service
 
@@ -191,7 +193,18 @@ class Function(object):
         """Endpoint name for this function."""
         return '%s::%s' % (self.service.name, self.func.name)
 
+    @property
+    def oneway(self):
+        """Whether this function is oneway."""
+        return self.spec.oneway
+
     def __call__(self, *args, **kwargs):
+        if self.oneway:
+            raise OneWayNotSupportedError(
+                'TChannel+Thrift does not currently support oneway '
+                'procedures.'
+            )
+
         module = self.service._module
         call_args = self.request_cls(*args, **kwargs)
 
@@ -232,6 +245,7 @@ def register(dispatcher, service, handler=None, method=None):
         assert function, (
             'Service "%s" does not define method "%s"' % (service.name, method)
         )
+        assert not function.oneway
 
         handler = build_handler(function, handler)
         dispatcher.register(
@@ -278,17 +292,14 @@ def build_handler(function, handler):
                 raise_exc_info(sys.exc_info())
         else:
             response = response_from_mixed(response)
-            if response.body is not None:
-                assert response_spec.return_spec is not None, (
-                    'Tried to return a result for a void method.'
+
+            if response_spec.return_spec is not None:
+                assert response.body is not None, (
+                    'Expected a value to be returned for %s, '
+                    'but recieved None - only void procedures can '
+                    'return None.' % function.endpoint
                 )
                 response_kwargs['success'] = response.body
-            else:
-                assert response_spec.return_spec is None, (
-                    'Expected a value to be returned for %r but received '
-                    'None. Only void procedures can return None.'
-                    % function.endpoint
-                )
 
         response.body = response_cls(**response_kwargs)
         raise gen.Return(response)
@@ -317,7 +328,7 @@ class ThriftRWRequest(ThriftRequest):
             if body.success is None:
                 raise ValueExpectedError(
                     'Expected a value to be returned for %s, '
-                    'but recieved None - only void procedures can'
+                    'but recieved None - only void procedures can '
                     'return None.' % self.endpoint
                 )
 
