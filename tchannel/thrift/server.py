@@ -115,6 +115,7 @@ def build_handler(result_type, f):
             response = response_from_mixed(response)
             result.write_result(response.body)
 
+        response.status = result.code
         response.body = result.result
 
         raise gen.Return(response)
