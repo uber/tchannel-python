@@ -181,7 +181,7 @@ class TChannel(object):
     def listen(self, port=None):
         with self._listen_lock:
             if self._dep_tchannel.is_listening():
-                listening_port = int(self._dep_tchannel.hostport.rsplit(":")[1])
+                listening_port = int(self.hostport.rsplit(":")[1])
                 if port and port != listening_port:
                     raise AlreadyListeningError(
                         "TChannel server is already listening on port: %d"
