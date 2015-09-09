@@ -4,8 +4,10 @@ Changes by Version
 0.17.0 (unreleased)
 -------------------
 
-- Add ``tchannel.thrift.load`` to read and compile Thrift files at startup.
-  This eliminates manual code generation completely.
+- It is now possible to load Thrift IDL files directly with
+  ``tchannel.thrift.load``. This means that the code generation step using the
+  Apache Thrift compiler can be skipped entirely. Check the API documentation
+  for more details.
 - Accept host file in advertise: ``TChannel.advertise()`` now accepts
   a parameter, ``router_file`` that contains a JSON stringified format
   of the router list.

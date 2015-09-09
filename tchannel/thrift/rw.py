@@ -45,8 +45,10 @@ def load(service, path, hostport=None, module_name=None):
 
     .. code-block:: python
 
-        donuts = tchannel.thrift.load('donuts', 'donuts.thrift')
-        coffee = tchannel.thrift.load('coffee', 'coffee.thrift')
+        from tchannel import TChannel, thrift
+
+        donuts = thrift.load('donuts', 'donuts.thrift')
+        coffee = thrift.load('coffee', 'coffee.thrift')
 
         tchannel = TChannel('myservice')
 
@@ -114,7 +116,7 @@ def load(service, path, hostport=None, module_name=None):
 
         from foo.bar.donuts import DonutsService, Order
 
-        def baz():
+        def baz(tchannel):
             return tchannel.thrift(
                 DonutsService.submitOrder(Order(..))
             )
@@ -133,8 +135,10 @@ def load(service, path, hostport=None, module_name=None):
         Name used for the generated Python module. Defaults to the name of the
         Thrift file.
     """
+    # TODO replace with more specific exceptions
     assert service, 'service is required'
     assert path, 'path is required'
+
     module = thriftrw.load(path=path, name=module_name)
     return TChannelThriftModule(service, module, hostport)
 
