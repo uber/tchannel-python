@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.16.5 (unreleased)
+0.16.5 (2015-09-09)
 -------------------
 
 - Actually fix status code being unset in responses when using the Thrift
