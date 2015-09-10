@@ -25,6 +25,7 @@ import pytest
 from thrift.Thrift import TType
 
 from tchannel.serializer.thrift import ThriftSerializer
+from tchannel.thrift.server import build_handler
 from tchannel.thrift.server import deprecated_build_handler
 from tchannel.tornado.request import Request
 from tchannel.tornado.response import Response
@@ -190,3 +191,24 @@ def test_deprecated_build_handler_exception():
         ])
     )
     assert 1 == res.status_code
+
+
+@pytest.mark.gen_test
+def test_build_handler_application_exception():
+    def call(req):
+        raise FakeException('fail')
+
+    req = Request(
+        argstreams=[
+            InMemStream('hello'),
+            InMemStream('\00\00'),  # no headers
+            InMemStream('\00'),  # empty struct
+        ],
+        serializer=ThriftSerializer(FakeResult),
+    )
+    req.close_argstreams()
+
+    handler = build_handler(FakeResult, call)
+    res = yield handler(req)
+
+    assert res.status == 1
