@@ -47,7 +47,7 @@ class CallRequestMessage(CallRequestContinueMessage):
         headers=None,
         checksum=None,
         args=None,
-        id=0
+        id=0,
     ):
         args = args or ["", "", ""]
         super(CallRequestMessage, self).__init__(flags, checksum, args, id)
