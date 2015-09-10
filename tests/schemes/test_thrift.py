@@ -43,6 +43,9 @@ from tchannel.testing.data.generated.ThriftTest import SecondService
 from tchannel.testing.data.generated.ThriftTest import ThriftTest
 from tchannel.tornado import TChannel as DeprecatedTChannel
 
+from tchannel.tornado.connection import TornadoConnection
+from tchannel.messages.call_request import CallRequestMessage
+
 
 # TODO - where possible, in req/res style test, create parameterized tests,
 #        each test should test w headers and wout
@@ -1243,3 +1246,45 @@ def test_client_for_with_sync_tchannel():
     resp = future.result()
 
     assert resp == 'sbb'
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_exception_status_code_is_set():
+
+    # Given this test server:
+
+    server = TChannel(name='server')
+
+    @server.thrift.register(ThriftTest)
+    def testException(request):
+        raise ThriftTest.Xception(
+            errorCode=1001,
+            message=request.body.arg
+        )
+
+    server.listen()
+
+    # Make a call:
+
+    conn = yield TornadoConnection.outgoing(server.hostport)
+    res = yield conn.send(
+        CallRequestMessage(
+            service=b'service',
+            headers={b'cn': b'client', b'as': b'thrift'},
+            args=[
+                b'ThriftTest::testException',
+                b'',
+                bytearray([
+                    0x0B,        # type = string
+                    0x00, 0x01,  # field ID 1
+
+                    0x00, 0x00, 0x00, 0x00,  # empty string
+
+                    0x00,  # STOP
+                ]),
+            ],
+        )
+    )
+
+    assert 1 == res.status_code

@@ -203,6 +203,8 @@ class RequestDispatcher(object):
                 # instantiate a tchannel.Response
                 new_resp = response_from_mixed(new_resp)
 
+                response.code = new_resp.status
+
                 # assign resp values to dep response
                 response.write_header(new_resp.headers)
 
