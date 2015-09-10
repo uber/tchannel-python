@@ -9,6 +9,8 @@ Changes by Version
   of the router list.
 - Add ``TChannel.is_listening`` method to return whether the tchannel instance
   is listening or not.
+- Actually fix status code being unset in responses when using the Thrift
+  scheme.
 
 
 0.16.4 (2015-09-09)
