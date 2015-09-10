@@ -1095,20 +1095,16 @@ def test_client_for_with_sync_tchannel(server, ThriftTest):
 
 @pytest.mark.gen_test
 @pytest.mark.call
-def test_exception_status_code_is_set():
+def test_exception_status_code_is_set(server, ThriftTest, server_ttypes):
 
     # Given this test server:
 
-    server = TChannel(name='server')
-
     @server.thrift.register(ThriftTest)
     def testException(request):
-        raise ThriftTest.Xception(
+        raise server_ttypes.Xception(
             errorCode=1001,
             message=request.body.arg
         )
-
-    server.listen()
 
     # Make a call:
 
