@@ -11,6 +11,7 @@ Changes by Version
   is listening or not.
 - Actually fix status code being unset in responses when using the Thrift
   scheme.
+- Fix request TTLs not being propagated over the wire.
 
 
 0.16.4 (2015-09-09)
