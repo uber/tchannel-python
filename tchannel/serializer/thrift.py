@@ -52,8 +52,9 @@ class ThriftSerializer(object):
 
     def deserialize_header(self, headers):
         headers = headers or {}
-        headers = io.BytesIO(headers)
-        headers = self._headers_rw.read(headers)
+        if headers:
+            headers = io.BytesIO(headers)
+            headers = self._headers_rw.read(headers)
         result = dict(headers)
 
         return result

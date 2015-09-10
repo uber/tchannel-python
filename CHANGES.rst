@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.16.5 (unreleased)
+0.16.6 (unreleased)
 -------------------
 
 - Accept host file in advertise: ``TChannel.advertise()`` now accepts
@@ -9,6 +9,14 @@ Changes by Version
   of the router list.
 - Add ``TChannel.is_listening`` method to return whether the tchannel instance
   is listening or not.
+
+
+0.16.5 (2015-09-09)
+-------------------
+
+- Actually fix status code being unset in responses when using the Thrift
+  scheme.
+- Fix request TTLs not being propagated over the wire.
 
 
 0.16.4 (2015-09-09)
