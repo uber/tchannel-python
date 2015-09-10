@@ -97,7 +97,7 @@ class MessageFactory(object):
         if request.state == StreamState.init:
             message = CallRequestMessage(
                 flags=request.flags,
-                # ttl=request.ttl,
+                ttl=request.ttl,
                 tracing=Tracing(request.tracing.span_id,
                                 request.tracing.parent_span_id,
                                 request.tracing.trace_id,
@@ -206,7 +206,7 @@ class MessageFactory(object):
         # TODO decide what to pass to Request from message
         req = Request(
             flags=message.flags,
-            # ttl=message.ttl,
+            ttl=message.ttl,
             tracing=tracing,
             service=message.service,
             headers=message.headers,
