@@ -23,7 +23,7 @@
 #
 # DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
 #
-#  options string: py:tornado,dynamic,utf8strings,new_style,slots
+#  options string: py:new_style,slots,dynamic
 #
 
 from thrift.Thrift import TType, TMessageType, TException, TApplicationException

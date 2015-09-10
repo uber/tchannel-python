@@ -16,7 +16,7 @@ from thrift.transport import TSSLSocket
 from thrift.transport import THttpClient
 from thrift.protocol import TBinaryProtocol
 
-from tcollector import TCollector
+from tcollector import TCollectorGo
 from tcollector.ttypes import *
 
 if len(sys.argv) <= 1 or sys.argv[1] == '--help':
@@ -25,7 +25,6 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print('')
   print('Functions:')
   print('  Response submit(Span span)')
-  print('   multi_submit( spans)')
   print('')
   sys.exit(0)
 
@@ -79,7 +78,7 @@ else:
   else:
     transport = TTransport.TBufferedTransport(socket)
 protocol = TBinaryProtocol.TBinaryProtocol(transport)
-client = TCollector.Client(protocol)
+client = TCollectorGo.Client(protocol)
 transport.open()
 
 if cmd == 'submit':
@@ -87,12 +86,6 @@ if cmd == 'submit':
     print('submit requires 1 args')
     sys.exit(1)
   pp.pprint(client.submit(eval(args[0]),))
-
-elif cmd == 'multi_submit':
-  if len(args) != 1:
-    print('multi_submit requires 1 args')
-    sys.exit(1)
-  pp.pprint(client.multi_submit(eval(args[0]),))
 
 else:
   print('Unrecognized method %s' % cmd)

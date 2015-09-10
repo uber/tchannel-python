@@ -61,6 +61,11 @@ struct Response {
     1: bool ok
 }
 
+service TCollectorGo {
+    Response submit(1: Span span)
+}
+
 service TCollector {
     Response submit(1: Span span)
+    list<Response> multi_submit(1: list<Span> spans)
 }
