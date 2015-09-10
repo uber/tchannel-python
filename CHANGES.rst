@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.16.5 (unreleased)
+0.16.5 (2015-09-09)
 -------------------
 
 - Accept host file in advertise: ``TChannel.advertise()`` now accepts
