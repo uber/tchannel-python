@@ -33,7 +33,10 @@ from . import transport
 from . import retry
 from .errors import AlreadyListeningError
 from .glossary import DEFAULT_TIMEOUT
+from .health import health
+from .health.thrift import Meta
 from .response import Response, TransportHeaders
+from .schemes import THRIFT
 from .tornado import TChannel as DeprecatedTChannel
 from .tornado.dispatch import RequestDispatcher as DeprecatedDispatcher
 
@@ -112,6 +115,8 @@ class TChannel(object):
         self.json = schemes.JsonArgScheme(self)
         self.thrift = schemes.ThriftArgScheme(self)
         self._listen_lock = Lock()
+
+        self._use_default_health_handler = True
 
     def is_listening(self):
         return self._dep_tchannel.is_listening()
@@ -196,6 +201,8 @@ class TChannel(object):
                 else:
                     return
 
+            if self._use_default_health_handler:
+                self.register_health_handler(health)
             return self._dep_tchannel.listen(port)
 
     @property
@@ -224,6 +231,13 @@ class TChannel(object):
             return decorator
         else:
             return decorator(handler)
+
+    def register_health_handler(self, f, **kwargs):
+        """Register custom health handler for TChannel. It will override
+        default health handler.
+        """
+        self._use_default_health_handler = False
+        self.register(scheme=THRIFT, endpoint=Meta, handler=f, **kwargs)
 
     @gen.coroutine
     def advertise(self, routers=None, name=None, timeout=None,
