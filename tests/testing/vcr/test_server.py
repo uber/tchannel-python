@@ -177,7 +177,7 @@ def test_protocol_error(vcr_service, cassette, call, mock_server):
     allow(cassette).can_replay.and_return(False)
     expect(cassette).record.never()
 
-    mock_server.expect_call('endpoint').and_error(
+    mock_server.expect_call('endpoint').and_raise(
         TChannelError.from_code(1, description='great sadness')
     )
 

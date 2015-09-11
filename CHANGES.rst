@@ -1,6 +1,18 @@
 Changes by Version
 ==================
 
+0.16.6 (unreleased)
+-------------------
+
+- Accept host file in advertise: ``TChannel.advertise()`` now accepts
+  a parameter, ``router_file`` that contains a JSON stringified format
+  of the router list.
+- Add ``TChannel.is_listening`` method to return whether the tchannel instance
+  is listening or not.
+- Fixed a bug where Zipkin traces were not being propagated correctly in
+  services using the ``tchannel.TChannel`` API.
+
+
 0.16.5 (2015-09-09)
 -------------------
 

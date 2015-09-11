@@ -63,8 +63,16 @@ class ThriftArgScheme(object):
         self._tchannel = tchannel
 
     @gen.coroutine
-    def __call__(self, request, headers=None, timeout=None,
-                 retry_on=None, retry_limit=None):
+    def __call__(
+        self,
+        request,
+        headers=None,
+        timeout=None,
+        retry_on=None,
+        retry_limit=None,
+        shard_key=None,
+        trace=None,
+    ):
 
         if not headers:
             headers = {}
@@ -89,7 +97,9 @@ class ThriftArgScheme(object):
             timeout=timeout,
             retry_on=retry_on,
             retry_limit=retry_limit,
-            hostport=request.hostport
+            hostport=request.hostport,
+            shard_key=shard_key,
+            trace=trace,
         )
 
         # deserialize...
