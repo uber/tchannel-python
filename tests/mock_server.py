@@ -24,8 +24,8 @@ import threading
 
 import tornado.ioloop
 
-import tchannel.tornado.tchannel as tornado_tchannel
-from tchannel.errors import TChannelError
+from tchannel import TChannel
+from tchannel import Response
 
 
 class UnexpectedCallException(Exception):
@@ -58,8 +58,9 @@ class Expectation(object):
 
         def execute(request, response):
             if headers:
-                response.write_header(headers)
-            response.write_body(body)
+                response.headers = headers
+            response.body = body
+            return response
 
         self.execute = execute
         return self
@@ -67,7 +68,7 @@ class Expectation(object):
     def and_result(self, result):
 
         def execute(request, response):
-            response.write_result(result)
+            return result
 
         self.execute = execute
         return self
@@ -76,22 +77,6 @@ class Expectation(object):
 
         def execute(request, response):
             raise exc
-
-        self.execute = execute
-        return self
-
-    def and_error(self, protocoal_error):
-
-        def execute(request, response):
-            # send error message for test purpose only
-            connection = response.connection
-            connection.send_error(
-                protocoal_error.code,
-                protocoal_error.description,
-                response.id,
-            )
-            # stop normal response streams
-            response.set_exception(TChannelError("stop stream"))
 
         self.execute = execute
         return self
@@ -110,7 +95,7 @@ class MockServer(object):
     def __init__(self, port=None, timeout=None):
         port = port or 0
 
-        self.tchannel = tornado_tchannel.TChannel(
+        self.tchannel = TChannel(
             name='test',
             hostport="localhost:%s" % str(port),
         )
@@ -128,17 +113,25 @@ class MockServer(object):
     def hostport(self):
         return self.tchannel.hostport
 
-    def expect_call(self, endpoint, scheme=None, **kwargs):
-        assert scheme is None or isinstance(scheme, basestring)
+    def expect_call(self, endpoint, scheme='raw', **kwargs):
+        assert isinstance(scheme, basestring)
+
+        if not isinstance(endpoint, basestring):
+            scheme = 'thrift'
 
         expectation = Expectation()
 
-        def handle_expected_endpoint(request, response):
-            expectation.execute(request, response)
+        def handle_expected_endpoint(request):
+            response = Response()
+            return expectation.execute(request, response)
 
         self.tchannel.register(
-            endpoint, scheme, handle_expected_endpoint, **kwargs
+            scheme=scheme,
+            endpoint=endpoint,
+            handler=handle_expected_endpoint,
+            **kwargs
         )
+
         return expectation
 
     def __enter__(self):

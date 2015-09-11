@@ -31,6 +31,7 @@ from tornado import gen
 from . import schemes
 from . import transport
 from . import retry
+from .context import get_current_context
 from .errors import AlreadyListeningError
 from .glossary import DEFAULT_TIMEOUT
 from .response import Response, TransportHeaders
@@ -121,8 +122,20 @@ class TChannel(object):
         return self._dep_tchannel.hooks
 
     @gen.coroutine
-    def call(self, scheme, service, arg1, arg2=None, arg3=None,
-             timeout=None, retry_on=None, retry_limit=None, hostport=None):
+    def call(
+        self,
+        scheme,
+        service,
+        arg1,
+        arg2=None,
+        arg3=None,
+        timeout=None,
+        retry_on=None,
+        retry_limit=None,
+        hostport=None,
+        shard_key=None,
+        trace=None,
+    ):
         """Make low-level requests to TChannel services.
 
         **Note:** Usually you would interact with a higher-level arg scheme
@@ -148,6 +161,7 @@ class TChannel(object):
             retry_limit = retry.DEFAULT_RETRY_LIMIT
 
         # TODO - allow filters/steps for serialization, tracing, etc...
+        context = get_current_context()
 
         # calls tchannel.tornado.peer.PeerClientOperation.__init__
         operation = self._dep_tchannel.request(
@@ -155,6 +169,7 @@ class TChannel(object):
             hostport=hostport,
             arg_scheme=scheme,
             retry=retry_on,
+            parent_tracing=context.parent_tracing if context else None
         )
 
         # fire operation
@@ -162,6 +177,15 @@ class TChannel(object):
             transport.SCHEME: scheme,
             transport.CALLER_NAME: self.name,
         }
+        if shard_key:
+            transport_headers[transport.SHARD_KEY] = shard_key
+
+        # If we got some parent tracing info we always want to propagate it
+        # along. Otherwise use the ``trace`` parameter that was passed in. If
+        # **that** wasn't provided, fall back to the TChannel default.
+        trace_override = self._dep_tchannel.trace if trace is None else trace
+        traceflag = bool(context.parent_tracing if context else trace_override)
+
         response = yield operation.send(
             arg1=arg1,
             arg2=arg2,
@@ -169,6 +193,7 @@ class TChannel(object):
             headers=transport_headers,
             retry_limit=retry_limit,
             ttl=timeout,
+            traceflag=traceflag,
         )
 
         # unwrap response

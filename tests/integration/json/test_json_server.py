@@ -24,7 +24,7 @@ import pytest
 import tornado
 import tornado.gen
 
-from tchannel import TChannel
+from tchannel import TChannel, Response
 from tchannel.schemes import JSON
 from tests.mock_server import MockServer
 
@@ -69,14 +69,13 @@ def sample_json():
 
 
 def register(tchannel):
-    @tchannel.register("json_echo", "json")
+    @tchannel.json.register("json_echo")
     @tornado.gen.coroutine
-    def json_echo(request, response):
-        header = yield request.get_header()
-        body = yield request.get_body()
+    def json_echo(request):
+        headers = request.headers
+        body = request.body
 
-        response.write_header(header)
-        response.write_body(body)
+        return Response(body, headers)
 
 
 @pytest.yield_fixture

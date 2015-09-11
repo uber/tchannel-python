@@ -9,6 +9,8 @@ Changes by Version
   of the router list.
 - Add ``TChannel.is_listening`` method to return whether the tchannel instance
   is listening or not.
+- Fixed a bug where Zipkin traces were not being propagated correctly in
+  services using the ``tchannel.TChannel`` API.
 
 
 0.16.5 (2015-09-09)

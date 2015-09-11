@@ -24,10 +24,9 @@ import pytest
 
 from tchannel import tcurl
 from tchannel.errors import NetworkError
-from tchannel.errors import TChannelError
-from tchannel.tornado import TChannel
+from tchannel.errors import BadRequestError
+from tchannel import TChannel
 from tchannel.tornado.connection import StreamConnection
-from tchannel.tornado.stream import InMemStream
 from tests.util import big_arg
 
 
@@ -60,18 +59,23 @@ def test_tchannel_call_request_fragment(mock_server,
     endpoint = b'tchannelpeertest'
 
     mock_server.expect_call(endpoint).and_write(
-        headers=endpoint, body=arg3
+        headers=endpoint,
+        body=arg3
     )
 
     tchannel = TChannel(name='test')
-    response = yield tchannel.request(mock_server.hostport).send(
-        InMemStream(endpoint), InMemStream(arg2), InMemStream(arg3)
+
+    response = yield tchannel.raw(
+        service='test-service',
+        hostport=mock_server.hostport,
+        endpoint=endpoint,
+        headers=arg2,
+        body=arg3,
     )
-    header = yield response.get_header()
-    body = yield response.get_body()
-    assert header == endpoint
-    assert body == arg3
-    assert response.headers['as'] == 'raw'
+
+    assert response.headers == endpoint
+    assert response.body == arg3
+    assert response.transport.scheme == 'raw'
 
 
 @pytest.mark.gen_test
@@ -100,14 +104,11 @@ def test_tcurl(mock_server):
 
 @pytest.mark.gen_test
 def test_endpoint_not_found(mock_server):
-    endpoint = b'tchanneltest'
-    mock_server.expect_call(endpoint).and_write(
-        headers=endpoint,
-        body='world'
-    )
     tchannel = TChannel(name='test')
 
-    with pytest.raises(TChannelError):
-        yield tchannel.request(
-            mock_server.hostport
-        ).send(InMemStream(), InMemStream(), InMemStream())
+    with pytest.raises(BadRequestError):
+        yield tchannel.raw(
+            service='test-server',
+            endpoint='fooo',
+            hostport=mock_server.hostport,
+        )
