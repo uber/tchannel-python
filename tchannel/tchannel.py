@@ -34,7 +34,10 @@ from . import retry
 from .context import get_current_context
 from .errors import AlreadyListeningError
 from .glossary import DEFAULT_TIMEOUT
+from .health import health
+from .health.thrift import Meta
 from .response import Response, TransportHeaders
+from .schemes import THRIFT
 from .tornado import TChannel as DeprecatedTChannel
 from .tornado.dispatch import RequestDispatcher as DeprecatedDispatcher
 
@@ -113,6 +116,10 @@ class TChannel(object):
         self.json = schemes.JsonArgScheme(self)
         self.thrift = schemes.ThriftArgScheme(self)
         self._listen_lock = Lock()
+        # register default health endpoint
+        self._dep_tchannel.register(
+            scheme=THRIFT, endpoint=Meta, handler=health
+        )
 
     def is_listening(self):
         return self._dep_tchannel.is_listening()
@@ -220,7 +227,6 @@ class TChannel(object):
                     )
                 else:
                     return
-
             return self._dep_tchannel.listen(port)
 
     @property
