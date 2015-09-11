@@ -43,14 +43,14 @@ def test_default_health():
     assert resp.body.message is None
 
 
-def user_health(request):
-    return HealthStatus(ok=False, message="from me")
-
-
 @pytest.mark.gen_test
 def test_user_health():
     server = TChannel("health_test_server")
-    server.register_health_handler(user_health, method='health')
+
+    @server.thrift.register(Meta, method="health")
+    def user_health(request):
+        return HealthStatus(ok=False, message="from me")
+
     server.listen()
 
     client = TChannel("health_test_client")
