@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.16.6 (unreleased)
+0.16.6 (2015-09-14)
 -------------------
 
 - Fixed a bug where Zipkin traces were not being propagated correctly in
