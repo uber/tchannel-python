@@ -34,8 +34,29 @@ _LOCAL = TChannelLocal()
 
 
 class RequestContext(object):
-    """RequestContext is used to save necessary context information related
-    to current running async thread.
+    """Tracks the :py:class:`Request` currently being handled.
+
+    The asynchronous nature of Tornado means that multiple requests can be
+    in-flight at any given moment. It's often useful to be able to see some
+    information about the request that triggered the current method invocation.
+
+    There are two ways to do this:
+
+    * Pass the :py:class:`tchannel.Request` to every method that may need to
+      use it.  This is performant but breaks MVC boundaries.
+
+    * Use :py:class:`RequestContext` -- in particular
+      :py:func:`get_current_context` -- to see this info from any point in your
+      code. This can be "easier" (read: magical).
+
+    :py:class:`RequestContext` uses Tornado's ``StackContext`` functionality,
+    which hurts throughput. There's currently no way to disable
+    :py:class:`RequestContext` tracking (for cases when you want to pass the
+    :py:class:`tchannel.Request` explicity), although it is planned.
+
+
+    :ivar parent_tracing:
+        Tracing information (trace id, span id) for this request.
     """
 
     __slots__ = ('parent_tracing', '_old_context',)
@@ -54,8 +75,7 @@ class RequestContext(object):
 
 def get_current_context():
     """
-
-    :return: request context in current running aysnc thread.
+    :return: The current :py:class:`RequestContext` for this thread.
     """
     return _LOCAL.context
 

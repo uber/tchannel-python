@@ -18,4 +18,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__all__ = ['ttypes', 'constants', 'TCollectorGo', 'TCollector']
+from __future__ import absolute_import
+
+from .thrift.ttypes import HealthStatus
+
+
+def health(request):
+    return HealthStatus(ok=True)

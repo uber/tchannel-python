@@ -8,6 +8,7 @@ exclude_lines =
   def __repr__
   def __str__
 omit =
+    tchannel/health/thrift/*
     tchannel/zipkin/thrift/*
     tchannel/testing/vcr/proxy/*
     tchannel/testing/data/*

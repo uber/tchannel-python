@@ -16,16 +16,15 @@ from thrift.transport import TSSLSocket
 from thrift.transport import THttpClient
 from thrift.protocol import TBinaryProtocol
 
-from tcollector import TCollector
-from tcollector.ttypes import *
+from meta import Meta
+from meta.ttypes import *
 
 if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print('')
   print('Usage: ' + sys.argv[0] + ' [-h host[:port]] [-u url] [-f[ramed]] [-s[sl]] function [arg1 [arg2...]]')
   print('')
   print('Functions:')
-  print('  Response submit(Span span)')
-  print('   multi_submit( spans)')
+  print('  HealthStatus health()')
   print('')
   sys.exit(0)
 
@@ -79,20 +78,14 @@ else:
   else:
     transport = TTransport.TBufferedTransport(socket)
 protocol = TBinaryProtocol.TBinaryProtocol(transport)
-client = TCollector.Client(protocol)
+client = Meta.Client(protocol)
 transport.open()
 
-if cmd == 'submit':
-  if len(args) != 1:
-    print('submit requires 1 args')
+if cmd == 'health':
+  if len(args) != 0:
+    print('health requires 0 args')
     sys.exit(1)
-  pp.pprint(client.submit(eval(args[0]),))
-
-elif cmd == 'multi_submit':
-  if len(args) != 1:
-    print('multi_submit requires 1 args')
-    sys.exit(1)
-  pp.pprint(client.multi_submit(eval(args[0]),))
+  pp.pprint(client.health())
 
 else:
   print('Unrecognized method %s' % cmd)

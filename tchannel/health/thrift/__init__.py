@@ -18,4 +18,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__all__ = ['ttypes', 'constants', 'TCollectorGo', 'TCollector']
+__all__ = ['ttypes', 'constants', 'Meta']

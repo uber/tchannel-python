@@ -40,13 +40,6 @@ class Iface(object):
     """
     pass
 
-  def multi_submit(self, spans):
-    """
-    Parameters:
-     - spans
-    """
-    pass
-
 
 class Client(Iface):
   def __init__(self, iprot, oprot=None):
@@ -86,44 +79,12 @@ class Client(Iface):
       return result.success
     raise TApplicationException(TApplicationException.MISSING_RESULT, "submit failed: unknown result");
 
-  def multi_submit(self, spans):
-    """
-    Parameters:
-     - spans
-    """
-    self.send_multi_submit(spans)
-    return self.recv_multi_submit()
-
-  def send_multi_submit(self, spans):
-    self._oprot.writeMessageBegin('multi_submit', TMessageType.CALL, self._seqid)
-    args = multi_submit_args()
-    args.spans = spans
-    args.write(self._oprot)
-    self._oprot.writeMessageEnd()
-    self._oprot.trans.flush()
-
-  def recv_multi_submit(self):
-    iprot = self._iprot
-    (fname, mtype, rseqid) = iprot.readMessageBegin()
-    if mtype == TMessageType.EXCEPTION:
-      x = TApplicationException()
-      x.read(iprot)
-      iprot.readMessageEnd()
-      raise x
-    result = multi_submit_result()
-    result.read(iprot)
-    iprot.readMessageEnd()
-    if result.success is not None:
-      return result.success
-    raise TApplicationException(TApplicationException.MISSING_RESULT, "multi_submit failed: unknown result");
-
 
 class Processor(Iface, TProcessor):
   def __init__(self, handler):
     self._handler = handler
     self._processMap = {}
     self._processMap["submit"] = Processor.process_submit
-    self._processMap["multi_submit"] = Processor.process_multi_submit
 
   def process(self, iprot, oprot):
     (name, type, seqid) = iprot.readMessageBegin()
@@ -147,17 +108,6 @@ class Processor(Iface, TProcessor):
     result = submit_result()
     result.success = self._handler.submit(args.span)
     oprot.writeMessageBegin("submit", TMessageType.REPLY, seqid)
-    result.write(oprot)
-    oprot.writeMessageEnd()
-    oprot.trans.flush()
-
-  def process_multi_submit(self, seqid, iprot, oprot):
-    args = multi_submit_args()
-    args.read(iprot)
-    iprot.readMessageEnd()
-    result = multi_submit_result()
-    result.success = self._handler.multi_submit(args.spans)
-    oprot.writeMessageBegin("multi_submit", TMessageType.REPLY, seqid)
     result.write(oprot)
     oprot.writeMessageEnd()
     oprot.trans.flush()
@@ -201,53 +151,6 @@ class submit_result(TBase):
 
   thrift_spec = (
     (0, TType.STRUCT, 'success', (Response, Response.thrift_spec), None, ), # 0
-  )
-
-  def __init__(self, success=None,):
-    self.success = success
-
-  def __hash__(self):
-    value = 17
-    value = (value * 31) ^ hash(self.success)
-    return value
-
-
-class multi_submit_args(TBase):
-  """
-  Attributes:
-   - spans
-  """
-
-  __slots__ = [ 
-    'spans',
-   ]
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.LIST, 'spans', (TType.STRUCT,(Span, Span.thrift_spec)), None, ), # 1
-  )
-
-  def __init__(self, spans=None,):
-    self.spans = spans
-
-  def __hash__(self):
-    value = 17
-    value = (value * 31) ^ hash(self.spans)
-    return value
-
-
-class multi_submit_result(TBase):
-  """
-  Attributes:
-   - success
-  """
-
-  __slots__ = [ 
-    'success',
-   ]
-
-  thrift_spec = (
-    (0, TType.LIST, 'success', (TType.STRUCT,(Response, Response.thrift_spec)), None, ), # 0
   )
 
   def __init__(self, success=None,):

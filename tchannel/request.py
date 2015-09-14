@@ -85,6 +85,7 @@ class TransportHeaders(object):
         'retry_flags',
         'scheme',
         'speculative_exe',
+        'shard_key',
     )
 
     def __init__(self,
@@ -95,6 +96,7 @@ class TransportHeaders(object):
                  retry_flags=None,
                  scheme=None,
                  speculative_exe=None,
+                 shard_key=None,
                  **kwargs):
 
         if scheme is None:
@@ -107,3 +109,4 @@ class TransportHeaders(object):
         self.retry_flags = retry_flags
         self.scheme = scheme
         self.speculative_exe = speculative_exe
+        self.shard_key = shard_key

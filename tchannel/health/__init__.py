@@ -18,4 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__all__ = ['ttypes', 'constants', 'TCollectorGo', 'TCollector']
+from __future__ import absolute_import
+
+from .health import health   # noqa
+from .thrift.ttypes import HealthStatus  # noqa

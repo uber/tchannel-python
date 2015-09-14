@@ -46,8 +46,8 @@ def handler2(request, response):
 
 
 def register(tchannel):
-    tchannel.register("endpoint1", "raw", handler1)
-    tchannel.register("endpoint2", "raw", handler2)
+    tchannel.register(endpoint="endpoint1", scheme="raw", handler=handler1)
+    tchannel.register(endpoint="endpoint2", scheme="raw", handler=handler2)
 
 
 @pytest.fixture
