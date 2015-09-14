@@ -119,7 +119,7 @@ From 0.15 to 0.16
   - ``NotRetryableError`` (for requests should never be retried),
   - ``RetryableError`` (for requests that are always safe to retry), and
   - ``MaybeRetryableError`` (for requests that are safe to retry on idempotent
-    endpoints).
+  endpoints).
 
 
 From 0.14 to 0.15
