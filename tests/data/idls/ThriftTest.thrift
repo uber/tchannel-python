@@ -47,68 +47,68 @@ typedef i64 UserId
 
 struct Bonk
 {
-  1: string message,
-  2: i32 type
+  1: optional string message,
+  2: optional i32 type
 }
 
 typedef map<string,Bonk> MapType
 
 struct Bools {
-  1: bool im_true,
-  2: bool im_false,
+  1: optional bool im_true,
+  2: optional bool im_false,
 }
 
 struct Xtruct
 {
-  1:  string string_thing,
-  4:  byte   byte_thing,
-  9:  i32    i32_thing,
-  11: i64    i64_thing
+  1:  optional string string_thing,
+  4:  optional byte   byte_thing,
+  9:  optional i32    i32_thing,
+  11: optional i64    i64_thing
 }
 
 struct Xtruct2
 {
-  1: byte   byte_thing,
-  2: Xtruct struct_thing,
-  3: i32    i32_thing
+  1: optional byte   byte_thing,
+  2: optional Xtruct struct_thing,
+  3: optional i32    i32_thing
 }
 
 struct Xtruct3
 {
-  1:  string string_thing,
-  4:  i32    changed,
-  9:  i32    i32_thing,
-  11: i64    i64_thing
+  1:  optional string string_thing,
+  4:  optional i32    changed,
+  9:  optional i32    i32_thing,
+  11: optional i64    i64_thing
 }
 
 
 struct Insanity
 {
-  1: map<Numberz, UserId> userMap,
-  2: list<Xtruct> xtructs
+  1: optional map<Numberz, UserId> userMap,
+  2: optional list<Xtruct> xtructs
 }
 
 struct CrazyNesting {
-  1: string string_field,
+  1: optional string string_field,
   2: optional set<Insanity> set_field,
   3: required list< map<set<i32>,map<i32,set<list<map<Insanity,string>>>>>> list_field,
-  4: binary binary_field
+  4: optional binary binary_field
 }
 
 exception Xception {
-  1: i32 errorCode,
-  2: string message
+  1: optional i32 errorCode,
+  2: optional string message
 }
 
 exception Xception2 {
-  1: i32 errorCode,
-  2: Xtruct struct_thing
+  1: optional i32 errorCode,
+  2: optional Xtruct struct_thing
 }
 
 struct EmptyStruct {}
 
 struct OneField {
-  1: EmptyStruct field
+  1: optional EmptyStruct field
 }
 
 service ThriftTest
@@ -294,70 +294,70 @@ service SecondService
 }
 
 struct VersioningTestV1 {
-       1: i32 begin_in_both,
-       3: string old_string,
-       12: i32 end_in_both
+       1: optional i32 begin_in_both,
+       3: optional string old_string,
+       12: optional i32 end_in_both
 }
 
 struct VersioningTestV2 {
-       1: i32 begin_in_both,
+       1: optional i32 begin_in_both,
 
-       2: i32 newint,
-       3: byte newbyte,
-       4: i16 newshort,
-       5: i64 newlong,
-       6: double newdouble
-       7: Bonk newstruct,
-       8: list<i32> newlist,
-       9: set<i32> newset,
-       10: map<i32, i32> newmap,
-       11: string newstring,
-       12: i32 end_in_both
+       2: optional i32 newint,
+       3: optional byte newbyte,
+       4: optional i16 newshort,
+       5: optional i64 newlong,
+       6: optional double newdouble
+       7: optional Bonk newstruct,
+       8: optional list<i32> newlist,
+       9: optional set<i32> newset,
+       10: optional map<i32, i32> newmap,
+       11: optional string newstring,
+       12: optional i32 end_in_both
 }
 
 struct ListTypeVersioningV1 {
-       1: list<i32> myints;
-       2: string hello;
+       1: optional list<i32> myints;
+       2: optional string hello;
 }
 
 struct ListTypeVersioningV2 {
-       1: list<string> strings;
-       2: string hello;
+       1: optional list<string> strings;
+       2: optional string hello;
 }
 
 struct GuessProtocolStruct {
-  7: map<string,string> map_field,
+  7: optional map<string,string> map_field,
 }
 
 struct LargeDeltas {
-  1: Bools b1,
-  10: Bools b10,
-  100: Bools b100,
-  500: bool check_true,
-  1000: Bools b1000,
-  1500: bool check_false,
-  2000: VersioningTestV2 vertwo2000,
-  2500: set<string> a_set2500,
-  3000: VersioningTestV2 vertwo3000,
-  4000: list<i32> big_numbers
+  1: optional Bools b1,
+  10: optional Bools b10,
+  100: optional Bools b100,
+  500: optional bool check_true,
+  1000: optional Bools b1000,
+  1500: optional bool check_false,
+  2000: optional VersioningTestV2 vertwo2000,
+  2500: optional set<string> a_set2500,
+  3000: optional VersioningTestV2 vertwo3000,
+  4000: optional list<i32> big_numbers
 }
 
 struct NestedListsI32x2 {
-  1: list<list<i32>> integerlist
+  1: optional list<list<i32>> integerlist
 }
 struct NestedListsI32x3 {
-  1: list<list<list<i32>>> integerlist
+  1: optional list<list<list<i32>>> integerlist
 }
 struct NestedMixedx2 {
-  1: list<set<i32>> int_set_list
-  2: map<i32,set<string>> map_int_strset
-  3: list<map<i32,set<string>>> map_int_strset_list
+  1: optional list<set<i32>> int_set_list
+  2: optional map<i32,set<string>> map_int_strset
+  3: optional list<map<i32,set<string>>> map_int_strset_list
 }
 struct ListBonks {
-  1: list<Bonk> bonk
+  1: optional list<Bonk> bonk
 }
 struct NestedListsBonk {
-  1: list<list<list<Bonk>>> bonk
+  1: optional list<list<list<Bonk>>> bonk
 }
 
 struct BoolTest {

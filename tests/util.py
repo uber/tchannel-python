@@ -36,11 +36,7 @@ def big_arg(kilobytes=64 * 5):
     return urandom(1024 * kilobytes)
 
 
-@contextmanager
-def get_thrift_service_module(root, tornado=False):
-    if not thrift:
-        pytest.skip('Thrift is not installed.')
-
+def get_thrift_file(root):
     thrift_file = root.join('service.thrift')
     thrift_file.write(dedent("""
         union Value {
@@ -49,16 +45,17 @@ def get_thrift_service_module(root, tornado=False):
         }
 
         struct Item {
-            1: string key
-            2: Value value
+            1: required string key
+            2: required Value value
         }
 
         exception ItemAlreadyExists {
-            1: Item item
+            1: required Item item
+            2: optional string message
         }
 
         exception ItemDoesNotExist {
-            1: string key
+            1: required string key
         }
 
         service Service {
@@ -73,6 +70,15 @@ def get_thrift_service_module(root, tornado=False):
             bool healthy();
         }
     """))
+    return thrift_file
+
+
+@contextmanager
+def get_thrift_service_module(root, tornado=False):
+    if not thrift:
+        pytest.skip('Thrift is not installed.')
+
+    thrift_file = get_thrift_file(root)
     with root.as_cwd():
         options = 'py:new_style,utf8strings,dynamic'
         if tornado:

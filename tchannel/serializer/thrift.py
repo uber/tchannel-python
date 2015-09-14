@@ -84,3 +84,22 @@ class ThriftSerializer(object):
         result = self.deserialize_type()
         result.read(proto)
         return result
+
+
+class ThriftRWSerializer(ThriftSerializer):
+
+    def __init__(self, module, deserialize_type):
+        """
+        :param module:
+            thriftrw generated module
+        """
+        # TODO export dumps/loads on classes in thriftrw in addition to
+        # module-level dumps/loads.
+        super(ThriftRWSerializer, self).__init__(deserialize_type)
+        self.module = module
+
+    def serialize_body(self, obj):
+        return self.module.dumps(obj)
+
+    def deserialize_body(self, body):
+        return self.module.loads(self.deserialize_type, body)
