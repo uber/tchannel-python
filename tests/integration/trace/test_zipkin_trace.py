@@ -25,12 +25,11 @@ import pytest
 import tornado
 import tornado.gen
 
-from tchannel.tornado import TChannel
-from tchannel.tornado.stream import InMemStream
+from tchannel import TChannel, Response
 from tchannel.zipkin.annotation import Endpoint
 from tchannel.zipkin.annotation import client_send
 from tchannel.zipkin.thrift import TCollector
-from tchannel.zipkin.thrift.ttypes import Response
+from tchannel.zipkin.thrift.ttypes import Response as TResponse
 from tchannel.zipkin.trace import Trace
 from tchannel.zipkin.tracers import TChannelZipkinTracer
 from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
@@ -42,10 +41,11 @@ except:
     from StringIO import StringIO
 
 
-def submit(request, response):
-    span = request.args.span
-    r = Response()
-    r.ok = request.transport.headers['shardKey'] == base64.b64encode(
+def submit(request):
+    span = request.body.span
+    r = TResponse()
+
+    r.ok = request.transport.shard_key == base64.b64encode(
         span.traceId
     )
     return r
@@ -54,26 +54,24 @@ def submit(request, response):
 @pytest.fixture
 def register(tchannel):
     @tornado.gen.coroutine
-    def handler2(request, response):
-        response.set_body_s(InMemStream("from handler2"))
+    def handler2(request):
+        return "from handler2"
 
     @tornado.gen.coroutine
-    def handler1(request, response):
-        header = yield request.get_header()
-        res = yield tchannel.request(header).send(
-            "endpoint2",
-            "",
-            "",
-            traceflag=True
-        )
-        body = yield res.get_body()
-        yield response.write_header("from handler1")
-        yield response.write_body(body)
-        response.flush()
+    def handler1(request):
+        hostport = request.headers
 
-    tchannel.register("endpoint1", "raw", handler1)
-    tchannel.register("endpoint2", "raw", handler2)
-    tchannel.register(TCollector, "thrift", submit)
+        res = yield tchannel.raw(
+            service='handler2',
+            hostport=hostport,
+            endpoint="endpoint2",
+        )
+
+        raise tornado.gen.Return(Response(res.body, "from handler1"))
+
+    tchannel.register(endpoint="endpoint1", scheme="raw", handler=handler1)
+    tchannel.register(endpoint="endpoint2", scheme="raw", handler=handler2)
+    tchannel.register(endpoint=TCollector, scheme="thrift", handler=submit)
 
 trace_buf = StringIO()
 
@@ -99,12 +97,16 @@ def test_zipkin_trace(trace_server):
 
     hostport = 'localhost:%d' % trace_server.port
 
-    response = yield tchannel.request(hostport).send(InMemStream(endpoint),
-                                                     InMemStream(hostport),
-                                                     InMemStream(),
-                                                     traceflag=True)
-    header = yield response.get_header()
-    body = yield response.get_body()
+    response = yield tchannel.raw(
+        service='test-client',
+        hostport=hostport,
+        endpoint=endpoint,
+        headers=hostport,
+        trace=True,
+    )
+
+    header = response.headers
+    body = response.body
     assert header == "from handler1"
     assert body == "from handler2"
     traces = []
@@ -112,7 +114,11 @@ def test_zipkin_trace(trace_server):
         if trace:
             traces.append(json.loads(trace))
 
+    parent_span_id = object()
     trace_id = traces[0][0][u'trace_id']
+
+    assert traces
+
     for trace in traces:
         assert trace_id == trace[0][u'trace_id']
         if trace[0][u'name'] == u'endpoint2':
@@ -132,4 +138,4 @@ def test_tcollector_submit(trace_server):
 
     results = yield TChannelZipkinTracer(tchannel).record([(trace, anns)])
 
-    assert results[0].ok
+    assert results[0].body.ok is True

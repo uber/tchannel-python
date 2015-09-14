@@ -43,13 +43,13 @@ from .formatters import thrift_formatter
 from .formatters import i64_to_base64
 from .thrift import TCollector
 from .thrift import constants
-from ..thrift import client_for
+from ..thrift import thrift_request_builder
 
 log = logging.getLogger('zipkin_tracing')
 
 zipkin_log = logging.getLogger('zipkin')
 
-TCollectorClient = client_for('tcollector', TCollector)
+TCollectorClient = thrift_request_builder('tcollector', TCollector)
 
 
 class EndAnnotationTracer(object):
@@ -152,11 +152,10 @@ class TChannelZipkinTracer(object):
 
         fus = []
         for (trace, annotations) in traces:
-            client = TCollectorClient(
-                self._tchannel,
-                protocol_headers={'shardKey': i64_to_base64(trace.trace_id)}
+            f = self._tchannel.thrift(
+                TCollectorClient.submit(thrift_formatter(trace, annotations)),
+                shard_key=i64_to_base64(trace.trace_id),
             )
-            f = client.submit(thrift_formatter(trace, annotations))
             f.add_done_callback(submit_callback)
             fus.append(f)
 

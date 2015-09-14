@@ -1,6 +1,13 @@
 Changes by Version
 ==================
 
+0.16.6 (unreleased)
+-------------------
+
+- Fixed a bug where Zipkin traces were not being propagated correctly in
+  services using the ``tchannel.TChannel`` API.
+
+
 0.16.5 (2015-09-09)
 -------------------
 
