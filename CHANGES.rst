@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.17.0 (unreleased)
+0.17.0 (2015-09-14)
 -------------------
 
 - It is now possible to load Thrift IDL files directly with
