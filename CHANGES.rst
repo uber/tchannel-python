@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.16.6 (unreleased)
+0.16.7 (unreleased)
 -------------------
 
 - Accept host file in advertise: ``TChannel.advertise()`` now accepts
@@ -9,6 +9,11 @@ Changes by Version
   of the router list.
 - Add ``TChannel.is_listening`` method to return whether the tchannel instance
   is listening or not.
+
+
+0.16.6 (2015-09-14)
+-------------------
+
 - Fixed a bug where Zipkin traces were not being propagated correctly in
   services using the ``tchannel.TChannel`` API.
 
