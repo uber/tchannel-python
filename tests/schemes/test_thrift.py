@@ -197,10 +197,18 @@ def test_double_registration_with_a_coroutine_hanlder(
     """
 
     @server.thrift.register(ThriftTest)
+    @server.thrift.register(ThriftTest)
     def testVoid(request):
         pass
 
-    assert server.thrift.register(ThriftTest)(testVoid)
+    tchannel = TChannel(name='client')
+
+    resp = yield tchannel.thrift(
+        service.testVoid(),
+        headers={'req': 'header'},
+    )
+
+    assert resp
 
 
 @pytest.mark.gen_test
