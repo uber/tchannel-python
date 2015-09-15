@@ -4,7 +4,7 @@ Changes by Version
 0.17.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed a bug with thriftrw where registering an endpoint twice could fail.
 
 
 0.17.0 (2015-09-14)
