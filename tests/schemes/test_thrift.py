@@ -185,6 +185,25 @@ def test_void(server, service, ThriftTest):
 
 
 @pytest.mark.gen_test
+def test_double_registration_with_a_coroutine_hanlder(
+    server,
+    service,
+    ThriftTest
+):
+    """Registering twice should override the original.
+
+    This is mostly testing that ``build_handler`` correctly passes on the
+    function name.
+    """
+
+    @server.thrift.register(ThriftTest)
+    def testVoid(request):
+        pass
+
+    assert server.thrift.register(ThriftTest)(testVoid)
+
+
+@pytest.mark.gen_test
 @pytest.mark.call
 def test_void_with_headers(server, service, ThriftTest):
 

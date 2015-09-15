@@ -347,6 +347,8 @@ def build_handler(function, handler):
         response.body = response_cls(**response_kwargs)
         raise gen.Return(response)
 
+    handle.__name__ = function.spec.name
+
     return handle
 
 
