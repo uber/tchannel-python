@@ -328,6 +328,57 @@ class MessageFactory(object):
         else:
             return message
 
+    def build_inbound_request(self, message, request):
+        if message.message_type == Types.CALL_REQ:
+            if request:
+                raise FatalProtocolError(
+                    "Already got an request with same message id.")
+
+            self.verify_message(message)
+            request = self.build_request(message)
+            num = self._find_incompleted_stream(request)
+            self.close_argstream(request, num)
+            return request
+
+        if message.message_type == Types.CALL_REQ_CONTINUE:
+            if request is None:
+                # missing call msg before continue msg
+                raise FatalProtocolError(
+                    "missing call message after receiving continue message")
+
+            dst = self._find_incompleted_stream(request)
+            try:
+                self.verify_message(message)
+            except InvalidChecksumError as e:
+                request.argstreams[dst].set_exception(e)
+                raise
+
+            src = 0
+            while src < len(message.args):
+                request.argstreams[dst].write(message.args[src])
+                dst += 1
+                src += 1
+
+            if message.flags != FlagsType.fragment:
+                # get last fragment. mark it as completed
+                assert (len(request.argstreams) ==
+                        CallContinueMessage.max_args_num)
+                self.message_buffer.pop(message.id, None)
+                request.flags = FlagsType.none
+
+            self.close_argstream(request, dst - 1)
+            return request
+
+    @classmethod
+    def _find_incompleted_stream(cls, reqres):
+        # find the incompleted stream
+        num = 0
+        for i, arg in enumerate(reqres.argstreams):
+            if arg.state != StreamState.completed:
+                num = i
+                break
+        return num
+
     def fragment(self, message):
         """Fragment message based on max payload size
 

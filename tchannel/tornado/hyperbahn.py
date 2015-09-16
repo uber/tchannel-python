@@ -123,7 +123,7 @@ def advertise(tchannel, service, routers=None, timeout=None, router_file=None):
     for router in routers:
         # We use .get here instead of .add because we don't want to fail if a
         # TChannel already knows about some of the routers.
-        tchannel.peers.get(router)
+        tchannel.peer_group.get(router)
 
     result = yield _advertise_with_backoff(
         tchannel, service, timeout=timeout

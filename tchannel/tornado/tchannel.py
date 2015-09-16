@@ -97,7 +97,7 @@ class TChannel(object):
         else:
             self._handler = dispatcher
 
-        self.peers = PeerGroup(self)
+        self.peer_group = PeerGroup(self)
 
         self._port = 0
         self._host = None
@@ -123,7 +123,7 @@ class TChannel(object):
 
         if known_peers:
             for peer_hostport in known_peers:
-                self.peers.add(peer_hostport)
+                self.peer_group.add(peer_hostport)
 
         # server created from calling listen()
         self._server = None
@@ -183,7 +183,7 @@ class TChannel(object):
 
         self._state = State.closing
         try:
-            yield self.peers.clear()
+            yield self.peer_group.clear()
         finally:
             self._state = State.closed
 
@@ -221,7 +221,7 @@ class TChannel(object):
         # TODO disallow certain parameters or don't propagate them backwards.
         # For example, blacklist and score threshold aren't really
         # user-configurable right now.
-        return self.peers.request(hostport=hostport,
+        return self.peer_group.request(hostport=hostport,
                                   service=service,
                                   arg_scheme=arg_scheme,
                                   retry=retry,
@@ -394,17 +394,27 @@ class TChannel(object):
         else:
             return decorator
 
+    @tornado.gen.coroutine
+    def stop(self, reason=None, exempt=None):
+        self._server.drain()
+        yield [
+            peer.stop(reason, exempt) for peer in self.peer_group.peers()
+        ]
+
 
 class TChannelServer(tornado.tcpserver.TCPServer):
-    __slots__ = ('tchannel',)
+    __slots__ = ('tchannel', 'draining')
 
     def __init__(self, tchannel):
         super(TChannelServer, self).__init__()
         self.tchannel = tchannel
+        self.draining = False
 
     @tornado.gen.coroutine
     def handle_stream(self, stream, address):
         log.debug("New incoming connection from %s:%d" % address)
+        if self.draining:
+            raise tornado.gen.Return(stream.close())
 
         conn = StreamConnection(connection=stream, tchannel=self.tchannel)
 
@@ -419,12 +429,16 @@ class TChannelServer(tornado.tcpserver.TCPServer):
             conn.remote_host_port,
             conn.remote_process_name)
 
-        self.tchannel.peers.get(
+        self.tchannel.peer_group.get(
             "%s:%s" % (conn.remote_host,
                        conn.remote_host_port)
         ).register_incoming(conn)
-
         yield conn.serve(handler=self._handle)
 
     def _handle(self, message, connection):
         self.tchannel.receive_call(message, connection)
+
+    def drain(self):
+        """Set the draining flag to stop accepting new connections."""
+        self.draining = True
+

@@ -121,7 +121,11 @@ class TornadoConnection(object):
         self._loop_running = False
 
         self.tchannel = tchannel
+        self.inprogress_requests = {}
 
+        self.draining = False
+        self.drain_reason = None
+        self.drain_exempt = None
         connection.set_close_callback(self._on_close)
 
     def next_message_id(self):
@@ -130,7 +134,6 @@ class TornadoConnection(object):
 
     def _on_close(self):
         self.closed = True
-
         for message_id, future in self._outstanding.iteritems():
             future.set_exception(
                 NetworkError(
@@ -138,7 +141,6 @@ class TornadoConnection(object):
                 )
             )
         self._outstanding = {}
-
         try:
             while True:
                 message = self._messages.get_nowait()
@@ -192,6 +194,8 @@ class TornadoConnection(object):
 
             if isinstance(exception, tornado.iostream.StreamClosedError):
                 self.close()
+            if message_future.running():
+                message_future.set_exception(exception)
 
         size_width = frame.frame_rw.size_rw.width()
         self.connection.read_bytes(size_width).add_done_callback(on_read_size)
@@ -452,15 +456,14 @@ class TornadoConnection(object):
         """
         assert handler, "handler is required"
         assert self._loop_running, "Finish the handshake first"
-
         while not self.closed:
             message = yield self.await()
-
             try:
                 handler(message, self)
             except Exception:
                 # TODO Send error frame back
                 logging.exception("Failed to process %s", repr(message))
+
 
     def send_error(self, code, description, message_id):
         """Convenience method for writing Error frames up the wire.
@@ -488,6 +491,13 @@ class TornadoConnection(object):
 
     def pong(self):
         return self._write(messages.PingResponseMessage())
+
+    def drain(self, reason=None, exempt=None):
+        self.draining = True
+        self.drain_reason = reason
+        self.drain_exempt = exempt
+
+        return self.handler.drain(reason, exempt)
 
 
 class StreamConnection(TornadoConnection):

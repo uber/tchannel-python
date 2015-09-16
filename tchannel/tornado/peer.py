@@ -379,6 +379,10 @@ class Peer(object):
         for connection in self.connections:
             connection.close()
 
+    @gen.coroutine
+    def stop(self, reason=None, exempt=None):
+        yield [ con.drain(reason, exempt) for con in self.connections]
+
 
 class PeerState(object):
     """Represents the state of the Peer."""

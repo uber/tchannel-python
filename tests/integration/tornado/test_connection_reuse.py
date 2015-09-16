@@ -61,10 +61,10 @@ def test_reuse():
     yield loop1(2)
 
     # Peer representing 2 for 1's point-of-view
-    peer_1_2 = server1.peers.lookup(hostport2)
+    peer_1_2 = server1.peer_group.lookup(hostport2)
 
     # Peer representing 1 from 2's point-of-view
-    peer_2_1 = server2.peers.lookup(hostport1)
+    peer_2_1 = server2.peer_group.lookup(hostport1)
 
     assert len(peer_1_2.outgoing_connections) == 1
     assert len(peer_2_1.incoming_connections) == 1

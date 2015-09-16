@@ -69,7 +69,7 @@ class FakeState(PeerState):
 def chain(number_of_peers, endpoint):
     tchannel = TChannel(name='test')
     for i in range(number_of_peers):
-        p = tchannel.peers.get(server(endpoint).hostport)
+        p = tchannel.peer_group.get(server(endpoint).hostport)
         # Gaurantee error servers have score in order to pick first.
         p.state = FakeState()
 
@@ -156,7 +156,7 @@ def test_retry_on_error_success():
     tchannel_success = TChannel(name='test', hostport='localhost:0')
     tchannel_success.register(endpoint, 'raw', handler_success)
     tchannel_success.listen()
-    tchannel.peers.get(tchannel_success.hostport)
+    tchannel.peer_group.get(tchannel_success.hostport)
 
     with (
         patch(
