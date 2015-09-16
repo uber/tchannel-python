@@ -20,12 +20,14 @@
 
 from __future__ import absolute_import
 
+import os
 import sys
 
 from .. import thrift
 
 
-meta = thrift.load(None, 'tchannel/health/meta.thrift')
+base = os.path.dirname(__file__)
+meta = thrift.load(None, os.path.join(base, 'meta.thrift'))
 sys.modules[__name__ + '.meta'] = meta
 
 
