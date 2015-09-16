@@ -82,7 +82,6 @@ def ThriftTest(use_thriftrw_server):
 
     if use_thriftrw_server:
         return thrift.load(
-            'server',
             'tests/data/idls/ThriftTest.thrift',
         ).ThriftTest
     else:
@@ -95,7 +94,6 @@ def SecondService(use_thriftrw_server):
 
     if use_thriftrw_server:
         return thrift.load(
-            'server',
             'tests/data/idls/ThriftTest.thrift',
         ).SecondService
     else:
@@ -108,7 +106,6 @@ def server_ttypes(use_thriftrw_server):
 
     if use_thriftrw_server:
         return thrift.load(
-            'server',
             'tests/data/idls/ThriftTest.thrift',
         )
     else:
@@ -121,7 +118,6 @@ def client_ttypes(use_thriftrw_client):
 
     if use_thriftrw_client:
         return thrift.load(
-            'server',
             'tests/data/idls/ThriftTest.thrift',
         )
     else:

@@ -4,7 +4,8 @@ Changes by Version
 0.17.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Made "service" optional for ``thrift.load()``. The first argument should be a
+  path, but backwards compatibility is provided for 0.17.0.
 
 
 0.17.0 (2015-09-14)

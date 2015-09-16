@@ -37,7 +37,7 @@ from tchannel.serializer.thrift import ThriftRWSerializer
 from .module import ThriftRequest
 
 
-def load(service, path, hostport=None, module_name=None):
+def load(path, service=None, hostport=None, module_name=None):
     """Loads the Thrift file at the specified path.
 
     .. note::
@@ -52,10 +52,14 @@ def load(service, path, hostport=None, module_name=None):
 
         from tchannel import TChannel, thrift
 
-        donuts = thrift.load('donuts', 'donuts.thrift')
-        coffee = thrift.load('coffee', 'coffee.thrift')
+        # Load our server's interface definition.
+        donuts = thrift.load('donuts.thrift')
 
-        tchannel = TChannel('myservice')
+        # We need to specify a service name or hostport because this is a
+        # downstream service we'll be calling.
+        coffee = thrift.load('coffee.thrift', 'coffee')
+
+        tchannel = TChannel('donuts')
 
         @tchannel.thrift.register(donuts.DonutsService)
         @tornado.gen.coroutine
@@ -108,7 +112,7 @@ def load(service, path, hostport=None, module_name=None):
         import sys
         from tchannel import thrift
 
-        donuts = = thrift.load('donuts', 'donuts.thrift')
+        donuts = = thrift.load('donuts.thrift')
         sys.modules[__name__ + '.donuts'] = donuts
 
     This installs the module generated for ``donuts.thrift`` as the module
@@ -142,7 +146,11 @@ def load(service, path, hostport=None, module_name=None):
     """
     # TODO replace with more specific exceptions
     # assert service, 'service is required'
-    assert path, 'path is required'
+    # assert path, 'path is required'
+
+    # Backwards compatibility for callers passing in service name as first arg.
+    if not path.endswith('.thrift'):
+        service, path = path, service
 
     module = thriftrw.load(path=path, name=module_name)
     return TChannelThriftModule(service, module, hostport)
@@ -243,6 +251,15 @@ class Function(object):
             raise OneWayNotSupportedError(
                 'TChannel+Thrift does not currently support oneway '
                 'procedures.'
+            )
+
+        if not (
+            self.service._module.hostport
+            or self.service._module.service
+        ):
+            raise ValueError(
+                "No 'service' or 'hostport' provided to " +
+                str(self)
             )
 
         module = self.service._module
