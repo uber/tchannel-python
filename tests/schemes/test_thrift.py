@@ -130,8 +130,8 @@ def service(server, use_thriftrw_client):
 
     if use_thriftrw_client:
         return thrift.load(
-            'server',
             'tests/data/idls/ThriftTest.thrift',
+            'server',
             hostport=server.hostport,
         ).ThriftTest
     else:
@@ -148,8 +148,8 @@ def second_service(server, use_thriftrw_client):
 
     if use_thriftrw_client:
         return thrift.load(
-            'server',
             'tests/data/idls/ThriftTest.thrift',
+            'server',
             hostport=server.hostport,
         ).SecondService
     else:
