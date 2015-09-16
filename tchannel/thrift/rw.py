@@ -141,7 +141,7 @@ def load(service, path, hostport=None, module_name=None):
         Thrift file.
     """
     # TODO replace with more specific exceptions
-    assert service, 'service is required'
+    # assert service, 'service is required'
     assert path, 'path is required'
 
     module = thriftrw.load(path=path, name=module_name)
