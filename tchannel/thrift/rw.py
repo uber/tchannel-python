@@ -254,8 +254,8 @@ class Function(object):
             )
 
         if not (
-            self.service._module.hostport
-            or self.service._module.service
+            self.service._module.hostport or
+            self.service._module.service
         ):
             raise ValueError(
                 "No 'service' or 'hostport' provided to " +
