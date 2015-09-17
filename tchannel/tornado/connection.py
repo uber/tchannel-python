@@ -24,16 +24,18 @@ import logging
 import os
 import socket
 import sys
-from tornado.concurrent import Future
 
 import tornado.gen
 import tornado.iostream
+from tornado.concurrent import Future
+
 from .. import errors
 from .. import frame
 from .. import glossary
 from .. import messages
-from ..errors import NetworkError, DeclinedError
+from ..errors import DeclinedError
 from ..errors import FatalProtocolError
+from ..errors import NetworkError
 from ..errors import TChannelError
 from ..event import EventType
 from ..io import BytesIO
@@ -53,6 +55,26 @@ except ImportError:
     from Queue import Empty as QueueEmpty
 
 log = logging.getLogger('tchannel')
+
+
+class _Drain(object):
+
+    DEFAULT_REASON = "Server has stopped accepting new requests."
+
+    def __init__(self, reason=None, exempt=None, future=None):
+        """
+        :param reason:
+            User can specify the reason for the drain action.
+        :param exempt:
+            exempt function to exempt request for particular service for
+            draining.
+        :param future:
+            The future is used to tell when all in progress requests have been
+            processed. In other words, draining is completed.
+        """
+        self.future = future or Future()
+        self.reason = reason or self.DEFAULT_REASON
+        self.exempt = exempt
 
 
 class TornadoConnection(object):
@@ -78,8 +100,6 @@ class TornadoConnection(object):
 
     CALL_REQ_TYPES = frozenset([Types.CALL_REQ, Types.CALL_REQ_CONTINUE])
     CALL_RES_TYPES = frozenset([Types.CALL_RES, Types.CALL_RES_CONTINUE])
-
-    DEFAULT_REASON = "Server stops accepting new requests."
 
     def __init__(self, connection, tchannel=None):
         assert connection, "connection is required"
@@ -123,10 +143,8 @@ class TornadoConnection(object):
         self.incoming_requests = {}
         self.incoming_responses = {}
 
-        self.drain_future = None
-        self.draining = False
-        self.drain_reason = self.DEFAULT_REASON
-        self.drain_exempt = None
+        self._drain = None
+
         connection.set_close_callback(self._on_close)
 
     def next_message_id(self):
@@ -469,19 +487,19 @@ class TornadoConnection(object):
         while not self.closed:
             message = yield self.await()
             try:
-                if self.draining:
+                if self._drain:
                     if message.message_type == Types.CALL_REQ:
-                        if self.drain_exempt and self.drain_exempt(
+                        if self._drain.exempt and self._drain.exempt(
                                 message.service
                         ):
                             handler(message, self)
                         else:
-                            raise DeclinedError(self.drain_reason)
+                            raise DeclinedError(self._drain.reason)
                     elif (message.message_type == Types.CALL_REQ_CONTINUE and
                             self.get_incoming_request(message.id)):
                         handler(message, self)
                     else:
-                        raise DeclinedError(self.drain_reason)
+                        raise DeclinedError(self._drain.reason)
                 else:
                     handler(message, self)
             except DeclinedError as e:
@@ -518,13 +536,12 @@ class TornadoConnection(object):
         return self._write(messages.PingResponseMessage())
 
     def drain(self, reason=None, exempt=None):
-        self.draining = True
-        self.drain_future = Future()
-        self.drain_reason = reason or self.drain_reason
-        self.drain_exempt = exempt
+        self._drain = _Drain(reason, exempt)
+
         if len(self.incoming_requests) == 0:
-            self.drain_future.set_result(None)
-        return self.drain_future
+            self._drain.future.set_result(None)
+
+        return self._drain.future
 
     def add_incoming_request(self, request):
         self.incoming_requests[request.id] = request
@@ -535,9 +552,9 @@ class TornadoConnection(object):
     def remove_incoming_request(self, id):
         req = self.incoming_requests.pop(id, None)
 
-        if (self.draining and len(self.incoming_requests) == 0 and
-                self.drain_future and self.drain_future.running()):
-            self.drain_future.set_result(None)
+        if (self._drain and len(self.incoming_requests) == 0 and
+                self._drain.future and self._drain.future.running()):
+            self._drain.future.set_result(None)
         return req
 
 

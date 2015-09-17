@@ -26,6 +26,7 @@ import json
 import logging
 
 from threading import Lock
+from tchannel.tornado.tchannel import State
 from tornado import gen
 
 from . import schemes
@@ -109,6 +110,7 @@ class TChannel(object):
         )
 
         self.name = name
+        self.known_peers = known_peers
 
         # set arg schemes
         self.raw = schemes.RawArgScheme(self)
@@ -320,8 +322,46 @@ class TChannel(object):
 
         raise gen.Return(response)
 
+    @gen.coroutine
     def stop(self, reason=None):
-        self._dep_tchannel.stop(reason)
+        """Gracefully shut down tchannel.
+        :param reason:
+            User can specify the reason for the stop action.
+        """
+        yield self.drain(reason)
+        self._dep_tchannel.peer_group.clear()
+        self._dep_tchannel._server.stop()
+        self._dep_tchannel._server = None
+        self._dep_tchannel._state = State.ready
+        if self.known_peers:
+            for peer_hostport in self.known_peers:
+                self._dep_tchannel.peer_group.add(peer_hostport)
 
+        if self._dep_tchannel.advertise_loop:
+            self._dep_tchannel.advertise_loop.stop()
+            self._dep_tchannel.advertise_loop = None
+
+    @gen.coroutine
     def drain(self, reason=None, exempt=None):
-        return self._dep_tchannel.drain(reason, exempt)
+        """Drain the existing connections, and stop taking new requests.
+        :param reason:
+            User can specify the reason for the drain action.
+        :param exempt:
+            exempt should be a function that takes service name as string
+            argument and return bool. It provides a way for use to specify what
+            service requests that will continue to be processed during
+            draining.
+
+        .. code:: python
+            def exempt_sample(service):
+                if service == 'hello':
+                    return True
+
+                return False
+
+        """
+        self._dep_tchannel._server.drain()
+        yield [
+            peer.drain(reason, exempt) for peer in
+            self._dep_tchannel.peer_group.peers
+        ]

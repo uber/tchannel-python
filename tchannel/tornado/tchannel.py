@@ -97,7 +97,6 @@ class TChannel(object):
         else:
             self._handler = dispatcher
 
-        self.known_peers = known_peers
         self.peer_group = PeerGroup(self)
 
         self._port = 0
@@ -397,28 +396,6 @@ class TChannel(object):
             return decorator(handler)
         else:
             return decorator
-
-    @tornado.gen.coroutine
-    def stop(self, reason=None):
-        yield self.drain(reason)
-        self.peer_group.clear()
-        self._server.stop()
-        self._server = None
-        self._state = State.ready
-        if self.known_peers:
-            for peer_hostport in self.known_peers:
-                self.peer_group.add(peer_hostport)
-
-        if self.advertise_loop:
-            self.advertise_loop.stop()
-            self.advertise_loop = None
-
-    @tornado.gen.coroutine
-    def drain(self, reason=None, exempt=None):
-        self._server.drain()
-        yield [
-            peer.drain(reason, exempt) for peer in self.peer_group.peers
-        ]
 
 
 class TChannelServer(tornado.tcpserver.TCPServer):

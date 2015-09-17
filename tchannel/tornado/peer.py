@@ -381,7 +381,6 @@ class Peer(object):
 
     @gen.coroutine
     def drain(self, reason=None, exempt=None):
-        print ("peer drain")
         yield [con.drain(reason, exempt) for con in self.connections]
 
 

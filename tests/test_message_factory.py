@@ -19,10 +19,14 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
-from tchannel.messages import CallRequestMessage, CallResponseMessage, \
-    ErrorMessage
-from tchannel.messages.common import StreamState, FlagsType
-from tchannel.tornado import Request, Response
+
+from tchannel.messages import CallRequestMessage
+from tchannel.messages import CallResponseMessage
+from tchannel.messages import ErrorMessage
+from tchannel.messages.common import FlagsType
+from tchannel.messages.common import StreamState
+from tchannel.tornado import Request
+from tchannel.tornado import Response
 from tchannel.tornado.message_factory import MessageFactory
 from tchannel.tornado.response import StatusCode
 from tchannel.zipkin.trace import Trace

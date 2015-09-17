@@ -236,12 +236,6 @@ class MessageFactory(object):
         )
         return res
 
-    def build_context(self, message):
-        if message.message_type == Types.CALL_REQ:
-            return self.build_request(message)
-        elif message.message_type == Types.CALL_RES:
-            return self.build_response(message)
-
     def build_inbound_response(self, message, response):
         """buffer all the streaming messages based on the
         message id. Reconstruct all fragments together.

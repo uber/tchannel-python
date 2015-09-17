@@ -19,13 +19,15 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
+
 import pytest
-from tchannel import TChannel
-from tchannel import schemes
-from tchannel.errors import DeclinedError
 import tornado
 from tornado.concurrent import Future
 from tornado.iostream import StreamClosedError
+
+from tchannel import TChannel
+from tchannel import schemes
+from tchannel.errors import DeclinedError
 
 
 @pytest.mark.gen_test
@@ -62,9 +64,9 @@ def test_drain_state():
     server.drain(reason=reason, exempt=exempt_sample)
     for peer in server._dep_tchannel.peer_group.peers:
         for con in peer.connections:
-            assert con.draining
-            assert con.drain_exempt == exempt_sample
-            assert con.drain_reason == reason
+            assert con._drain
+            assert con._drain.exempt == exempt_sample
+            assert con._drain.reason == reason
 
 
 @pytest.mark.gen_test
@@ -147,5 +149,5 @@ def test_drain_blocking_new_request(io_loop):
 
     for peer in server._dep_tchannel.peer_group.peers:
         for con in peer.connections:
-            assert con.draining
+            assert con._drain
             assert len(con.incoming_requests) == 0
