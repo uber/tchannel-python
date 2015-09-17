@@ -35,8 +35,8 @@ def test_default_health():
     client = TChannel("health_test_client")
 
     service = thrift.load(
-        'health_test_server',
-        'tchannel/health/meta.thrift',
+        path='tchannel/health/meta.thrift',
+        service='health_test_server',
         hostport=server.hostport,
     )
 
@@ -57,8 +57,8 @@ def test_user_health():
 
     client = TChannel("health_test_client")
     service = thrift.load(
-        'health_test_server',
-        'tchannel/health/meta.thrift',
+        path='tchannel/health/meta.thrift',
+        service='health_test_server',
         hostport=server.hostport,
     )
 
