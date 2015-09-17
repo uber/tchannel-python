@@ -41,4 +41,4 @@ twine
 ipdb
 coveralls
 
-yaml
+PyYAML
