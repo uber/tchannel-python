@@ -10,6 +10,9 @@ setup(
     license='MIT',
     url='https://github.com/uber/tchannel-python',
     packages=find_packages(exclude=['tests', 'tests.*']),
+    package_data={
+        '': ['*.thrift'],
+    },
     install_requires=[
         'contextlib2',
         'crcmod',

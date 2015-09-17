@@ -41,7 +41,6 @@ def get_service_methods(iface):
 
 
 def get_module_name(module):
-
     name = module.__name__.rsplit('.', 1)[-1]
 
     return name
