@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.17.1 (unreleased)
+0.17.1 (2015-09-17)
 -------------------
 
 - Made "service" optional for ``thrift.load()``. The first argument should be a
