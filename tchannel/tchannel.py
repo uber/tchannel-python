@@ -27,7 +27,6 @@ import logging
 
 from threading import Lock
 from tornado import gen
-from tornado import ioloop
 
 from . import schemes
 from . import transport
@@ -322,5 +321,7 @@ class TChannel(object):
         raise gen.Return(response)
 
     def stop(self, reason=None):
-        return self._dep_tchannel.stop(reason)
+        self._dep_tchannel.stop(reason)
 
+    def drain(self, reason=None, exempt=None):
+        return self._dep_tchannel.drain(reason, exempt)

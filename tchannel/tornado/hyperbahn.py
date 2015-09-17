@@ -134,6 +134,7 @@ def advertise(tchannel, service, routers=None, timeout=None, router_file=None):
         DELAY,
     )
     advertise_loop.start()
+    tchannel.advertise_loop = advertise_loop
 
     raise tornado.gen.Return(result)
 

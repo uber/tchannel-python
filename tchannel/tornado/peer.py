@@ -380,8 +380,9 @@ class Peer(object):
             connection.close()
 
     @gen.coroutine
-    def stop(self, reason=None, exempt=None):
-        yield [ con.drain(reason, exempt) for con in self.connections]
+    def drain(self, reason=None, exempt=None):
+        print ("peer drain")
+        yield [con.drain(reason, exempt) for con in self.connections]
 
 
 class PeerState(object):
@@ -602,7 +603,6 @@ class PeerClientOperation(object):
         # event: send_request
         self.tchannel.event_emitter.fire(EventType.before_send_request, req)
         response_future = connection.send_request(req)
-
         with timeout(response_future, req.ttl):
             try:
                 response = yield response_future

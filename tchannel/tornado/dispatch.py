@@ -24,7 +24,6 @@ import logging
 from collections import namedtuple
 
 import tornado
-from tornado.concurrent import Future
 import tornado.gen
 from tornado import gen
 
@@ -33,7 +32,7 @@ from tchannel.request import Request
 from tchannel.request import TransportHeaders
 from tchannel.response import response_from_mixed
 from ..context import request_context
-from ..errors import BadRequestError, DeclinedError
+from ..errors import BadRequestError
 from ..errors import TChannelError
 from ..event import EventType
 from ..messages import Types
@@ -64,28 +63,16 @@ class RequestDispatcher(object):
     """
 
     FALLBACK = object()
-    DEFAULT_REASON = "Server stops accepting new requests."
 
     def __init__(self, _handler_returns_response=False):
         self.handlers = {}
         self.register(self.FALLBACK, self.not_found)
         self._handler_returns_response = _handler_returns_response
-        self.draining = False
-        self.drain_reason = self.DEFAULT_REASON
-        self.drain_exempt = None
-        self.drain_future = None
 
     _HANDLER_NAMES = {
         Types.CALL_REQ: 'pre_call',
         Types.CALL_REQ_CONTINUE: 'pre_call'
     }
-
-    def drain(self, reason, exempt):
-        self.draining = True
-        self.drain_reason = reason or self.drain_reason
-        self.drain_exempt = exempt
-        self.drain_future = Future()
-        return self.drain_future
 
     def handle(self, message, connection):
         # TODO assert that the handshake was already completed
@@ -114,30 +101,16 @@ class RequestDispatcher(object):
         :param connection: tornado connection
         """
         try:
-            _inprogress_requests = connection.inprogress_requests
-            inprogress_request = _inprogress_requests.get(message.id, None)
-            if self.draining:
-                if message.message_type == Types.CALL_REQ:
-                    if not self.drain_exempt(message.service):
-                        raise DeclinedError(self.drain_reason)
-                elif not inprogress_request:
-                    raise DeclinedError(self.drain_reason)
-
-            new_req = connection.request_message_factory.build_inbound_request(
-                message, inprogress_request
+            new_req = connection.message_factory.build_inbound_request(
+                message, connection.get_incoming_request(message.id)
             )
             # message_factory will create Request only when it receives
             # CallRequestMessage. It will return None, if it receives
             # CallRequestContinueMessage.
             if new_req:
-                _inprogress_requests[new_req.id] = new_req
+                connection.add_incoming_request(new_req)
                 yield self.handle_call(new_req, connection)
-                _inprogress_requests.pop(new_req.id, None)
-
-                if (self.draining and len(_inprogress_requests) == 0 and
-                        self.drain_future.running()):
-                    self.drain_future.set_result(None)
-
+                connection.remove_incoming_request(new_req.id)
         except TChannelError as e:
             log.warn('Received a bad request.', exc_info=True)
 
@@ -157,13 +130,13 @@ class RequestDispatcher(object):
         # request.endpoint. The original argstream[0] is no longer valid. If
         # user still tries read from it, it will return empty.
         chunk = yield request.argstreams[0].read()
-        response = None
         while chunk:
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
 
         log.debug('Received a call to %s.', request.endpoint)
 
+        response = None
         tchannel = connection.tchannel
 
         # event: receive_request
@@ -198,7 +171,6 @@ class RequestDispatcher(object):
             headers={'as': request.headers.get('as', 'raw')},
             serializer=handler.resp_serializer,
         )
-
         connection.post_response(response)
 
         try:
@@ -250,17 +222,13 @@ class RequestDispatcher(object):
 
             response.flush()
         except TChannelError as e:
-            connection.send_error(
-                e.code,
-                e.message,
-                request.id,
-            )
+            response.set_exception(e)
+            connection.send_error(e.code, e.message, request.id)
         except Exception as e:
             msg = "An unexpected error has occurred from the handler"
             log.exception(msg)
 
             response.set_exception(TChannelError(e.message))
-            connection.request_message_factory.remove_buffer(response.id)
 
             connection.send_error(ErrorCode.unexpected, msg, response.id)
             tchannel.event_emitter.fire(EventType.on_exception, request, e)

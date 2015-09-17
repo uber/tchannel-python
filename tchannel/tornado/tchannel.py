@@ -97,6 +97,7 @@ class TChannel(object):
         else:
             self._handler = dispatcher
 
+        self.known_peers = known_peers
         self.peer_group = PeerGroup(self)
 
         self._port = 0
@@ -127,6 +128,9 @@ class TChannel(object):
 
         # server created from calling listen()
         self._server = None
+
+        # periodical callback loop for advertise
+        self.advertise_loop = None
 
     @property
     def trace(self):
@@ -222,10 +226,10 @@ class TChannel(object):
         # For example, blacklist and score threshold aren't really
         # user-configurable right now.
         return self.peer_group.request(hostport=hostport,
-                                  service=service,
-                                  arg_scheme=arg_scheme,
-                                  retry=retry,
-                                  **kwargs)
+                                       service=service,
+                                       arg_scheme=arg_scheme,
+                                       retry=retry,
+                                       **kwargs)
 
     def listen(self, port=None):
         """Start listening for incoming connections.
@@ -395,10 +399,25 @@ class TChannel(object):
             return decorator
 
     @tornado.gen.coroutine
-    def stop(self, reason=None, exempt=None):
+    def stop(self, reason=None):
+        yield self.drain(reason)
+        self.peer_group.clear()
+        self._server.stop()
+        self._server = None
+        self._state = State.ready
+        if self.known_peers:
+            for peer_hostport in self.known_peers:
+                self.peer_group.add(peer_hostport)
+
+        if self.advertise_loop:
+            self.advertise_loop.stop()
+            self.advertise_loop = None
+
+    @tornado.gen.coroutine
+    def drain(self, reason=None, exempt=None):
         self._server.drain()
         yield [
-            peer.stop(reason, exempt) for peer in self.peer_group.peers()
+            peer.drain(reason, exempt) for peer in self.peer_group.peers
         ]
 
 
@@ -436,9 +455,8 @@ class TChannelServer(tornado.tcpserver.TCPServer):
         yield conn.serve(handler=self._handle)
 
     def _handle(self, message, connection):
-        self.tchannel.receive_call(message, connection)
+        return self.tchannel.receive_call(message, connection)
 
     def drain(self):
         """Set the draining flag to stop accepting new connections."""
         self.draining = True
-
