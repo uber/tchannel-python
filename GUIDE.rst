@@ -2,6 +2,9 @@
 Getting Started
 ===============
 
+This guide is current as of version 0.16. See the :ref:`Upgrade Guide` if
+you're running an older version.
+
 The code matching this guide is `here
 <https://github.com/uber/tchannel-python/tree/master/examples/guide>`_.
 
