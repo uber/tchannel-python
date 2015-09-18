@@ -84,7 +84,6 @@ class RequestDispatcher(object):
         handler_name = "handle_" + self._HANDLER_NAMES[message.message_type]
         return getattr(self, handler_name)(message, connection)
 
-    @gen.coroutine
     def handle_pre_call(self, message, connection):
         """Handle incoming request message including CallRequestMessage and
         CallRequestContinueMessage
@@ -109,8 +108,10 @@ class RequestDispatcher(object):
             # CallRequestContinueMessage.
             if new_req:
                 connection.add_incoming_request(new_req)
-                yield self.handle_call(new_req, connection)
-                connection.remove_incoming_request(new_req.id)
+                self.handle_call(new_req, connection).add_done_callback(
+                    lambda _: connection.remove_incoming_request(new_req.id)
+                )
+
         except TChannelError as e:
             log.warn('Received a bad request.', exc_info=True)
 

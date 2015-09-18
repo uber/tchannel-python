@@ -28,6 +28,42 @@ from tornado.iostream import StreamClosedError
 from tchannel import TChannel
 from tchannel import schemes
 from tchannel.errors import DeclinedError
+from tchannel.errors import NetworkError
+
+
+@pytest.mark.gen_test
+def test_stop():
+    server = TChannel("server")
+
+    @tornado.gen.coroutine
+    def endpoint(request):
+        raise tornado.gen.Return("hello")
+
+    server.raw.register("endpoint")(endpoint)
+    server.listen()
+    server.stop()
+
+    client = TChannel("client")
+    with pytest.raises(NetworkError):
+        yield client.call(
+            scheme=schemes.RAW,
+            service='server',
+            arg1='endpoint',
+            arg2='req headers',
+            arg3='req body',
+            hostport=server.hostport,
+        )
+
+    server.listen()
+    resp = yield client.call(
+        scheme=schemes.RAW,
+        service='server',
+        arg1='endpoint',
+        arg2='req headers',
+        arg3='req body',
+        hostport=server.hostport,
+    )
+    assert resp.body == "hello"
 
 
 @pytest.mark.gen_test
@@ -89,9 +125,9 @@ def test_drain_waiting_for_inprogress_request(io_loop):
         yield server.drain()
 
     # start draining in the mid of request
-    io_loop.call_later(0.01, lambda: drain())
+    io_loop.call_later(0.1, lambda: drain())
     # trigger the finish of the request after draining
-    io_loop.call_later(0.02, lambda: f.set_result(None))
+    io_loop.call_later(0.2, lambda: f.set_result(None))
 
     resp = yield client.call(
         scheme=schemes.RAW,
@@ -124,9 +160,9 @@ def test_drain_blocking_new_request(io_loop):
         yield server.drain()
 
     # start draining in the mid of request
-    io_loop.call_later(0.01, lambda: drain())
+    io_loop.call_later(0.1, lambda: drain())
     # trigger the finish of the request after draining
-    io_loop.call_later(0.02, lambda: f.set_result(None))
+    io_loop.call_later(0.2, lambda: f.set_result(None))
 
     yield client.call(
         scheme=schemes.RAW,
@@ -151,3 +187,38 @@ def test_drain_blocking_new_request(io_loop):
         for con in peer.connections:
             assert con._drain
             assert len(con.incoming_requests) == 0
+
+
+@pytest.mark.gen_test
+def test_drain_timeout(io_loop):
+    server = TChannel("server")
+    f = Future()
+
+    @tornado.gen.coroutine
+    def endpoint(request):
+        yield f
+        raise tornado.gen.Return("hello")
+
+    server.raw.register("endpoint")(endpoint)
+
+    server.listen()
+
+    client = TChannel("client")
+
+    @tornado.gen.coroutine
+    def drain():
+        yield server.drain()
+
+    # start draining in the mid of request
+    io_loop.call_later(0.1, lambda: drain())
+    # trigger the finish of the request after draining
+    io_loop.call_later(0.2, lambda: f.set_result(None))
+
+    yield client.call(
+        scheme=schemes.RAW,
+        service='server',
+        arg1='endpoint',
+        arg2='req headers',
+        arg3='req body',
+        hostport=server.hostport,
+    )

@@ -344,6 +344,7 @@ class TChannel(object):
     @gen.coroutine
     def drain(self, reason=None, exempt=None):
         """Drain the existing connections, and stop taking new requests.
+
         :param reason:
             User can specify the reason for the drain action.
         :param exempt:
@@ -360,7 +361,9 @@ class TChannel(object):
                 return False
 
         """
+
         self._dep_tchannel._server.drain()
+
         yield [
             peer.drain(reason, exempt) for peer in
             self._dep_tchannel.peer_group.peers

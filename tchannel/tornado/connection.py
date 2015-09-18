@@ -230,62 +230,62 @@ class TornadoConnection(object):
         self._loop_running = True
 
         while not self.closed:
-            message = None
             try:
                 message = yield self._recv()
             except tornado.iostream.StreamClosedError:
                 log.warning("Stream has been closed.")
                 break
-            # TODO: There should probably be a try-catch on the yield.
+
             if message.message_type in self.CALL_REQ_TYPES:
                 self._messages.put(message)
             elif message.id in self._outstanding:
-                # first time to receive response for this message id.
-                # therefore the future obj still sits in the _outstanding dict.
-
-                # set exception if receive error message
-                future = self._outstanding.pop(message.id)
-                if message.message_type == Types.ERROR:
-                    error = self.message_factory.build_inbound_error(message)
-                    if future.running():
-                        future.set_exception(error)
-
-                    self.tchannel.event_emitter.fire(
-                        EventType.after_receive_error, error,
-                    )
-                    continue
-
-                response = self.message_factory.build_inbound_response(
-                    message, None
-                )
-                if future.running():
-                    future.set_result(response)
-                if (message.message_type in self.CALL_RES_TYPES and
-                        message.flags == FlagsType.fragment):
-                    # still streaming, keep it for record
-                    self.incoming_responses[message.id] = response
+                # This should just handle CALL_RES or ERROR message.
+                # It is invalid if any CALL_RES_CONTINUE message goes here.
+                self._handle_response(message)
             elif message.id in self.incoming_responses:
-                # call continue messages
-                response = self.incoming_responses.pop(message.id)
-                if message.message_type == Types.ERROR:
-                    error = self.message_factory.build_inbound_error(
-                        message, response
-                    )
-                    response.set_exception(error)
+                # This should just handle CALL_RES_CONTINUE or ERROR message.
+                # It is invalid if any CALL_RES message goes here.
+                self._handle_continuing_response(message)
+            else:
+                log.warn('Unconsumed message %s', message)
 
-                    self.tchannel.event_emitter.fire(
-                        EventType.after_receive_error, error,
-                    )
-                    continue
+    def _handle_continuing_response(self, message):
+        response = self.incoming_responses.pop(message.id)
+        if message.message_type == Types.ERROR:
+            error = self.message_factory.build_inbound_error(message)
+            response.set_exception(error)
 
-                self.message_factory.build_inbound_response(message, response)
+            self.tchannel.event_emitter.fire(
+                EventType.after_receive_error, error,
+            )
+            return
 
-                if (message.message_type in self.CALL_RES_TYPES and
-                        message.flags == FlagsType.fragment):
-                    # still streaming, keep it for record
-                    self.incoming_responses[message.id] = response
-                else:
-                    log.warn('Unconsumed message %s', message)
+        self.message_factory.build_inbound_response(message, response)
+
+        if (message.message_type in self.CALL_RES_TYPES and
+                message.flags == FlagsType.fragment):
+            # still streaming, keep it for record
+            self.incoming_responses[message.id] = response
+
+    def _handle_response(self, message):
+        future = self._outstanding.pop(message.id)
+        if message.message_type == Types.ERROR:
+            error = self.message_factory.build_inbound_error(message)
+            if future.running():
+                future.set_exception(error)
+
+            self.tchannel.event_emitter.fire(
+                EventType.after_receive_error, error,
+            )
+            return
+
+        response = self.message_factory.build_inbound_response(message, None)
+        if future.running():
+            future.set_result(response)
+        if (message.message_type in self.CALL_RES_TYPES and
+                message.flags == FlagsType.fragment):
+            # still streaming, keep it for record
+            self.incoming_responses[message.id] = response
 
     # Basically, the only difference between send and write is that send
     # sets up a Future to get the response. That's ideal for peers making
