@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.17.2 (unreleased)
+0.17.2 (2015-09-18)
 -------------------
 
 - VCR no longer matches on hostport to better support ephemeral ports.
