@@ -81,7 +81,7 @@ _MATCHERS = {
 # By default, two requests match if their service name, hostport, endpoint,
 # headers, body, and arg scheme match.
 DEFAULT_MATCHERS = (
-    'serviceName', 'hostPort', 'endpoint', 'headers', 'body', 'argScheme',
+    'serviceName', 'endpoint', 'headers', 'body', 'argScheme',
 )
 # TODO: protocol headers?
 
