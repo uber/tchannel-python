@@ -87,19 +87,13 @@ def test_tcurl(mock_server):
         body="hello"
     )
 
-    hostport = 'localhost:%d/%s' % (
-        mock_server.port, endpoint.decode('ascii')
+    hostport = 'localhost:%d' % mock_server.port
+    response = yield tcurl.main(
+        ['--host', hostport, '--endpoint', endpoint, '--service', 'mock-server']
     )
-    responses = yield tcurl.main(['--host', hostport, '-d', ''])
 
-    # TODO: get multiple requests working here
-    assert len(responses) == 1
-
-    for response in responses:
-        header = yield response.get_header()
-        body = yield response.get_body()
-        assert header == endpoint
-        assert body == "hello"
+    assert response.headers == endpoint
+    assert response.body == "hello"
 
 
 @pytest.mark.gen_test
