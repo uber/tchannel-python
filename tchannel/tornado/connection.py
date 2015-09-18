@@ -140,7 +140,14 @@ class TornadoConnection(object):
         self._loop_running = False
 
         self.tchannel = tchannel
+
+        # Map from message ID to inflight requests on the server side.
         self.incoming_requests = {}
+        # Map from message ID to inflight responses on the client side.
+        # When client sends a request, it will first put ID and a future for
+        # response in the _outstanding map. After it gets response message,
+        # but not a completed response, it will put ID and response obj in the
+        # incoming_response.
         self.incoming_responses = {}
 
         self._drain = None
