@@ -22,8 +22,8 @@ from __future__ import absolute_import
 
 import pytest
 
-from tchannel import TChannel, thrift_request_builder
-from tchannel.health.thrift import Meta
+from tchannel import TChannel, thrift
+from tchannel.health import Meta
 from tchannel.health import HealthStatus
 
 
@@ -33,12 +33,14 @@ def test_default_health():
     server.listen()
 
     client = TChannel("health_test_client")
-    service = thrift_request_builder(
-        service='meta',
-        thrift_module=Meta,
+
+    service = thrift.load(
+        path='tchannel/health/meta.thrift',
+        service='health_test_server',
         hostport=server.hostport,
     )
-    resp = yield client.thrift(request=service.health())
+
+    resp = yield client.thrift(service.Meta.health())
     assert resp.body.ok is True
     assert resp.body.message is None
 
@@ -54,11 +56,12 @@ def test_user_health():
     server.listen()
 
     client = TChannel("health_test_client")
-    service = thrift_request_builder(
-        service='meta',
-        thrift_module=Meta,
+    service = thrift.load(
+        path='tchannel/health/meta.thrift',
+        service='health_test_server',
         hostport=server.hostport,
     )
-    resp = yield client.thrift(request=service.health())
+
+    resp = yield client.thrift(service.Meta.health())
     assert resp.body.ok is False
     assert resp.body.message == "from me"

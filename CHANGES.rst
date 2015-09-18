@@ -1,10 +1,18 @@
 Changes by Version
 ==================
 
-0.17.1 (unreleased)
+0.17.2 (unreleased)
 -------------------
 
+- VCR no longer matches on hostport to better support ephemeral ports.
 - Fixed a bug with thriftrw where registering an endpoint twice could fail.
+
+
+0.17.1 (2015-09-17)
+-------------------
+
+- Made "service" optional for ``thrift.load()``. The first argument should be a
+  path, but backwards compatibility is provided for 0.17.0.
 
 
 0.17.0 (2015-09-14)

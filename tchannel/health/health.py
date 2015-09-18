@@ -20,8 +20,16 @@
 
 from __future__ import absolute_import
 
-from .thrift.ttypes import HealthStatus
+import os
+import sys
+
+from .. import thrift
+
+
+base = os.path.dirname(__file__)
+meta = thrift.load(os.path.join(base, 'meta.thrift'))
+sys.modules[__name__ + '.meta'] = meta
 
 
 def health(request):
-    return HealthStatus(ok=True)
+    return meta.HealthStatus(ok=True)

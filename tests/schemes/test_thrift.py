@@ -82,7 +82,6 @@ def ThriftTest(use_thriftrw_server):
 
     if use_thriftrw_server:
         return thrift.load(
-            'server',
             'tests/data/idls/ThriftTest.thrift',
         ).ThriftTest
     else:
@@ -95,7 +94,6 @@ def SecondService(use_thriftrw_server):
 
     if use_thriftrw_server:
         return thrift.load(
-            'server',
             'tests/data/idls/ThriftTest.thrift',
         ).SecondService
     else:
@@ -108,8 +106,7 @@ def server_ttypes(use_thriftrw_server):
 
     if use_thriftrw_server:
         return thrift.load(
-            'server',
-            'tests/data/idls/ThriftTest.thrift',
+            path='tests/data/idls/ThriftTest.thrift',
         )
     else:
         return _ttypes
@@ -121,8 +118,7 @@ def client_ttypes(use_thriftrw_client):
 
     if use_thriftrw_client:
         return thrift.load(
-            'server',
-            'tests/data/idls/ThriftTest.thrift',
+            path='tests/data/idls/ThriftTest.thrift',
         )
     else:
         return _ttypes
@@ -134,8 +130,8 @@ def service(server, use_thriftrw_client):
 
     if use_thriftrw_client:
         return thrift.load(
-            'server',
-            'tests/data/idls/ThriftTest.thrift',
+            path='tests/data/idls/ThriftTest.thrift',
+            service='server',
             hostport=server.hostport,
         ).ThriftTest
     else:
@@ -152,8 +148,8 @@ def second_service(server, use_thriftrw_client):
 
     if use_thriftrw_client:
         return thrift.load(
-            'server',
-            'tests/data/idls/ThriftTest.thrift',
+            path='tests/data/idls/ThriftTest.thrift',
+            service='server',
             hostport=server.hostport,
         ).SecondService
     else:

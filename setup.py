@@ -3,13 +3,16 @@ from setuptools import find_packages, setup
 
 setup(
     name='tchannel',
-    version='0.17.1.dev0',
+    version='0.17.2.dev0',
     author='Abhinav Gupta, Aiden Scandella, Bryce Lampe, Grayson Koonce, Junchao Wu',
     author_email='abg@uber.com',
     description='Network multiplexing and framing protocol for RPC',
     license='MIT',
     url='https://github.com/uber/tchannel-python',
     packages=find_packages(exclude=['tests', 'tests.*']),
+    package_data={
+        '': ['*.thrift'],
+    },
     install_requires=[
         'contextlib2',
         'crcmod',

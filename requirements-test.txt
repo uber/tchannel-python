@@ -40,3 +40,5 @@ twine
 # for debugging
 ipdb
 coveralls
+
+PyYAML
