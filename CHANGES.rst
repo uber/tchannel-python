@@ -5,6 +5,7 @@ Changes by Version
 -------------------
 
 - VCR no longer matches on hostport to better support ephemeral ports.
+- Fixed a bug with thriftrw where registering an endpoint twice could fail.
 
 
 0.17.1 (2015-09-17)
