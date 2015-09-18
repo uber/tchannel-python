@@ -26,7 +26,6 @@ import json
 import logging
 
 from threading import Lock
-from tchannel.tornado.tchannel import State
 from tornado import gen
 
 from . import schemes
@@ -39,6 +38,7 @@ from .health import health
 from .health import Meta
 from .response import Response, TransportHeaders
 from .tornado import TChannel as DeprecatedTChannel
+from .tornado.tchannel import State
 from .tornado.dispatch import RequestDispatcher as DeprecatedDispatcher
 
 log = logging.getLogger('tchannel')
@@ -324,7 +324,8 @@ class TChannel(object):
 
     @gen.coroutine
     def stop(self, reason=None):
-        """Gracefully shut down tchannel.
+        """Gracefully shut down TChannel instance.
+
         :param reason:
             User can specify the reason for the stop action.
         """
@@ -354,11 +355,9 @@ class TChannel(object):
             draining.
 
         .. code:: python
-            def exempt_sample(service):
-                if service == 'hello':
-                    return True
 
-                return False
+            def exempt_sample(service):
+                return service == 'hello'
 
         """
 
