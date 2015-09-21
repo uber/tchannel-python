@@ -88,9 +88,11 @@ def test_tcurl(mock_server):
     )
 
     hostport = 'localhost:%d' % mock_server.port
-    response = yield tcurl.main(
-        ['--host', hostport, '--endpoint', endpoint, '--service', 'mock-server']
-    )
+    response = yield tcurl.main([
+        '--host', hostport,
+        '--endpoint', endpoint,
+        '--service', 'mock-server',
+    ])
 
     assert response.headers == endpoint
     assert response.body == "hello"
