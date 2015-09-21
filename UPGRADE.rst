@@ -6,6 +6,11 @@ Upgrade Guide
 Migrating to a version of TChannel with breaking changes? This guide documents
 what broke and how to safely migrate to newer versions.
 
+From 0.16 to 0.17
+-----------------
+
+- No breaking changes.
+
 From 0.15 to 0.16
 -----------------
 
