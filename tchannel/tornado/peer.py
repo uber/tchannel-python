@@ -519,7 +519,10 @@ class PeerClientOperation(object):
         # peer, we throw exceptions from retry not NoAvailablePeerError.
         peer = self._choose()
         if not peer:
-            raise NoAvailablePeerError("Can't find available peer.")
+            raise NoAvailablePeerError(
+                "Can't find an available peer for '%s'" % self.service
+            )
+
         connection = yield peer.connect()
 
         arg1, arg2, arg3 = (
