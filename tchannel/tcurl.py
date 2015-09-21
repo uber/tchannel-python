@@ -45,14 +45,15 @@ from __future__ import absolute_import
 import argparse
 import logging
 import json
+import os
 import sys
+import traceback
 
 import tornado.ioloop
 import tornado.gen
 
 from . import TChannel
 from . import thrift
-from .health import Meta
 
 log = logging.getLogger('tchannel')
 
@@ -136,6 +137,15 @@ def parse_args(args=None):
         help="Say more.",
     )
 
+    parser.add_argument(
+        "--health",
+        action="store_true",
+        help=(
+            "Perform a health check against the given service. This is "
+            "overridden if --endpoint is provided."
+        ),
+    )
+
     thrift_group = parser.add_argument_group('thrift')
 
     thrift_group.add_argument(
@@ -144,14 +154,6 @@ def parse_args(args=None):
         type=argparse.FileType('r'),
         help=(
             "Path to a Thrift IDL file. Incompatible with --json."
-        ),
-    )
-    thrift_group.add_argument(
-        "--health",
-        action="store_true",
-        help=(
-            "Perform a health check against the given service. This is "
-            "overridden if --endpoint is provided."
         ),
     )
 
@@ -188,84 +190,86 @@ def parse_args(args=None):
     return args
 
 
-def tcurl(tchannel, host, endpoint, headers, body, service):
+@tornado.gen.coroutine
+def catch_errors(future, verbose, exit=sys.exit):
+    try:
+        result = yield future
+    except Exception, e:
+        if verbose:
+            traceback.print_exc(file=sys.stderr)
+        else:
+            print >> sys.stderr, str(e)
+        exit(1)
 
-    request = tchannel.request(host, service)
-
-    return request.send(
-        endpoint,
-        headers,
-        body,
-    )
+    raise tornado.gen.Return(result)
 
 
 @tornado.gen.coroutine
 def main(argv=None):
     args = parse_args(argv)
 
+    # Should this be my username?
     tchannel = TChannel(name='tcurl.py')
 
     if args.health:
-        args.endpoint = 'Meta::health'
-
-        # HACK
-        Meta._module.service = args.service
-        Meta._module.hostport = args.host
-
-        result = yield tchannel.thrift(
-            Meta.health(),
-            headers=args.headers,
-            timeout=args.timeout,
+        args.thrift = open(
+            os.path.join(os.path.dirname(__file__), 'health/meta.thrift'),
+            'r',
         )
-
-        print 'ok' if result.body.ok else 'notOk'
-        raise tornado.gen.Return(result)
+        args.endpoint = "Meta::health"
 
     if args.thrift:
+        thrift_service_name, thrift_method_name = args.endpoint.split('::')
+
         thrift_module = thrift.load(
             path=args.thrift.name,
             service=args.service,
             hostport=args.host,
         )
-
-        thrift_service_name, thrift_method_name = args.endpoint.split('::')
-
         thrift_service = getattr(thrift_module, thrift_service_name)
         thrift_method = getattr(thrift_service, thrift_method_name)
 
-        result = yield tchannel.thrift(
-            thrift_method(**args.body),
-            timeout=args.timeout,
-            headers=args.headers,
+        body = args.body or {}
+
+        result = yield catch_errors(
+            tchannel.thrift(
+                thrift_method(**body),
+                headers=args.headers,
+                timeout=args.timeout,
+            ),
+            verbose=args.verbose,
         )
 
-        print result.body
-        raise tornado.gen.Return(result)
+    elif args.json:
 
-    if args.json:
-
-        result = yield tchannel.json(
-            service=args.service,
-            endpoint=args.endpoint,
-            body=args.body,
-            headers=args.headers,
-            timeout=args.timeout,
-            hostport=args.host,
+        result = yield catch_errors(
+            tchannel.json(
+                service=args.service,
+                endpoint=args.endpoint,
+                body=args.body,
+                headers=args.headers,
+                timeout=args.timeout,
+                hostport=args.host,
+            ),
+            verbose=args.verbose,
         )
 
-        print result.body
-        raise tornado.gen.Return(result)
+    else:
 
-    result = yield tchannel.raw(
-        service=args.service,
-        endpoint=args.endpoint,
-        body=args.body,
-        headers=args.headers,
-        timeout=args.timeout,
-        hostport=args.host,
-    )
+        result = yield catch_errors(
+            tchannel.raw(
+                service=args.service,
+                endpoint=args.endpoint,
+                body=args.body,
+                headers=args.headers,
+                timeout=args.timeout,
+                hostport=args.host,
+            ),
+            verbose=args.verbose,
+        )
 
     print result.body
+
     raise tornado.gen.Return(result)
 
 

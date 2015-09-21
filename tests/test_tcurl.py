@@ -20,28 +20,45 @@
 
 from __future__ import absolute_import
 
-import collections
-
 import mock
+import tornado.gen
 import pytest
 
+from tchannel import TChannel
+from tchannel.tcurl import catch_errors
+from tchannel.tcurl import main
 from tchannel.tcurl import parse_args
-
-
-Expectation = collections.namedtuple(
-    'Expectation',
-    'host, service, headers, endpoint, body, thrift, json',
-)
+from tchannel.testing.data.generated.ThriftTest import ThriftTest
 
 
 @pytest.mark.parametrize('input, expectations', [
-    (   # basic case
-        ['-p', 'localhost:54496', '-s', 'larry', '--headers', '{"req": "header"}', '--body', '{"req": "body"}', '--json', '--endpoint', 'foo'],
-        dict(host='localhost:54496', headers={'req': 'header'}, body={"req": "body"}, json=True)
+    (
+        [
+            '-p', 'localhost:54496',
+            '-s', 'larry',
+            '--headers', '{"req": "header"}',
+            '--body', '{"req": "body"}',
+            '--json',
+            '--endpoint', 'foo',
+        ],
+        dict(
+            host='localhost:54496',
+            headers={'req': 'header'},
+            body={"req": "body"},
+            json=True,
+        )
     ),
     (
-        ['--service', 'larry', '--thrift', 'tests/data/idls/ThriftTest.thrift', '--endpoint', 'foo::bar'],
-        dict(service="larry", thrift=mock.ANY, endpoint='foo::bar'),
+        [
+            '--service', 'larry',
+            '--thrift', 'tests/data/idls/ThriftTest.thrift',
+            '--endpoint', 'foo::bar',
+        ],
+        dict(
+            service="larry",
+            thrift=mock.ANY,
+            endpoint='foo::bar',
+        ),
     ),
 ])
 def test_parse_valid_args(input, expectations):
@@ -65,17 +82,48 @@ def test_parse_valid_args(input, expectations):
         'No such file or directory',
     ),
     (
-        ['--service', 'larry', '--thrift', 'tests/data/idls/ThriftTest.thrift', '--endpoint'],
+        [
+            '--service', 'larry',
+            '--thrift', 'tests/data/idls/ThriftTest.thrift',
+        ],
+        "--thrift must be used with --endpoint",
+    ),
+    (
+        [
+            '--service', 'larry',
+            '--thrift', 'tests/data/idls/ThriftTest.thrift',
+            '--endpoint',
+        ],
         '--endpoint/-1: expected one argument',
     ),
     (
-        ['--service', 'larry', '--thrift', 'tests/data/idls/ThriftTest.thrift', '--endpoint', 'foo'],
+        [
+            '--service', 'larry',
+            '--thrift', 'tests/data/idls/ThriftTest.thrift',
+            '--endpoint', 'foo',
+        ],
         '--endpoint should be of the form'
     ),
     (
-        ['-p', 'localhost:54496', '-s', 'larry', '--headers', '{"req": "header"}', '--body', '{"req": "body"}', '--json'],
+        [
+            '-p', 'localhost:54496',
+            '-s', 'larry',
+            '--headers', '{"req": "header"}',
+            '--body', '{"req": "body"}',
+            '--json',
+        ],
         '--json must be used with --endpoint',
-    )
+    ),
+    (
+        [
+            '-p', 'localhost:54496',
+            '-s', 'larry',
+            '--headers', '{"req": "header"}',
+            '--body', '{"req": "body"',
+            '--json',
+        ],
+        "--body isn't valid JSON",
+    ),
 ])
 def test_parse_invalid_args(input, message, capsys):
     with pytest.raises(SystemExit) as e:
@@ -86,3 +134,99 @@ def test_parse_invalid_args(input, message, capsys):
 
     out, err = capsys.readouterr()
     assert message in err
+
+
+@pytest.mark.gen_test
+def test_tcurl_health():
+    server = TChannel(name='server')
+    server.listen()
+
+    response = yield main([
+        '-s', 'server',
+        '--host', server.hostport,
+        '--health',
+    ])
+
+    assert response.body.ok
+
+
+@pytest.mark.gen_test
+def test_tcurl_thrift():
+    server = TChannel(name='server')
+
+    @server.thrift.register(ThriftTest)
+    def testString(request):
+        return request.body.thing
+
+    server.listen()
+
+    response = yield main([
+        '-s', 'server',
+        '--host', server.hostport,
+        '--thrift', 'tests/data/idls/ThriftTest.thrift',
+        '--body', '{"thing": "foo"}',
+        '--endpoint', 'ThriftTest::testString',
+    ])
+
+    assert response.body == 'foo'
+
+
+@pytest.mark.gen_test
+def test_tcurl_json():
+    server = TChannel(name='server')
+
+    @server.json.register
+    def test(request):
+        return request.body
+
+    server.listen()
+
+    response = yield main([
+        '-s', 'server',
+        '--host', server.hostport,
+        '--body', '{"thing": "foo"}',
+        '--endpoint', 'test',
+        '--json',
+    ])
+
+    assert response.body == {"thing": "foo"}
+
+
+@pytest.mark.gen_test
+def test_catch_errors(capsys):
+
+    class Exit(Exception):
+        pass
+
+    def exit(ret):
+        raise Exit(ret)
+
+    f = tornado.gen.Future()
+    f.set_exception(Exception("Foobar"))
+
+    with pytest.raises(Exit):
+        yield catch_errors(f, verbose=False, exit=exit)
+
+    out, err = capsys.readouterr()
+
+    assert err == "Foobar\n"
+
+
+@pytest.mark.gen_test
+def test_catch_errors_verbose(capsys):
+
+    class Exit(Exception):
+        pass
+
+    def exit(ret):
+        raise Exit(ret)
+
+    f = tornado.gen.Future()
+    f.set_exception(Exception("Foobar"))
+
+    with pytest.raises(Exit):
+        yield catch_errors(f, verbose=True, exit=exit)
+
+    out, err = capsys.readouterr()
+
+    assert 'Traceback' in err
