@@ -7,6 +7,19 @@ Changes by Version
 - Added Thrift support to ``tcurl.py`` and re-worked the script's arguments.
 
 
+0.17.3 (unreleased)
+-------------------
+
+- No changes yet.
+
+
+0.17.2 (2015-09-18)
+-------------------
+
+- VCR no longer matches on hostport to better support ephemeral ports.
+- Fixed a bug with thriftrw where registering an endpoint twice could fail.
+
+
 0.17.1 (2015-09-17)
 -------------------
 
