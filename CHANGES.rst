@@ -1,10 +1,12 @@
 Changes by Version
 ==================
 
-0.17.3 (unreleased)
+0.18.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- **BREAKING** - headers for JSON handlers are not longer JSON blobs but are
+  instead maps of strings to strings. This mirrors behavior for Thrift
+  handlers.
 
 
 0.17.2 (2015-09-18)

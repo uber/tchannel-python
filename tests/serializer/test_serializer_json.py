@@ -22,18 +22,18 @@ from __future__ import absolute_import
 import pytest
 
 from tchannel.serializer.json import JsonSerializer
+from tchannel.errors import ReadError
 
 
-@pytest.mark.parametrize('v1, v2', [
-    (True, 'true'),
-    ({'a': 'd'}, '{"a": "d"}'),
-    (2, '2'),
-    (['a'], '["a"]'),
+@pytest.mark.parametrize('v1', [
+    ({}),
+    ({'a': 'd'}),
 ])
-def test_header(v1, v2):
+def test_header(v1):
     serializer = JsonSerializer()
-    assert v2 == serializer.serialize_header(v1)
-    assert v1 == serializer.deserialize_header(v2)
+    assert v1 == serializer.deserialize_header(
+        serializer.serialize_header(v1)
+    )
 
 
 @pytest.mark.parametrize('v1, v2', [
@@ -52,10 +52,8 @@ def test_body(v1, v2):
 
 def test_exception():
     serializer = JsonSerializer()
-    with pytest.raises(TypeError):
-        serializer.serialize_header({"sss"})
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ReadError):
         serializer.deserialize_header('{sss')
 
     with pytest.raises(TypeError):

@@ -6,10 +6,21 @@ Upgrade Guide
 Migrating to a version of TChannel with breaking changes? This guide documents
 what broke and how to safely migrate to newer versions.
 
+From 0.17 to 0.18
+-----------------
+
+- ``request.headers`` in a JSON handler is no longer a JSON blob. Instead it is
+  a dictionary mapping strings to strings. This matches the Thrift
+  implementation. If your headers include richer types like lists or ints,
+  you'll need to coordinate with your callers to no longer pass headers as JSON
+  blobs.
+
+
 From 0.16 to 0.17
 -----------------
 
 - No breaking changes.
+
 
 From 0.15 to 0.16
 -----------------
@@ -135,10 +146,12 @@ From 0.14 to 0.15
 
 - No breaking changes.
 
+
 From 0.13 to 0.14
 -----------------
 
 - No breaking changes.
+
 
 From 0.12 to 0.13
 -----------------
@@ -150,6 +163,7 @@ From 0.11 to 0.12
 -----------------
 
 - Removed ``print_arg``. Use ``request.get_body()`` instead.
+
 
 From 0.10 to 0.11
 -----------------

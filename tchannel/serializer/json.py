@@ -23,20 +23,14 @@ from __future__ import absolute_import
 import json
 
 from tchannel.schemes import JSON
+from tchannel.serializer.thrift import ThriftSerializer
 
 
-class JsonSerializer(object):
+class JsonSerializer(ThriftSerializer):
     name = JSON
 
-    def deserialize_header(self, obj):
-        obj = obj or {}
-        if obj:
-            return json.loads(obj)
-
-    def serialize_header(self, obj):
-        obj = obj or {}
-        if obj:
-            return json.dumps(obj)
+    def __init__(self):
+        pass
 
     def deserialize_body(self, obj):
         return json.loads(obj)
