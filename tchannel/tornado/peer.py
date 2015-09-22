@@ -520,8 +520,9 @@ class PeerClientOperation(object):
         peer = self._choose()
         if not peer:
             raise NoAvailablePeerError(
-                "Can't find available peer for " + self.service
+                "Can't find an available peer for '%s'" % self.service
             )
+
         connection = yield peer.connect()
 
         arg1, arg2, arg3 = (

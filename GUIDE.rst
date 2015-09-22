@@ -29,7 +29,7 @@ requires an ``__init__.py`` and a ``setup.py`` at the root:
     $ touch keyvalue/__init__.py
 
 Setup a `virtual environment <https://virtualenv.pypa.io/en/latest/>`_ for your
-service and install the tornado and tchannel:
+service and install the Tornado and Tchannel packages:
 
 .. code-block:: bash
 
