@@ -105,7 +105,8 @@ def parse_args(args=None):
         dest="headers",
         default=None,
         help=(
-            ", e.g., --headers foo=bar zip=zap."
+            "A JSON blob unless --raw was specified, e.g., --headers "
+            "'{\"foo\": \"bar\"}'."
         ),
     )
 
@@ -152,11 +153,11 @@ def parse_args(args=None):
         dest="thrift",
         type=argparse.FileType('r'),
         help=(
-            "Path to a Thrift IDL file. Incompatible with --json."
+            "Path to a Thrift IDL file. Incompatible with --raw."
         ),
     )
 
-    raw_group = parser.add_argument_group('json')
+    raw_group = parser.add_argument_group('raw')
 
     raw_group.add_argument(
         "--raw",
