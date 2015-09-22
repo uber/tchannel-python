@@ -195,20 +195,6 @@ def parse_args(args=None):
 
 
 @tornado.gen.coroutine
-def catch_errors(future, verbose, exit=sys.exit):
-    try:
-        result = yield future
-    except Exception, e:
-        if verbose:
-            traceback.print_exc(file=sys.stderr)
-        else:
-            print >> sys.stderr, str(e)
-        exit(1)
-
-    raise tornado.gen.Return(result)
-
-
-@tornado.gen.coroutine
 def main(argv=None):
     args = parse_args(argv)
 
@@ -237,7 +223,7 @@ def main(argv=None):
 
         body = args.body or {}
 
-        result = yield catch_errors(
+        result = yield _catch_errors(
             tchannel.thrift(
                 thrift_method(**body),
                 headers=args.headers,
@@ -248,7 +234,7 @@ def main(argv=None):
 
     elif args.raw:
 
-        result = yield catch_errors(
+        result = yield _catch_errors(
             tchannel.raw(
                 service=args.service,
                 endpoint=args.endpoint,
@@ -262,7 +248,7 @@ def main(argv=None):
 
     else:
 
-        result = yield catch_errors(
+        result = yield _catch_errors(
             tchannel.json(
                 service=args.service,
                 endpoint=args.endpoint,
@@ -274,9 +260,35 @@ def main(argv=None):
             verbose=args.verbose,
         )
 
-    print result.body
+    if not args.raw:
+        print json.dumps(result.body, default=_dictify)
+    else:
+        print result.body
 
     raise tornado.gen.Return(result)
+
+
+@tornado.gen.coroutine
+def _catch_errors(future, verbose, exit=sys.exit):
+    try:
+        result = yield future
+    except Exception, e:
+        if verbose:
+            traceback.print_exc(file=sys.stderr)
+        else:
+            print >> sys.stderr, str(e)
+        exit(1)
+
+    raise tornado.gen.Return(result)
+
+
+def _dictify(thrift_obj):
+    result = {}
+    for field in thrift_obj.type_spec.fields:
+        value = getattr(thrift_obj, field.name)
+        result[field.name] = value
+
+    return result
 
 
 def start_ioloop():  # pragma: no cover

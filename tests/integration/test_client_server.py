@@ -92,6 +92,7 @@ def test_tcurl(mock_server):
         '--host', hostport,
         '--endpoint', endpoint,
         '--service', 'mock-server',
+        '--raw',
     ])
 
     assert response.headers == endpoint

@@ -25,7 +25,7 @@ import tornado.gen
 import pytest
 
 from tchannel import TChannel
-from tchannel.tcurl import catch_errors
+from tchannel.tcurl import _catch_errors
 from tchannel.tcurl import main
 from tchannel.tcurl import parse_args
 from tchannel.testing.data.generated.ThriftTest import ThriftTest
@@ -125,6 +125,24 @@ def test_parse_valid_args(input, expectations):
         ],
         "--body isn't valid JSON",
     ),
+    (
+        [
+            '-p', 'localhost:54496',
+            '-s', 'larry',
+            '--headers', '{"req": "header"',
+            '--body', '{"req": "body"}',
+        ],
+        "--headers isn't valid JSON",
+    ),
+    (
+        [
+            '--service', 'larry',
+            '--thrift', 'tests/data/idls/ThriftTest.thrift',
+            '--endpoint', 'foo::bar',
+            '--raw',
+        ],
+        "can't use --thrift and --raw together",
+    ),
 ])
 def test_parse_invalid_args(input, message, capsys):
     with pytest.raises(SystemExit) as e:
@@ -205,7 +223,7 @@ def test_catch_errors(capsys):
     f.set_exception(Exception("Foobar"))
 
     with pytest.raises(Exit):
-        yield catch_errors(f, verbose=False, exit=exit)
+        yield _catch_errors(f, verbose=False, exit=exit)
 
     out, err = capsys.readouterr()
 
@@ -225,7 +243,7 @@ def test_catch_errors_verbose(capsys):
     f.set_exception(Exception("Foobar"))
 
     with pytest.raises(Exit):
-        yield catch_errors(f, verbose=True, exit=exit)
+        yield _catch_errors(f, verbose=True, exit=exit)
 
     out, err = capsys.readouterr()
 
