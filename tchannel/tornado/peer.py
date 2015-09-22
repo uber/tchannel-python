@@ -380,8 +380,8 @@ class Peer(object):
             connection.close()
 
     @gen.coroutine
-    def drain(self, reason=None, exempt=None):
-        yield [con.drain(reason, exempt) for con in self.connections]
+    def drain(self, reason=None):
+        yield [con.drain(reason) for con in self.connections]
 
 
 class PeerState(object):

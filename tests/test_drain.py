@@ -78,10 +78,6 @@ def test_stop():
     assert resp.body == "hello"
 
 
-def exempt_sample(_):
-    return True
-
-
 @pytest.mark.gen_test
 def test_drain_state():
     peer1 = TChannel("peer1")
@@ -91,11 +87,10 @@ def test_drain_state():
     server.listen()
     yield server._dep_tchannel.peer_group.choose().connect()
     reason = "testing"
-    server.drain(reason=reason, exempt=exempt_sample)
+    server.drain(reason=reason)
     for peer in server._dep_tchannel.peer_group.peers:
         for con in peer.connections:
             assert con.draining
-            assert con.draining.exempt == exempt_sample
             assert con.draining.reason == reason
 
 

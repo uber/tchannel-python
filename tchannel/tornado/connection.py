@@ -60,20 +60,16 @@ class _Drain(object):
 
     DEFAULT_REASON = "Server has stopped accepting new requests."
 
-    def __init__(self, reason=None, exempt=None, future=None):
+    def __init__(self, reason=None, future=None):
         """
         :param reason:
             User can specify the reason for the drain action.
-        :param exempt:
-            exempt function to exempt request for particular service for
-            draining.
         :param future:
             The future is used to tell when all in progress requests have been
             processed. In other words, draining is completed.
         """
         self._future = future or Future()
         self._reason = reason or self.DEFAULT_REASON
-        self._exempt = exempt or (lambda _: False)
 
     @property
     def reason(self):
@@ -82,10 +78,6 @@ class _Drain(object):
     @property
     def future(self):
         return self._future
-
-    @property
-    def exempt(self):
-        return self._exempt
 
 
 class TornadoConnection(object):
@@ -537,8 +529,8 @@ class TornadoConnection(object):
     def pong(self):
         return self._write(messages.PingResponseMessage())
 
-    def drain(self, reason=None, exempt=None):
-        self.draining = _Drain(reason, exempt)
+    def drain(self, reason=None):
+        self.draining = _Drain(reason)
 
         if len(self.incoming_requests) == 0:
             self.draining.future.set_result(None)

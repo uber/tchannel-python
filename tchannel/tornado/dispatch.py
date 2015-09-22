@@ -107,20 +107,17 @@ class RequestDispatcher(object):
             # CallRequestMessage. It will return None, if it receives
             # CallRequestContinueMessage.
             if new_req:
-                if not connection.draining or connection.draining.exempt(
-                    new_req.service
-                ):
-                    # process the new request
-                    connection.add_incoming_request(new_req)
-                    self.handle_call(new_req, connection).add_done_callback(
-                        lambda _: connection.remove_incoming_request(
-                            new_req.id
-                        )
-                    )
-                else:
+                if connection.draining:
                     # decline request
                     raise DeclinedError(connection.draining.reason)
 
+                # process the new request
+                connection.add_incoming_request(new_req)
+                self.handle_call(new_req, connection).add_done_callback(
+                    lambda _: connection.remove_incoming_request(
+                        new_req.id
+                    )
+                )
         except TChannelError as e:
             log.warn('Received a bad request.', exc_info=True)
 

@@ -343,25 +343,14 @@ class TChannel(object):
             self._dep_tchannel.advertise_loop = None
 
     @gen.coroutine
-    def drain(self, reason=None, exempt=None):
+    def drain(self, reason=None):
         """Drain the existing connections, and stop taking new requests.
 
         :param reason:
             User can specify the reason for the drain action.
-        :param exempt:
-            exempt should be a function that takes service name as string
-            argument and return bool. It provides a way for use to specify what
-            service requests that will continue to be processed during
-            draining.
-
-        .. code:: python
-
-            def exempt_sample(service):
-                return service == 'hello'
-
         """
 
         yield [
-            peer.drain(reason, exempt) for peer in
+            peer.drain(reason) for peer in
             self._dep_tchannel.peer_group.peers
         ]
