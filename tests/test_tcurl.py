@@ -38,14 +38,12 @@ from tchannel.testing.data.generated.ThriftTest import ThriftTest
             '-s', 'larry',
             '--headers', '{"req": "header"}',
             '--body', '{"req": "body"}',
-            '--json',
             '--endpoint', 'foo',
         ],
         dict(
             host='localhost:54496',
             headers={'req': 'header'},
             body={"req": "body"},
-            json=True,
         )
     ),
     (
@@ -58,6 +56,20 @@ from tchannel.testing.data.generated.ThriftTest import ThriftTest
             service="larry",
             thrift=mock.ANY,
             endpoint='foo::bar',
+        ),
+    ),
+    (
+        [
+            '-p', 'localhost:54496',
+            '-s', 'larry',
+            '--headers', '{"req": "header"}',
+            '--body', '{"req": "body"',
+            '--raw',
+        ],
+        dict(
+            service="larry",
+            headers='{"req": "header"}',
+            body='{"req": "body"',
         ),
     ),
 ])
@@ -109,18 +121,7 @@ def test_parse_valid_args(input, expectations):
             '-p', 'localhost:54496',
             '-s', 'larry',
             '--headers', '{"req": "header"}',
-            '--body', '{"req": "body"}',
-            '--json',
-        ],
-        '--json must be used with --endpoint',
-    ),
-    (
-        [
-            '-p', 'localhost:54496',
-            '-s', 'larry',
-            '--headers', '{"req": "header"}',
             '--body', '{"req": "body"',
-            '--json',
         ],
         "--body isn't valid JSON",
     ),
@@ -186,7 +187,6 @@ def test_tcurl_json():
         '--host', server.hostport,
         '--body', '{"thing": "foo"}',
         '--endpoint', 'test',
-        '--json',
     ])
 
     assert response.body == {"thing": "foo"}

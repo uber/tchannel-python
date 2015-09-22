@@ -104,7 +104,6 @@ def parse_args(args=None):
         "--headers", "-2",
         dest="headers",
         default=None,
-        type=json.loads,
         help=(
             ", e.g., --headers foo=bar zip=zap."
         ),
@@ -115,8 +114,8 @@ def parse_args(args=None):
         dest="body",
         default=None,
         help=(
-            "For Thrift requests this will be a JSON structure that maps "
-            "cleanly onto the provided Thrift interface."
+            "A JSON blob unless --raw was specified. This is coerced into a "
+            "Thrift structure when --thrift is given."
         ),
     )
 
@@ -134,8 +133,8 @@ def parse_args(args=None):
         "--health",
         action="store_true",
         help=(
-            "Perform a health check against the given service. This is "
-            "overridden if --endpoint is provided."
+            "Perform a health check against the given service. This overrides "
+            "--endpoint."
         ),
     )
 
@@ -157,35 +156,40 @@ def parse_args(args=None):
         ),
     )
 
-    json_group = parser.add_argument_group('json')
+    raw_group = parser.add_argument_group('json')
 
-    json_group.add_argument(
-        "--json", "-j", "-J",
-        dest="json",
+    raw_group.add_argument(
+        "--raw",
+        dest="raw",
         action="store_true",
         help=(
-            "Path to a Thrift IDL file. Incompatible with --thrfit."
+            "Treats --body as a binary blob instead of JSON."
         ),
     )
 
     args = parser.parse_args(args)
 
-    if args.thrift or args.json:
+    if not args.raw:
         try:
             args.body = json.loads(args.body) if args.body else {}
         except ValueError:
             return parser.error("--body isn't valid JSON")
 
+        try:
+            args.headers = json.loads(args.headers) if args.headers else {}
+        except ValueError:
+            return parser.error("--headers isn't valid JSON")
+
     if args.thrift and not args.endpoint:
         return parser.error("--thrift must be used with --endpoint")
-
-    if args.json and not args.endpoint:
-        return parser.error("--json must be used with --endpoint")
 
     if args.thrift and '::' not in args.endpoint:
         return parser.error(
             "--endpoint should be of the form ThriftService::methodName"
         )
+
+    if args.thrift and args.raw:
+        return parser.error("can't use --thrift and --raw together")
 
     return args
 
@@ -242,10 +246,10 @@ def main(argv=None):
             verbose=args.verbose,
         )
 
-    elif args.json:
+    elif args.raw:
 
         result = yield catch_errors(
-            tchannel.json(
+            tchannel.raw(
                 service=args.service,
                 endpoint=args.endpoint,
                 body=args.body,
@@ -259,7 +263,7 @@ def main(argv=None):
     else:
 
         result = yield catch_errors(
-            tchannel.raw(
+            tchannel.json(
                 service=args.service,
                 endpoint=args.endpoint,
                 body=args.body,
