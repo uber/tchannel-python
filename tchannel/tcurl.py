@@ -131,19 +131,19 @@ def parse_args(args=None):
     )
 
     parser.add_argument(
-        "-v", "--verbose",
-        dest="verbose",
-        action="store_true",
-        help="Say more.",
-    )
-
-    parser.add_argument(
         "--health",
         action="store_true",
         help=(
             "Perform a health check against the given service. This is "
             "overridden if --endpoint is provided."
         ),
+    )
+
+    parser.add_argument(
+        "-v", "--verbose",
+        dest="verbose",
+        action="store_true",
+        help="Say more.",
     )
 
     thrift_group = parser.add_argument_group('thrift')
@@ -212,6 +212,7 @@ def main(argv=None):
     tchannel = TChannel(name='tcurl.py')
 
     if args.health:
+
         args.thrift = open(
             os.path.join(os.path.dirname(__file__), 'health/meta.thrift'),
             'r',
@@ -219,6 +220,7 @@ def main(argv=None):
         args.endpoint = "Meta::health"
 
     if args.thrift:
+
         thrift_service_name, thrift_method_name = args.endpoint.split('::')
 
         thrift_module = thrift.load(
