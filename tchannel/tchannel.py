@@ -361,8 +361,6 @@ class TChannel(object):
 
         """
 
-        self._dep_tchannel._server.drain()
-
         yield [
             peer.drain(reason, exempt) for peer in
             self._dep_tchannel.peer_group.peers

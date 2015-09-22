@@ -32,7 +32,7 @@ from tchannel.request import Request
 from tchannel.request import TransportHeaders
 from tchannel.response import response_from_mixed
 from ..context import request_context
-from ..errors import BadRequestError
+from ..errors import BadRequestError, DeclinedError
 from ..errors import TChannelError
 from ..event import EventType
 from ..messages import Types
@@ -107,10 +107,19 @@ class RequestDispatcher(object):
             # CallRequestMessage. It will return None, if it receives
             # CallRequestContinueMessage.
             if new_req:
-                connection.add_incoming_request(new_req)
-                self.handle_call(new_req, connection).add_done_callback(
-                    lambda _: connection.remove_incoming_request(new_req.id)
-                )
+                if not connection.draining or connection.draining.exempt(
+                    new_req.service
+                ):
+                    # process the new request
+                    connection.add_incoming_request(new_req)
+                    self.handle_call(new_req, connection).add_done_callback(
+                        lambda _: connection.remove_incoming_request(
+                            new_req.id
+                        )
+                    )
+                else:
+                    # decline request
+                    raise DeclinedError(connection.draining.reason)
 
         except TChannelError as e:
             log.warn('Received a bad request.', exc_info=True)

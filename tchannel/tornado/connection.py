@@ -33,7 +33,6 @@ from .. import errors
 from .. import frame
 from .. import glossary
 from .. import messages
-from ..errors import DeclinedError
 from ..errors import FatalProtocolError
 from ..errors import NetworkError
 from ..errors import TChannelError
@@ -72,9 +71,21 @@ class _Drain(object):
             The future is used to tell when all in progress requests have been
             processed. In other words, draining is completed.
         """
-        self.future = future or Future()
-        self.reason = reason or self.DEFAULT_REASON
-        self.exempt = exempt
+        self._future = future or Future()
+        self._reason = reason or self.DEFAULT_REASON
+        self._exempt = exempt or (lambda _: False)
+
+    @property
+    def reason(self):
+        return self._reason
+
+    @property
+    def future(self):
+        return self._future
+
+    @property
+    def exempt(self):
+        return self._exempt
 
 
 class TornadoConnection(object):
@@ -150,7 +161,7 @@ class TornadoConnection(object):
         # incoming_response.
         self.incoming_responses = {}
 
-        self._drain = None
+        self.draining = None
 
         connection.set_close_callback(self._on_close)
 
@@ -494,23 +505,7 @@ class TornadoConnection(object):
         while not self.closed:
             message = yield self.await()
             try:
-                if self._drain:
-                    if message.message_type == Types.CALL_REQ:
-                        if self._drain.exempt and self._drain.exempt(
-                                message.service
-                        ):
-                            handler(message, self)
-                        else:
-                            raise DeclinedError(self._drain.reason)
-                    elif (message.message_type == Types.CALL_REQ_CONTINUE and
-                            self.get_incoming_request(message.id)):
-                        handler(message, self)
-                    else:
-                        raise DeclinedError(self._drain.reason)
-                else:
-                    handler(message, self)
-            except DeclinedError as e:
-                self.send_error(e.code, e.message, message.id)
+                handler(message, self)
             except Exception:
                 # TODO Send error frame back
                 logging.exception("Failed to process %s", repr(message))
@@ -543,12 +538,12 @@ class TornadoConnection(object):
         return self._write(messages.PingResponseMessage())
 
     def drain(self, reason=None, exempt=None):
-        self._drain = _Drain(reason, exempt)
+        self.draining = _Drain(reason, exempt)
 
         if len(self.incoming_requests) == 0:
-            self._drain.future.set_result(None)
+            self.draining.future.set_result(None)
 
-        return self._drain.future
+        return self.draining.future
 
     def add_incoming_request(self, request):
         self.incoming_requests[request.id] = request
@@ -559,9 +554,9 @@ class TornadoConnection(object):
     def remove_incoming_request(self, id):
         req = self.incoming_requests.pop(id, None)
 
-        if (self._drain and len(self.incoming_requests) == 0 and
-                self._drain.future and self._drain.future.running()):
-            self._drain.future.set_result(None)
+        if (self.draining and len(self.incoming_requests) == 0 and
+                self.draining.future and self.draining.future.running()):
+            self.draining.future.set_result(None)
         return req
 
 

@@ -23,7 +23,6 @@ from __future__ import absolute_import
 import pytest
 import tornado
 from tornado.concurrent import Future
-from tornado.iostream import StreamClosedError
 
 from tchannel import TChannel
 from tchannel import schemes
@@ -41,9 +40,21 @@ def test_stop():
 
     server.raw.register("endpoint")(endpoint)
     server.listen()
-    server.stop()
 
     client = TChannel("client")
+    # client can get response from server.
+    resp = yield client.call(
+        scheme=schemes.RAW,
+        service='server',
+        arg1='endpoint',
+        arg2='req headers',
+        arg3='req body',
+        hostport=server.hostport,
+    )
+    assert resp.body == "hello"
+
+    server.stop()
+    # client request will fail because server stops.
     with pytest.raises(NetworkError):
         yield client.call(
             scheme=schemes.RAW,
@@ -55,6 +66,7 @@ def test_stop():
         )
 
     server.listen()
+    # client can get response from server again.
     resp = yield client.call(
         scheme=schemes.RAW,
         service='server',
@@ -66,25 +78,7 @@ def test_stop():
     assert resp.body == "hello"
 
 
-@pytest.mark.gen_test
-def test_drain_no_new_connection():
-    server = TChannel("server")
-    server.listen()
-    server.drain()
-
-    client = TChannel("client")
-    with pytest.raises(StreamClosedError):
-        yield client.call(
-            scheme=schemes.RAW,
-            service='server',
-            arg1='endpoint',
-            arg2='req headers',
-            arg3='req body',
-            hostport=server.hostport,
-        )
-
-
-def exempt_sample(service_name):
+def exempt_sample(_):
     return True
 
 
@@ -100,9 +94,9 @@ def test_drain_state():
     server.drain(reason=reason, exempt=exempt_sample)
     for peer in server._dep_tchannel.peer_group.peers:
         for con in peer.connections:
-            assert con._drain
-            assert con._drain.exempt == exempt_sample
-            assert con._drain.reason == reason
+            assert con.draining
+            assert con.draining.exempt == exempt_sample
+            assert con.draining.reason == reason
 
 
 @pytest.mark.gen_test
@@ -173,19 +167,21 @@ def test_drain_blocking_new_request(io_loop):
         hostport=server.hostport,
     )
 
-    with pytest.raises(DeclinedError):
+    with pytest.raises(DeclinedError) as e:
         yield client.call(
             scheme=schemes.RAW,
             service='server',
             arg1='endpoint',
-            arg2='req headers',
-            arg3='req body',
+            arg2='req headers1',
+            arg3='req body1',
             hostport=server.hostport,
         )
 
+        assert e.message == "Server has stopped accepting new requests."
+
     for peer in server._dep_tchannel.peer_group.peers:
         for con in peer.connections:
-            assert con._drain
+            assert con.draining
             assert len(con.incoming_requests) == 0
 
 

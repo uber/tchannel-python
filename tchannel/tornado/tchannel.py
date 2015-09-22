@@ -399,18 +399,15 @@ class TChannel(object):
 
 
 class TChannelServer(tornado.tcpserver.TCPServer):
-    __slots__ = ('tchannel', 'draining')
+    __slots__ = ('tchannel')
 
     def __init__(self, tchannel):
         super(TChannelServer, self).__init__()
         self.tchannel = tchannel
-        self.draining = False
 
     @tornado.gen.coroutine
     def handle_stream(self, stream, address):
         log.debug("New incoming connection from %s:%d" % address)
-        if self.draining:
-            raise tornado.gen.Return(stream.close())
 
         conn = StreamConnection(connection=stream, tchannel=self.tchannel)
 
@@ -433,7 +430,3 @@ class TChannelServer(tornado.tcpserver.TCPServer):
 
     def _handle(self, message, connection):
         return self.tchannel.receive_call(message, connection)
-
-    def drain(self):
-        """Set the draining flag to stop accepting new connections."""
-        self.draining = True
