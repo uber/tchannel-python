@@ -4,7 +4,7 @@ Changes by Version
 0.17.3 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Add ``TChannel.stop()`` method to gracefully shutdown TChannel server.
 
 
 0.17.2 (2015-09-18)
