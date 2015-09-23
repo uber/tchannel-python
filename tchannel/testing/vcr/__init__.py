@@ -50,4 +50,4 @@ from .config import use_cassette
 from .record_modes import RecordMode
 
 
-__all__ = ['use_cassette', 'RecordMode']
+__all__ = ['use_cassette', 'RecordMode', 'proxy']

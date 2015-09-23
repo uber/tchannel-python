@@ -12,8 +12,8 @@ enum ArgScheme {
 }
 
 struct TransportHeader {
-    1: binary key
-    2: binary value
+    1: required binary key
+    2: required binary value
 }
 
 struct Request {

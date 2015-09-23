@@ -18,4 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__all__ = ['ttypes', 'constants', 'VCRProxy']
+import sys
+
+from tchannel import thrift
+
+
+proxy = thrift.load(
+    path='tchannel/testing/vcr/proxy.thrift',
+)
+
+sys.modules[__name__] = proxy

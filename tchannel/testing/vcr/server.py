@@ -32,6 +32,8 @@ from tchannel.tornado import TChannel
 
 from .proxy import VCRProxy
 
+import ipdb; ipdb.set_trace()
+
 
 def wrap_uncaught(func=None, reraise=None):
     """Catches uncaught exceptions and raises VCRServiceErrors instead.
