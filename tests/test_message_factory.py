@@ -19,9 +19,14 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
-from tchannel.messages import CallRequestMessage, CallResponseMessage
-from tchannel.messages.common import StreamState, FlagsType
-from tchannel.tornado import Request, Response
+
+from tchannel.messages import CallRequestMessage
+from tchannel.messages import CallResponseMessage
+from tchannel.messages import ErrorMessage
+from tchannel.messages.common import FlagsType
+from tchannel.messages.common import StreamState
+from tchannel.tornado import Request
+from tchannel.tornado import Response
 from tchannel.tornado.message_factory import MessageFactory
 from tchannel.tornado.response import StatusCode
 from tchannel.zipkin.trace import Trace
@@ -93,3 +98,12 @@ def test_build_response():
     assert req.flags == message.flags
     assert req.headers == message.headers
     assert req.id == message.id
+
+
+def test_build_inbound_error():
+    message = ErrorMessage(code=0, tracing=Trace(), description="test")
+    error = MessageFactory.build_inbound_error(message)
+
+    assert error.code == message.code
+    assert error.description == message.description
+    assert error.tracing == message.tracing

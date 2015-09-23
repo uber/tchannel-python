@@ -38,6 +38,7 @@ from .health import health
 from .health import Meta
 from .response import Response, TransportHeaders
 from .tornado import TChannel as DeprecatedTChannel
+from .tornado.tchannel import State
 from .tornado.dispatch import RequestDispatcher as DeprecatedDispatcher
 
 log = logging.getLogger('tchannel')
@@ -109,6 +110,7 @@ class TChannel(object):
         )
 
         self.name = name
+        self.known_peers = known_peers
 
         # set arg schemes
         self.raw = schemes.RawArgScheme(self)
@@ -319,3 +321,36 @@ class TChannel(object):
         response = Response(json.loads(body), headers or {})
 
         raise gen.Return(response)
+
+    @gen.coroutine
+    def stop(self, reason=None):
+        """Gracefully shut down TChannel instance.
+
+        :param reason:
+            User can specify the reason for the stop action.
+        """
+        yield self.drain(reason)
+        self._dep_tchannel.peer_group.clear()
+        self._dep_tchannel._server.stop()
+        self._dep_tchannel._server = None
+        self._dep_tchannel._state = State.ready
+        if self.known_peers:
+            for peer_hostport in self.known_peers:
+                self._dep_tchannel.peer_group.add(peer_hostport)
+
+        if self._dep_tchannel.advertise_loop:
+            self._dep_tchannel.advertise_loop.stop()
+            self._dep_tchannel.advertise_loop = None
+
+    @gen.coroutine
+    def drain(self, reason=None):
+        """Drain the existing connections, and stop taking new requests.
+
+        :param reason:
+            User can specify the reason for the drain action.
+        """
+
+        yield [
+            peer.drain(reason) for peer in
+            self._dep_tchannel.peer_group.peers
+        ]

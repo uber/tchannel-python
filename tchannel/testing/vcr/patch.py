@@ -85,7 +85,7 @@ class PatchedClientOperation(object):
         vcr_request = VCRProxy.Request(
             serviceName=self.service.encode('utf-8'),
             hostPort=self.hostport,
-            knownPeers=self.original_tchannel.peers.hosts,
+            knownPeers=self.original_tchannel.peer_group.hosts,
             endpoint=endpoint,
             headers=(yield read_full(arg2)),
             body=(yield read_full(arg3)),

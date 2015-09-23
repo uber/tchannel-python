@@ -40,8 +40,8 @@ def peer(tchannel):
 @pytest.mark.gen_test
 def test_peer_caching(tchannel, peer):
     "Connections are long-lived and should not be recreated."""
-    tchannel.peers.add(peer)
-    assert tchannel.peers.get("localhost:4040") is peer
+    tchannel.peer_group.add(peer)
+    assert tchannel.peer_group.get("localhost:4040") is peer
 
 
 def test_known_peers():
@@ -49,7 +49,7 @@ def test_known_peers():
     tchannel = TChannel('test', known_peers=peers)
 
     for peer in peers:
-        assert tchannel.peers.lookup(peer)
+        assert tchannel.peer_group.lookup(peer)
 
 
 def test_is_listening_should_return_false_when_listen_not_called(tchannel):

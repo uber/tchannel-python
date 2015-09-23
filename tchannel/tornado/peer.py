@@ -379,6 +379,10 @@ class Peer(object):
         for connection in self.connections:
             connection.close()
 
+    @gen.coroutine
+    def drain(self, reason=None):
+        yield [con.drain(reason) for con in self.connections]
+
 
 class PeerState(object):
     """Represents the state of the Peer."""
@@ -598,7 +602,6 @@ class PeerClientOperation(object):
         # event: send_request
         self.tchannel.event_emitter.fire(EventType.before_send_request, req)
         response_future = connection.send_request(req)
-
         with timeout(response_future, req.ttl):
             try:
                 response = yield response_future
