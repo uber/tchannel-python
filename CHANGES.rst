@@ -1,10 +1,16 @@
 Changes by Version
 ==================
 
+0.18.0 (unreleased)
+-------------------
+
+- Added Thrift support to ``tcurl.py`` and re-worked the script's arguments.
+
+
 0.17.3 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- No changes yet.
 
 
 0.17.2 (2015-09-18)
