@@ -25,6 +25,7 @@ import math
 import time
 
 from tchannel.zipkin.thrift import constants
+from tchannel.zipkin.thrift.ttypes import AnnotationType
 
 Endpoint = collections.namedtuple(
     'Endpoint',
@@ -97,3 +98,19 @@ def string(name, value):
 
 def bytes(name, value):
     return Annotation(name, value, 'bytes')
+
+
+def i16(name, value):
+    return Annotation(name, value, 'i16')
+
+
+def i32(name, value):
+    return Annotation(name, value, 'i32')
+
+
+def i64(name, value):
+    return Annotation(name, value, 'i64')
+
+
+def double(name, value):
+    return Annotation(name, value, 'double')

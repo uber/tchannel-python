@@ -25,11 +25,16 @@ import pytest
 import tornado
 import tornado.gen
 
-from tchannel import TChannel, Response
+from tchannel import Response
+from tchannel import TChannel
+from tchannel.zipkin import annotation
 from tchannel.zipkin.annotation import Endpoint
 from tchannel.zipkin.annotation import client_send
+from tchannel.zipkin.formatters import thrift_formatter
 from tchannel.zipkin.thrift import TCollector
+from tchannel.zipkin.thrift.constants import CLIENT_SEND
 from tchannel.zipkin.thrift.ttypes import Response as TResponse
+from tchannel.zipkin.thrift.ttypes import AnnotationType
 from tchannel.zipkin.trace import Trace
 from tchannel.zipkin.tracers import TChannelZipkinTracer
 from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
@@ -139,3 +144,25 @@ def test_tcollector_submit(trace_server):
     results = yield TChannelZipkinTracer(tchannel).record([(trace, anns)])
 
     assert results[0].body.ok is True
+
+
+@pytest.mark.gen_test
+def test_annotation():
+    tracing=Trace(
+        name='endpoint',
+        trace_id=111,
+        parent_span_id=111,
+        endpoint=Endpoint("127.0.0.1", 888, 'test_service'),
+    )
+
+    annotations = [annotation.client_send(),
+                   annotation.string('cn', 'batman')]
+
+    thrift_trace = thrift_formatter(tracing, annotations)
+
+    assert thrift_trace.binaryAnnotations[0].key == 'cn'
+    assert (thrift_trace.binaryAnnotations[0].annotationType ==
+            AnnotationType.STRING)
+    assert thrift_trace.binaryAnnotations[0].stringValue == 'batman'
+
+    assert thrift_trace.annotations[0].value == CLIENT_SEND

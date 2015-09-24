@@ -48,6 +48,16 @@ except ImportError:  # pragma: nocover
     import json
 
 
+annotation_types = {
+    'string': ttypes.AnnotationType.STRING,
+    'bytes': ttypes.AnnotationType.BYTES,
+    'bool': ttypes.AnnotationType.BOOL,
+    'i16': ttypes.AnnotationType.I16,
+    'i32': ttypes.AnnotationType.I32,
+    'i64': ttypes.AnnotationType.I64
+}
+
+
 def hex_str(n):
     return '%0.16x' % (n,)
 
@@ -112,11 +122,6 @@ def base64_thrift(thrift_obj):
 
 
 def binary_annotation_formatter(annotation):
-    annotation_types = {
-        'string': ttypes.AnnotationType.STRING,
-        'bytes': ttypes.AnnotationType.BYTES,
-    }
-
     annotation_type = annotation_types[annotation.annotation_type]
 
     value = annotation.value
@@ -124,11 +129,14 @@ def binary_annotation_formatter(annotation):
     if isinstance(value, unicode):
         value = value.encode('utf-8')
 
-    return ttypes.BinaryAnnotation(
+    ba = ttypes.BinaryAnnotation(
         key=annotation.name,
-        stringValue=value,
-        annotationType=annotation_type
+        annotationType=annotation_type,
     )
+
+    setattr(ba, annotation.annotation_type+'Value', value)
+
+    return ba
 
 
 def i64_to_string(data):
