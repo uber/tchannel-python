@@ -25,7 +25,6 @@ import math
 import time
 
 from tchannel.zipkin.thrift import constants
-from tchannel.zipkin.thrift.ttypes import AnnotationType
 
 Endpoint = collections.namedtuple(
     'Endpoint',

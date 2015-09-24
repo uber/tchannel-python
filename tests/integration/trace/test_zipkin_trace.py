@@ -148,7 +148,7 @@ def test_tcollector_submit(trace_server):
 
 @pytest.mark.gen_test
 def test_annotation():
-    tracing=Trace(
+    tracing = Trace(
         name='endpoint',
         trace_id=111,
         parent_span_id=111,
