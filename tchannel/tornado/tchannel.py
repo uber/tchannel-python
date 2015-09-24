@@ -97,7 +97,7 @@ class TChannel(object):
         else:
             self._handler = dispatcher
 
-        self.peers = PeerGroup(self)
+        self.peer_group = PeerGroup(self)
 
         self._port = 0
         self._host = None
@@ -123,7 +123,7 @@ class TChannel(object):
 
         if known_peers:
             for peer_hostport in known_peers:
-                self.peers.add(peer_hostport)
+                self.peer_group.add(peer_hostport)
 
         # server created from calling listen()
         self._server = None
@@ -183,7 +183,7 @@ class TChannel(object):
 
         self._state = State.closing
         try:
-            yield self.peers.clear()
+            yield self.peer_group.clear()
         finally:
             self._state = State.closed
 
@@ -221,11 +221,13 @@ class TChannel(object):
         # TODO disallow certain parameters or don't propagate them backwards.
         # For example, blacklist and score threshold aren't really
         # user-configurable right now.
-        return self.peers.request(hostport=hostport,
-                                  service=service,
-                                  arg_scheme=arg_scheme,
-                                  retry=retry,
-                                  **kwargs)
+        return self.peer_group.request(
+            hostport=hostport,
+            service=service,
+            arg_scheme=arg_scheme,
+            retry=retry,
+            **kwargs
+        )
 
     def listen(self, port=None):
         """Start listening for incoming connections.
@@ -396,7 +398,7 @@ class TChannel(object):
 
 
 class TChannelServer(tornado.tcpserver.TCPServer):
-    __slots__ = ('tchannel',)
+    __slots__ = ('tchannel', 'draining')
 
     def __init__(self, tchannel):
         super(TChannelServer, self).__init__()
@@ -419,11 +421,10 @@ class TChannelServer(tornado.tcpserver.TCPServer):
             conn.remote_host_port,
             conn.remote_process_name)
 
-        self.tchannel.peers.get(
+        self.tchannel.peer_group.get(
             "%s:%s" % (conn.remote_host,
                        conn.remote_host_port)
         ).register_incoming(conn)
-
         yield conn.serve(handler=self._handle)
 
     def _handle(self, message, connection):

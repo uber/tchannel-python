@@ -70,9 +70,6 @@ class MessageFactory(object):
     """
 
     def __init__(self, remote_host=None, remote_host_port=None):
-        # key: message_id
-        # value: incomplete streaming messages
-        self.message_buffer = {}
         self.remote_host = remote_host
         self.remote_host_port = remote_host_port
 
@@ -239,94 +236,120 @@ class MessageFactory(object):
         )
         return res
 
-    def build_context(self, message):
-        if message.message_type == Types.CALL_REQ:
-            return self.build_request(message)
-        elif message.message_type == Types.CALL_RES:
-            return self.build_response(message)
-
-    def build(self, message):
+    def build_inbound_response(self, message, response):
         """buffer all the streaming messages based on the
         message id. Reconstruct all fragments together.
 
         :param message:
             incoming message
-        :return: next complete message or None if streaming
+        :param response:
+            incoming response
+        :return: next complete message or None if streaming or fragmentation
             is not done
         """
-        context = None
-
-        if message.message_type in [Types.CALL_REQ,
-                                    Types.CALL_RES]:
+        if message.message_type == Types.CALL_RES:
             self.verify_message(message)
+            response = self.build_response(message)
+            num = self._find_incompleted_stream(response)
+            self.close_argstream(response, num)
+            return response
 
-            context = self.build_context(message)
-            # streaming message
-            if message.flags == common.FlagsType.fragment:
-                self.message_buffer[message.id] = context
-
-            # find the incompleted stream
-            num = 0
-            for i, arg in enumerate(context.argstreams):
-                if arg.state != StreamState.completed:
-                    num = i
-                    break
-
-            self.close_argstream(context, num)
-            return context
-
-        elif message.message_type in [Types.CALL_REQ_CONTINUE,
-                                      Types.CALL_RES_CONTINUE]:
-            context = self.message_buffer.get(message.id)
-            if context is None:
+        elif message.message_type == Types.CALL_RES_CONTINUE:
+            if response is None:
                 # missing call msg before continue msg
                 raise FatalProtocolError(
                     "missing call message after receiving continue message")
 
-            # find the incompleted stream
-            dst = 0
-            for i, arg in enumerate(context.argstreams):
-                if arg.state != StreamState.completed:
-                    dst = i
-                    break
-
+            dst = self._find_incompleted_stream(response)
             try:
                 self.verify_message(message)
             except InvalidChecksumError as e:
-                context.argstreams[dst].set_exception(e)
+                response.argstreams[dst].set_exception(e)
                 raise
 
             src = 0
             while src < len(message.args):
-                context.argstreams[dst].write(message.args[src])
+                response.argstreams[dst].write(message.args[src])
                 dst += 1
                 src += 1
 
             if message.flags != FlagsType.fragment:
                 # get last fragment. mark it as completed
-                assert (len(context.argstreams) ==
+                assert (len(response.argstreams) ==
                         CallContinueMessage.max_args_num)
-                self.message_buffer.pop(message.id, None)
-                context.flags = FlagsType.none
+                response.flags = FlagsType.none
 
-            self.close_argstream(context, dst - 1)
+            self.close_argstream(response, dst - 1)
             return None
-        elif message.message_type == Types.ERROR:
-            context = self.message_buffer.pop(message.id, None)
-            if context is None:
-                log.warn('Unconsumed error %s', context)
-                return None
-            else:
-                error = TChannelError.from_code(
-                    message.code,
-                    description=message.description,
-                    tracing=context.tracing,
-                )
 
-                context.set_exception(error)
-                return error
-        else:
-            return message
+    @classmethod
+    def build_inbound_error(cls, message):
+        """convert error message to TChannelError type."""
+        return TChannelError.from_code(
+            message.code,
+            description=message.description,
+            tracing=message.tracing
+        )
+
+    def build_inbound_request(self, message, request):
+        """buffer all the streaming messages based on the
+        message id. Reconstruct all fragments together.
+
+        :param message:
+            incoming message
+        :param request:
+            incoming request
+        :return: next complete message or None if streaming or fragmentation
+            is not done
+        """
+        if message.message_type == Types.CALL_REQ:
+            if request:
+                raise FatalProtocolError(
+                    "Already got an request with same message id.")
+
+            self.verify_message(message)
+            request = self.build_request(message)
+            num = self._find_incompleted_stream(request)
+            self.close_argstream(request, num)
+            return request
+
+        if message.message_type == Types.CALL_REQ_CONTINUE:
+            if request is None:
+                # missing call msg before continue msg
+                raise FatalProtocolError(
+                    "missing call message after receiving continue message")
+
+            dst = self._find_incompleted_stream(request)
+            try:
+                self.verify_message(message)
+            except InvalidChecksumError as e:
+                request.argstreams[dst].set_exception(e)
+                raise
+
+            src = 0
+            while src < len(message.args):
+                request.argstreams[dst].write(message.args[src])
+                dst += 1
+                src += 1
+
+            if message.flags != FlagsType.fragment:
+                # get last fragment. mark it as completed
+                assert (len(request.argstreams) ==
+                        CallContinueMessage.max_args_num)
+                request.flags = FlagsType.none
+
+            self.close_argstream(request, dst - 1)
+            return None
+
+    @classmethod
+    def _find_incompleted_stream(cls, reqres):
+        # find the incompleted stream
+        num = 0
+        for i, arg in enumerate(reqres.argstreams):
+            if arg.state != StreamState.completed:
+                num = i
+                break
+        return num
 
     def fragment(self, message):
         """Fragment message based on max payload size
@@ -399,24 +422,3 @@ class MessageFactory(object):
 
         for i in range(num):
             request.argstreams[i].close()
-
-    def remove_buffer(self, message_id):
-        self.message_buffer.pop(message_id, None)
-
-    def set_inbound_exception(self, protocol_error):
-        reqres = self.message_buffer.get(protocol_error.id)
-        if reqres is None:
-            # missing call msg before continue msg
-            raise FatalProtocolError(
-                "missing call message after receiving continue message")
-
-        # find the incompleted stream
-        dst = 0
-        for i, arg in enumerate(reqres.argstreams):
-            if arg.state != StreamState.completed:
-                dst = i
-                break
-
-        reqres.argstreams[dst].set_exception(protocol_error)
-
-        self.message_buffer.pop(protocol_error.id, None)

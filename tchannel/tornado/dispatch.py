@@ -77,7 +77,6 @@ class RequestDispatcher(object):
     def handle(self, message, connection):
         # TODO assert that the handshake was already completed
         assert message, "message must not be None"
-
         if message.message_type not in self._HANDLER_NAMES:
             # TODO handle this more gracefully
             raise NotImplementedError("Unexpected message: %s" % str(message))
@@ -101,13 +100,20 @@ class RequestDispatcher(object):
         :param connection: tornado connection
         """
         try:
-            req = connection.request_message_factory.build(message)
+            new_req = connection.message_factory.build_inbound_request(
+                message, connection.get_incoming_request(message.id)
+            )
             # message_factory will create Request only when it receives
             # CallRequestMessage. It will return None, if it receives
             # CallRequestContinueMessage.
-            if req:
-                self.handle_call(req, connection)
-
+            if new_req:
+                # process the new request
+                connection.add_incoming_request(new_req)
+                self.handle_call(new_req, connection).add_done_callback(
+                    lambda _: connection.remove_incoming_request(
+                        new_req.id
+                    )
+                )
         except TChannelError as e:
             log.warn('Received a bad request.', exc_info=True)
 
@@ -127,13 +133,13 @@ class RequestDispatcher(object):
         # request.endpoint. The original argstream[0] is no longer valid. If
         # user still tries read from it, it will return empty.
         chunk = yield request.argstreams[0].read()
-        response = None
         while chunk:
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
 
         log.debug('Received a call to %s.', request.endpoint)
 
+        response = None
         tchannel = connection.tchannel
 
         # event: receive_request
@@ -168,7 +174,6 @@ class RequestDispatcher(object):
             headers={'as': request.headers.get('as', 'raw')},
             serializer=handler.resp_serializer,
         )
-
         connection.post_response(response)
 
         try:
@@ -220,17 +225,13 @@ class RequestDispatcher(object):
 
             response.flush()
         except TChannelError as e:
-            connection.send_error(
-                e.code,
-                e.message,
-                request.id,
-            )
+            response.set_exception(e)
+            connection.send_error(e.code, e.message, request.id)
         except Exception as e:
             msg = "An unexpected error has occurred from the handler"
             log.exception(msg)
 
             response.set_exception(TChannelError(e.message))
-            connection.request_message_factory.remove_buffer(response.id)
 
             connection.send_error(ErrorCode.unexpected, msg, response.id)
             tchannel.event_emitter.fire(EventType.on_exception, request, e)
