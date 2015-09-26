@@ -38,20 +38,66 @@ __all__ = ['Cassette']
 VERSION = 1
 
 
+from thriftrw.wire.ttype import TType
+
+
+def primitive_struct(obj):
+    data = {}
+    for field in obj.type_spec.fields:
+        attr = getattr(obj, field.name)
+        if attr is not None:
+            data[field.name] = primitive(attr, field.ttype_code)
+
+    return data
+
+
+def primitive_list(obj):
+    return [primitive(v, v.type_spec.ttype_code) for v in obj]
+
+
+def primitive_map(obj):
+    import ipdb; ipdb.set_trace()
+    return obj
+
+
+def primitive_set(obj):
+    import ipdb; ipdb.set_trace()
+    return obj
+
+
+def primitive(value, ttype_code):
+    return ({
+        TType.LIST: lambda: primitive_list(value),
+        TType.MAP: lambda: primitive_map(value),
+        TType.SET: lambda: primitive_set(value),
+        TType.STRUCT: lambda: primitive_struct(value),
+    }.get(ttype_code) or (lambda: value))()
+
+
 class Interaction(namedtuple('Interaction', 'request response')):
     """An interaction is a request-response pair."""
 
     def to_primitive(self):
+        # import ipdb; ipdb.set_trace()
+        # from thriftrw.protocol import BinaryProtocol
+        # p = BinaryProtocol()
+
+        if hasattr(self.request, 'to_primitive'):
+            return {
+                'request': self.request.to_primitive(),
+                'response': self.response.to_primitive(),
+            }
+
         return {
-            'request': self.request.to_primitive(),
-            'response': self.response.to_primitive(),
+            'request': primitive(self.request, TType.STRUCT),
+            'response': primitive(self.response, TType.STRUCT),
         }
 
     @classmethod
     def to_native(cls, data):
         return cls(
-            request=proxy.Request.to_native(data['request']),
-            response=proxy.Response.to_native(data['response']),
+            request=proxy.Request(**data['request']),
+            response=proxy.Response(**data['response']),
         )
 
 

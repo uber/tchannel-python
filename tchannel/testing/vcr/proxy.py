@@ -25,6 +25,7 @@ from tchannel import thrift
 
 proxy = thrift.load(
     path='tchannel/testing/vcr/proxy.thrift',
+    service='proxy-server',
 )
 
 sys.modules[__name__] = proxy
