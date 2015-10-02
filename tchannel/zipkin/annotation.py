@@ -51,7 +51,7 @@ class Annotation(_AnnotationBase):
 
         :param annotation_type:
             The expected type of our ``value``. Expected values are
-            ``'string'`` and ``'bytes'``.
+            ``'string'``, ``'int'``, ``'double'`` and ``'bytes'``.
         :type annotation_type: str
 
         :param endpoint:
@@ -99,16 +99,12 @@ def bytes(name, value):
     return Annotation(name, value, 'bytes')
 
 
-def i16(name, value):
-    return Annotation(name, value, 'i16')
+def int(name, value):
+    return Annotation(name, value, 'int')
 
 
-def i32(name, value):
-    return Annotation(name, value, 'i32')
-
-
-def i64(name, value):
-    return Annotation(name, value, 'i64')
+def long(name, value):
+    return Annotation(name, value, 'int')
 
 
 def double(name, value):
