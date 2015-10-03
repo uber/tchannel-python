@@ -52,9 +52,9 @@ annotation_types = {
     'string': ttypes.AnnotationType.STRING,
     'bytes': ttypes.AnnotationType.BYTES,
     'bool': ttypes.AnnotationType.BOOL,
-    'i16': ttypes.AnnotationType.I16,
     'i32': ttypes.AnnotationType.I32,
-    'i64': ttypes.AnnotationType.I64
+    'i64': ttypes.AnnotationType.I64,
+    'double': ttypes.AnnotationType.DOUBLE,
 }
 
 
@@ -134,8 +134,18 @@ def binary_annotation_formatter(annotation):
         annotationType=annotation_type,
     )
 
-    setattr(ba, annotation.annotation_type+'Value', value)
-
+    if ba.annotationType == ttypes.AnnotationType.STRING:
+        ba.stringValue = value
+    elif ba.annotationType == ttypes.AnnotationType.BYTES:
+        ba.bytesValue = value
+    elif ba.annotationType == ttypes.AnnotationType.BOOL:
+        ba.boolValue = value
+    elif ba.annotationType == ttypes.AnnotationType.I32:
+        ba.intValue = value
+    elif ba.annotationType == ttypes.AnnotationType.I64:
+        ba.intValue = value
+    elif ba.annotationType == ttypes.AnnotationType.DOUBLE:
+        ba.doubleValue = value
     return ba
 
 

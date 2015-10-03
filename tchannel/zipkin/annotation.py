@@ -100,11 +100,11 @@ def bytes(name, value):
 
 
 def int(name, value):
-    return Annotation(name, value, 'int')
+    return Annotation(name, value, 'i32')
 
 
 def long(name, value):
-    return Annotation(name, value, 'int')
+    return Annotation(name, value, 'i64')
 
 
 def double(name, value):
