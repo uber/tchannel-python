@@ -5,6 +5,8 @@ Changes by Version
 -------------------
 
 - Added Thrift support to ``tcurl.py`` and re-worked the script's arguments.
+- Added binary annotation support for zipkin trace. ``cn`` and ``as`` headers
+  are added into zipkin binary annotation.
 
 
 0.17.3 (unreleased)
