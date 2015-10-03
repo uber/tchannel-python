@@ -25,17 +25,11 @@ import pytest
 import tornado
 import tornado.gen
 
-from tchannel import Response
-from tchannel import TChannel
-from tchannel.zipkin import annotation
+from tchannel import TChannel, Response
 from tchannel.zipkin.annotation import Endpoint
 from tchannel.zipkin.annotation import client_send
-from tchannel.zipkin.formatters import binary_annotation_formatter
-from tchannel.zipkin.formatters import thrift_formatter
 from tchannel.zipkin.thrift import TCollector
-from tchannel.zipkin.thrift.constants import CLIENT_SEND
 from tchannel.zipkin.thrift.ttypes import Response as TResponse
-from tchannel.zipkin.thrift.ttypes import AnnotationType
 from tchannel.zipkin.trace import Trace
 from tchannel.zipkin.tracers import TChannelZipkinTracer
 from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
@@ -145,65 +139,3 @@ def test_tcollector_submit(trace_server):
     results = yield TChannelZipkinTracer(tchannel).record([(trace, anns)])
 
     assert results[0].body.ok is True
-
-
-@pytest.mark.gen_test
-def test_annotation():
-    tracing = Trace(
-        name='endpoint',
-        trace_id=111,
-        parent_span_id=111,
-        endpoint=Endpoint("127.0.0.1", 888, 'test_service'),
-    )
-
-    annotations = [annotation.client_send(),
-                   annotation.string('cn', 'batman')]
-
-    thrift_trace = thrift_formatter(tracing, annotations)
-
-    assert thrift_trace.binaryAnnotations[0].key == 'cn'
-    assert (thrift_trace.binaryAnnotations[0].annotationType ==
-            AnnotationType.STRING)
-    assert thrift_trace.binaryAnnotations[0].stringValue == 'batman'
-
-    assert thrift_trace.annotations[0].value == CLIENT_SEND
-
-
-def test_string():
-    ann = annotation.string('key', 'string')
-    ba = binary_annotation_formatter(ann)
-    assert ann.name == ba.key
-    assert ann.value == ba.stringValue
-    assert ba.annotationType == AnnotationType.STRING
-
-
-def test_double():
-    ann = annotation.double('key', 3.9)
-    ba = binary_annotation_formatter(ann)
-    assert ann.name == ba.key
-    assert ann.value == ba.doubleValue
-    assert ba.annotationType == AnnotationType.DOUBLE
-
-
-def test_int():
-    ann = annotation.int('key', 2)
-    ba = binary_annotation_formatter(ann)
-    assert ann.name == ba.key
-    assert ann.value == ba.intValue
-    assert ba.annotationType == AnnotationType.I32
-
-
-def test_long():
-    ann = annotation.long('key', 2)
-    ba = binary_annotation_formatter(ann)
-    assert ann.name == ba.key
-    assert ann.value == ba.intValue
-    assert ba.annotationType == AnnotationType.I64
-
-
-def test_bytes():
-    ann = annotation.bytes('key', [2])
-    ba = binary_annotation_formatter(ann)
-    assert ann.name == ba.key
-    assert ann.value == ba.bytesValue
-    assert ba.annotationType == AnnotationType.BYTES
