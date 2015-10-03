@@ -54,23 +54,11 @@ class ZipkinTraceHook(EventHook):
         ann = annotation.client_send()
         request.tracing.annotations.append(ann)
 
-        ann = annotation.string('cn', request.headers.get('cn', None))
-        request.tracing.annotations.append(ann)
-
-        ann = annotation.string('as', request.headers.get('as', None))
-        request.tracing.annotations.append(ann)
-
     def before_receive_request(self, request):
         if not request.tracing.traceflags:
             return
 
         ann = annotation.server_recv()
-        request.tracing.annotations.append(ann)
-
-        ann = annotation.string('cn', request.headers.get('cn', None))
-        request.tracing.annotations.append(ann)
-
-        ann = annotation.string('as', request.headers.get('as', None))
         request.tracing.annotations.append(ann)
 
     def after_send_response(self, response):
