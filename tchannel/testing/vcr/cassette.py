@@ -30,15 +30,13 @@ from .exceptions import UnsupportedVersionError
 from .record_modes import RecordMode
 from . import proxy
 
+from thriftrw.wire.ttype import TType
 
 __all__ = ['Cassette']
 
 
 # Version of the storage format.
 VERSION = 1
-
-
-from thriftrw.wire.ttype import TType
 
 
 def primitive_struct(obj):
@@ -52,6 +50,10 @@ def primitive_struct(obj):
 
 
 def primitive_list(obj):
+    # I think this is because our objects aren't hydrating with the correct
+    # subtypes.
+    if obj and isinstance(obj[0], (str, dict)):
+        return obj
     return [primitive(v, v.type_spec.ttype_code) for v in obj]
 
 
