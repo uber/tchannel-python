@@ -18,10 +18,11 @@ setup(
         'crcmod',
         'tornado>=4.0,<5.0',
         'toro>=0.8,<0.9',
-        'thriftrw>=0.3,<0.4',
+        'thriftrw==0.3.3.dev0',
         'threadloop>=0.5,<0.6',
         'futures',
     ],
+    dependency_links=['http://github.com/uber/thriftrw-python/tarball/bryce_str#egg=thriftrw-0.3.3.dev0'],
     extras_require={
         'vcr': ['PyYAML', 'mock', 'wrapt'],
     },
