@@ -14,13 +14,17 @@ setup(
         '': ['*.thrift'],
     },
     install_requires=[
+        # stdlib backports, no constraints needed
         'contextlib2',
-        'crcmod',
-        'tornado>=4.0,<5.0',
-        'toro>=0.8,<0.9',
+        'futures',
+
+        # external deps
+        'crcmod>=1,<2',
+        'tornado>=4.2,<5',
+
+        # tchannel deps
         'thriftrw>=0.3,<0.4',
         'threadloop>=1,<2',
-        'futures',
     ],
     extras_require={
         'vcr': ['PyYAML', 'mock', 'wrapt'],
@@ -31,3 +35,4 @@ setup(
         ]
     },
 )
+

@@ -28,6 +28,7 @@ from itertools import chain
 from random import random
 
 from tornado import gen
+from tornado.locks import Condition
 
 from ..schemes import DEFAULT as DEFAULT_SCHEME
 from ..retry import (
@@ -46,12 +47,6 @@ from .stream import InMemStream
 from .stream import read_full
 from .stream import maybe_stream
 from .timeout import timeout
-
-try:
-    # included in Tornado 4.2
-    from tornado.locks import Condition
-except ImportError:  # pragma: no cover
-    from toro import Condition
 
 log = logging.getLogger('tchannel')
 
