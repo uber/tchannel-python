@@ -19,7 +19,7 @@ setup(
         'tornado>=4.0,<5.0',
         'toro>=0.8,<0.9',
         'thriftrw>=0.3,<0.4',
-        'threadloop>=0.5,<0.6',
+        'threadloop>=1,<2',
         'futures',
     ],
     extras_require={
