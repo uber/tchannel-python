@@ -89,7 +89,7 @@ class PatchedClientOperation(object):
             endpoint=endpoint,
             headers=(yield read_full(arg2)),
             body=(yield read_full(arg3)),
-            argScheme=getattr(proxy.module.ArgScheme, self.arg_scheme.upper()),
+            argScheme=getattr(proxy.ArgScheme, self.arg_scheme.upper()),
             transportHeaders=[
                 proxy.TransportHeader(k, v) for k, v in headers.items()
             ],

@@ -30,7 +30,7 @@ from hypothesis.strategies import (
 
 from tchannel.testing.vcr import proxy
 
-arg_schemes = sampled_from(proxy.module.ArgScheme.values)
+arg_schemes = sampled_from(proxy.ArgScheme.values)
 
 transport_headers = builds(
     proxy.TransportHeader,

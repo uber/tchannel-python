@@ -127,7 +127,7 @@ class VCRProxyService(object):
                 'One of them must be specified and non-empty.'
             )
 
-        arg_scheme = proxy.module.ArgScheme.name_of(request.argScheme).lower()
+        arg_scheme = proxy.ArgScheme.name_of(request.argScheme).lower()
 
         with self.unpatch():
             # TODO propagate other request and response parameters
