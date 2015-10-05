@@ -26,15 +26,11 @@ import tornado.gen
 import tornado.ioloop
 from tornado.iostream import PipeIOStream
 from tornado.iostream import StreamClosedError
+from tornado.locks import Condition
 
 from ..errors import UnexpectedError
 from ..messages import common
 from ..messages.common import StreamState
-
-try:
-    from tornado.locks import Condition
-except ImportError:  # pragma: no cover
-    from toro import Condition
 
 
 @tornado.gen.coroutine
