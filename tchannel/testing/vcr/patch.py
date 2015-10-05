@@ -62,7 +62,7 @@ class PatchedClientOperation(object):
         score_threshold=None,
     ):
         self.vcr_client = vcr_client
-        self.hostport = hostport
+        self.hostport = hostport or ''
         self.service = service or ''
         self.arg_scheme = arg_scheme or schemes.DEFAULT
         self.original_tchannel = original_tchannel
@@ -85,13 +85,13 @@ class PatchedClientOperation(object):
         vcr_request = proxy.Request(
             serviceName=self.service.encode('utf-8'),
             hostPort=self.hostport,
-            knownPeers=self.original_tchannel.peers.hosts,
+            knownPeers=[bytes(h) for h in self.original_tchannel.peers.hosts],
             endpoint=endpoint,
             headers=(yield read_full(arg2)),
             body=(yield read_full(arg3)),
             argScheme=getattr(proxy.ArgScheme, self.arg_scheme.upper()),
             transportHeaders=[
-                proxy.TransportHeader(k, v) for k, v in headers.items()
+                proxy.TransportHeader(bytes(k), bytes(v)) for k, v in headers.items()
             ],
         )
 
