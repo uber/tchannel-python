@@ -177,9 +177,12 @@ class TornadoConnection(object):
             size_bytes = read_size_future.result()
             size = frame.frame_rw.size_rw.read(BytesIO(size_bytes))
             read_body_future = self.connection.read_bytes(size - size_width)
-            read_body_future.add_done_callback(
+
+            tornado.ioloop.IOLoop.current().add_future(
+                read_body_future,
                 lambda future: on_body(future, size)
             )
+
             return read_body_future
 
         def on_error(future):
@@ -189,7 +192,12 @@ class TornadoConnection(object):
                 self.close()
 
         size_width = frame.frame_rw.size_rw.width()
-        self.connection.read_bytes(size_width).add_done_callback(on_read_size)
+        read_bytes_future = self.connection.read_bytes(size_width)
+
+        tornado.ioloop.IOLoop.current().add_future(
+            read_bytes_future,
+            on_read_size,
+        )
 
         return message_future
 
@@ -572,8 +580,9 @@ class StreamConnection(TornadoConnection):
 
         stream_future = self._stream(request, self.request_message_factory)
 
-        stream_future.add_done_callback(
-            lambda f: request.close_argstreams(force=True),
+        tornado.ioloop.IOLoop.current().add_future(
+            stream_future,
+            lambda f: request.close_argstreams(force=True)
         )
 
         return stream_future

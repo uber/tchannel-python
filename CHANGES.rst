@@ -11,7 +11,8 @@ Changes by Version
 0.17.3 (unreleased)
 -------------------
 
-- No changes yet.
+- Fixed uses of ``add_done_callback`` that should have been ``add_future``.
+  This was preventing propper request/response interleaving.
 
 
 0.17.2 (2015-09-18)

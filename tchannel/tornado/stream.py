@@ -136,7 +136,8 @@ class InMemStream(Stream):
         # We're not ready yet
         if self.state != StreamState.completed and not len(self._stream):
             wait_future = self._condition.wait()
-            wait_future.add_done_callback(
+            tornado.ioloop.IOLoop.current().add_future(
+                wait_future,
                 lambda f: f.exception() or read_chunk(read_future)
             )
             return read_future
