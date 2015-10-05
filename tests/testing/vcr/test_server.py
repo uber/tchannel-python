@@ -105,8 +105,8 @@ def test_replay(cassette, call):
 
     response = yield call('endpoint', 'request body')
     assert response.status == 0
-    assert response.headers == '{key: value}'
-    assert response.body == 'response body'
+    assert response.body.body == 'response body'
+    assert response.body.headers == '{key: value}'
 
 
 @pytest.mark.gen_test
@@ -140,8 +140,8 @@ def test_record(vcr_service, cassette, call, mock_server, use_known_peers):
         body='body',
     )
 
-    assert response.headers == 'response headers'
-    assert response.body == 'response body'
+    assert response.body.headers == 'response headers'
+    assert response.body.body == 'response body'
 
 
 @pytest.mark.gen_test
