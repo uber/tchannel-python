@@ -23,16 +23,13 @@ import json
 from tornado import gen
 from tornado import ioloop
 
-from tchannel import TChannel
-from tchannel import thrift_request_builder
-from tchannel.testing.data.generated.ThriftTest import ThriftTest
+from tchannel import TChannel, thrift
 
 tchannel = TChannel('thrift-client')
-
-service = thrift_request_builder(
+service = thrift.load(
+    path='tests/data/idls/ThriftTest.thrift',
     service='thrift-server',
-    thrift_module=ThriftTest,
-    hostport='localhost:54497'
+    hostport='localhost:54497',
 )
 
 
@@ -40,7 +37,7 @@ service = thrift_request_builder(
 def make_request():
 
     resp = yield tchannel.thrift(
-        request=service.testString(thing="req"),
+        request=service.ThriftTest.testString(thing="req"),
         headers={
             'req': 'header',
         },
