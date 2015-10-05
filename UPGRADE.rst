@@ -13,7 +13,8 @@ From 0.17 to 0.18
   a dictionary mapping strings to strings. This matches the Thrift
   implementation. If your headers include richer types like lists or ints,
   you'll need to coordinate with your callers to no longer pass headers as JSON
-  blobs.
+  blobs. The same applies to JSON requsts; rich headers will now fail to
+  serialize.
 
 
 From 0.16 to 0.17
