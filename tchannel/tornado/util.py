@@ -85,7 +85,7 @@ def chain(iterable, func):
         except StopIteration:
             all_done_future.set_result(None)
         else:
-            func(arg).add_done_callback(handle)
+            tornado.ioloop.IOLoop.current().add_future(func(arg), handle)
 
     go()
 

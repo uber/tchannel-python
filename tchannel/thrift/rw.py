@@ -53,11 +53,11 @@ def load(path, service=None, hostport=None, module_name=None):
         from tchannel import TChannel, thrift
 
         # Load our server's interface definition.
-        donuts = thrift.load('donuts.thrift')
+        donuts = thrift.load(path='donuts.thrift')
 
         # We need to specify a service name or hostport because this is a
         # downstream service we'll be calling.
-        coffee = thrift.load('coffee.thrift', 'coffee')
+        coffee = thrift.load(path='coffee.thrift', service='coffee')
 
         tchannel = TChannel('donuts')
 

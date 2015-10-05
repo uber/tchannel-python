@@ -26,15 +26,11 @@ import tornado.gen
 import tornado.ioloop
 from tornado.iostream import PipeIOStream
 from tornado.iostream import StreamClosedError
+from tornado.locks import Condition
 
 from ..errors import UnexpectedError
 from ..messages import common
 from ..messages.common import StreamState
-
-try:
-    from tornado.locks import Condition
-except ImportError:  # pragma: no cover
-    from toro import Condition
 
 
 @tornado.gen.coroutine
@@ -140,7 +136,8 @@ class InMemStream(Stream):
         # We're not ready yet
         if self.state != StreamState.completed and not len(self._stream):
             wait_future = self._condition.wait()
-            wait_future.add_done_callback(
+            tornado.ioloop.IOLoop.current().add_future(
+                wait_future,
                 lambda f: f.exception() or read_chunk(read_future)
             )
             return read_future

@@ -4,9 +4,18 @@ Changes by Version
 0.18.0 (unreleased)
 -------------------
 
+- Added Thrift support to ``tcurl.py`` and re-worked the script's arguments.
+- Changed minimum required version of Tornado to 4.2.
 - **BREAKING** - headers for JSON handlers are not longer JSON blobs but are
   instead maps of strings to strings. This mirrors behavior for Thrift
   handlers.
+
+
+0.17.3 (unreleased)
+-------------------
+
+- Fixed uses of ``add_done_callback`` that should have been ``add_future``.
+  This was preventing propper request/response interleaving.
 
 
 0.17.2 (2015-09-18)

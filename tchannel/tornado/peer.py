@@ -28,6 +28,7 @@ from itertools import chain
 from random import random
 
 from tornado import gen
+from tornado.locks import Condition
 
 from ..schemes import DEFAULT as DEFAULT_SCHEME
 from ..retry import (
@@ -46,12 +47,6 @@ from .stream import InMemStream
 from .stream import read_full
 from .stream import maybe_stream
 from .timeout import timeout
-
-try:
-    # included in Tornado 4.2
-    from tornado.locks import Condition
-except ImportError:  # pragma: no cover
-    from toro import Condition
 
 log = logging.getLogger('tchannel')
 
@@ -519,7 +514,10 @@ class PeerClientOperation(object):
         # peer, we throw exceptions from retry not NoAvailablePeerError.
         peer = self._choose()
         if not peer:
-            raise NoAvailablePeerError("Can't find available peer.")
+            raise NoAvailablePeerError(
+                "Can't find an available peer for '%s'" % self.service
+            )
+
         connection = yield peer.connect()
 
         arg1, arg2, arg3 = (
