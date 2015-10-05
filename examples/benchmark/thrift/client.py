@@ -75,6 +75,6 @@ if __name__ == '__main__':
     ioloop.PeriodicCallback(report_work, 1000).start()
 
     try:
-        ioloop.IOLoop.current().run_sync(do_work)
+        ioloop.IOLoop.current().start()
     except KeyboardInterrupt:
         pass
