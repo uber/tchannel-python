@@ -18,11 +18,11 @@ setup(
         'contextlib2',
         'futures',
 
-        # external
+        # external deps
         'crcmod>=1,<2',
         'tornado>=4.2,<5',
 
-        # internal
+        # tchannel deps
         'thriftrw>=0.3,<0.4',
         'threadloop>=1,<2',
     ],
