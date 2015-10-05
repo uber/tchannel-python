@@ -57,21 +57,9 @@ def primitive_list(obj):
     return [primitive(v, v.type_spec.ttype_code) for v in obj]
 
 
-def primitive_map(obj):
-    import ipdb; ipdb.set_trace()
-    return obj
-
-
-def primitive_set(obj):
-    import ipdb; ipdb.set_trace()
-    return obj
-
-
 def primitive(value, ttype_code):
     return ({
         TType.LIST: lambda: primitive_list(value),
-        TType.MAP: lambda: primitive_map(value),
-        TType.SET: lambda: primitive_set(value),
         TType.STRUCT: lambda: primitive_struct(value),
     }.get(ttype_code) or (lambda: value))()
 

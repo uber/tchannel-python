@@ -28,7 +28,6 @@ from tornado import gen
 from tornado.ioloop import IOLoop
 
 from tchannel.errors import TChannelError
-# from tchannel.tornado import TChannel
 from tchannel import TChannel
 
 from . import proxy

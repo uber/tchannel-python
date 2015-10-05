@@ -62,9 +62,6 @@ def vcr_service(cassette, unpatch, io_loop):
 
 @pytest.fixture
 def client(vcr_service):
-    # return client_for('vcr', VCRProxy)(
-        # TChannel('proxy-client'), hostport=vcr_service.hostport
-    # )
     proxy.VCRProxy._module.hostport = vcr_service.hostport
     return proxy.VCRProxy
 
@@ -124,7 +121,11 @@ def test_record(vcr_service, cassette, call, mock_server, use_known_peers):
             knownPeers=[mock_server.hostport] if use_known_peers else [],
             hostPort='' if use_known_peers else mock_server.hostport,
         ),
-        proxy.Response(0, 'response headers', 'response body'),
+        proxy.Response(
+            code=0,
+            headers='response headers',
+            body='response body',
+        ),
     )
 
     mock_server.expect_call('endpoint').and_write(
