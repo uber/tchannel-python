@@ -37,10 +37,13 @@ import base64
 import socket
 import struct
 
+# TODO how to get rid of this shit? wtf :(
+# TODO note this is the same prob as in serializer/thrift
 from thrift.protocol import TBinaryProtocol
 from thrift.transport import TTransport
 
-from tchannel.zipkin.thrift import ttypes
+from .tcollector import tcollector
+
 
 try:
     import ujson as json
@@ -113,8 +116,8 @@ def base64_thrift(thrift_obj):
 
 def binary_annotation_formatter(annotation):
     annotation_types = {
-        'string': ttypes.AnnotationType.STRING,
-        'bytes': ttypes.AnnotationType.BYTES,
+        'string': tcollector.AnnotationType.STRING,
+        'bytes': tcollector.AnnotationType.BYTES,
     }
 
     annotation_type = annotation_types[annotation.annotation_type]
@@ -124,7 +127,7 @@ def binary_annotation_formatter(annotation):
     if isinstance(value, unicode):
         value = value.encode('utf-8')
 
-    return ttypes.BinaryAnnotation(
+    return tcollector.BinaryAnnotation(
         key=annotation.name,
         stringValue=value,
         annotationType=annotation_type
@@ -147,21 +150,21 @@ def thrift_formatter(trace, annotations, isbased64=False):
     for annotation in annotations:
         endpoint = annotation.endpoint or trace.endpoint
         if endpoint and not host:
-            host = ttypes.Endpoint(
+            host = tcollector.Endpoint(
                 ipv4=ipv4_to_int(endpoint.ipv4),
                 port=endpoint.port,
                 serviceName=endpoint.service_name,
             )
 
         if annotation.annotation_type == 'timestamp':
-            thrift_annotations.append(ttypes.Annotation(
+            thrift_annotations.append(tcollector.Annotation(
                 timestamp=annotation.value,
                 value=annotation.name))
         else:
             binary_annotations.append(
                 binary_annotation_formatter(annotation))
 
-    thrift_trace = ttypes.Span(
+    thrift_trace = tcollector.Span(
         traceId=i64_to_string(trace.trace_id),
         name=trace.name,
         id=i64_to_string(trace.span_id),

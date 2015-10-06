@@ -24,7 +24,7 @@ import collections
 import math
 import time
 
-from tchannel.zipkin.thrift import constants
+from . import constants
 
 Endpoint = collections.namedtuple(
     'Endpoint',
