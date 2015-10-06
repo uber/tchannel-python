@@ -40,13 +40,13 @@ class ThriftArgScheme(object):
             print request.body.some_arg
 
     When calling a remote service, generated Thrift types need to be wrapped
-    with :py:func:`thrift_request_builder` to provide TChannel compatibility:
+    with :py:func:`tchannel.thrift.load` to provide TChannel compatibility:
 
     .. code:: python
 
-        thrift_service = thrift_request_builder(
+        service = thrift.load(
+            path='path/to/service.thrift',
             service='service-identifier',
-            thrift_module=GeneratedThriftModule,
         )
 
         response = yield tchannel.thrift(
