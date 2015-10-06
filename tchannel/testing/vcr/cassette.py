@@ -68,16 +68,6 @@ class Interaction(namedtuple('Interaction', 'request response')):
     """An interaction is a request-response pair."""
 
     def to_primitive(self):
-        # import ipdb; ipdb.set_trace()
-        # from thriftrw.protocol import BinaryProtocol
-        # p = BinaryProtocol()
-
-        if hasattr(self.request, 'to_primitive'):
-            return {
-                'request': self.request.to_primitive(),
-                'response': self.response.to_primitive(),
-            }
-
         return {
             'request': primitive(self.request, TType.STRUCT),
             'response': primitive(self.response, TType.STRUCT),
