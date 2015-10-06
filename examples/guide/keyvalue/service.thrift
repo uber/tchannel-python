@@ -18,4 +18,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__all__ = ['ttypes', 'constants', 'KeyValue']
+exception NotFoundError {
+    1: optional string key,
+}
+
+service KeyValue {
+
+    string getValue(
+        1: string key,
+    ) throws (
+        1: NotFoundError notFound,
+    )
+
+    void setValue(
+        1: string key,
+        2: string value,
+    )
+}

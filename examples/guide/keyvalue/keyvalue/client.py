@@ -17,36 +17,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from tornado import gen
-from tornado import ioloop
-from tchannel import TChannel
-from tchannel import thrift_request_builder
 
-from service import KeyValue
+from tornado import gen, ioloop
+from tchannel import TChannel, thrift
 
-
-# Note: When using Hyperbahn this `hostport` option is *NOT NEEDED*.
-KeyValueClient = thrift_request_builder(
+tchannel = TChannel('keyvalue-client')
+service = thrift.load(
+    path='examples/guide/keyvalue/service.thrift',
     service='keyvalue-server',
-    thrift_module=KeyValue,
     hostport='localhost:8889',
 )
 
 
 @gen.coroutine
 def run():
-    app_name = 'keyvalue-client'
-
-    tchannel = TChannel(app_name)
-
-    KeyValueClient.setValue("foo", "Hello, world!"),
 
     yield tchannel.thrift(
-        KeyValueClient.setValue("foo", "Hello, world!"),
+        service.KeyValue.setValue("foo", "Hello, world!"),
     )
 
     response = yield tchannel.thrift(
-        KeyValueClient.getValue("foo"),
+        service.KeyValue.getValue("foo"),
     )
 
     print response.body
