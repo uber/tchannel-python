@@ -17,10 +17,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 from tornado import ioloop
 from tchannel import TChannel, thrift
 
-tchannel = TChannel('keyvalue-server', hostport='localhost:8889')
+tchannel = TChannel('thrift-benchmark', hostport='localhost:8889')
 service = thrift.load('examples/guide/keyvalue/service.thrift')
 
 values = {'hello': 'world'}
