@@ -279,9 +279,9 @@ version <https://github.com/uber/tcurl>`_ for now since it has Thrift support.
 .. code-block:: bash
 
     $ python keyvalue/server.py &
-    $ tcurl -H /path/to/hyperbahn_host_list.json -t ~/keyvalue/thrift/service.thrift service KeyValue::setValue -3 '{"key": "hello", "value": "world"}'
-    $ tcurl -H /path/to/hyperbahn_host_list.json -t ~/keyvalue/thrift/service.thrift service KeyValue::getValue -3 '{"key": "hello"}'
-    $ tcurl -H /path/to/hyperbahn_host_list.json -t ~/keyvalue/thrift/service.thrift service KeyValue::getValue -3 '{"key": "hi"}'
+    $ tcurl -H /path/to/hyperbahn_host_list.json -t ~/keyvalue/thrift/service.thrift keyvalue-server KeyValue::setValue -3 '{"key": "hello", "value": "world"}'
+    $ tcurl -H /path/to/hyperbahn_host_list.json -t ~/keyvalue/thrift/service.thrift keyvalue-server KeyValue::getValue -3 '{"key": "hello"}'
+    $ tcurl -H /path/to/hyperbahn_host_list.json -t ~/keyvalue/thrift/service.thrift keyvalue-server KeyValue::getValue -3 '{"key": "hi"}'
 
 Your service can now be accessed from any language over Hyperbahn + TChannel!
 
