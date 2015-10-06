@@ -6,6 +6,9 @@ Changes by Version
 
 - Added Thrift support to ``tcurl.py`` and re-worked the script's arguments.
 - Changed minimum required version of Tornado to 4.2.
+- **BREAKING** - headers for JSON handlers are not longer JSON blobs but are
+  instead maps of strings to strings. This mirrors behavior for Thrift
+  handlers.
 
 
 0.17.3 (unreleased)
