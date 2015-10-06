@@ -252,7 +252,7 @@ instance:
     def run():
 
         tchannel.listen()
-        print('Listening on %s' % app.hostport)
+        print('Listening on %s' % tchannel.hostport)
 
         if os.path.exists('/path/to/hyperbahn_hostlist.json'):
             with open('/path/to/hyperbahn_hostlist.json', 'r') as f:
