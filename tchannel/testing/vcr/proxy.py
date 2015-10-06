@@ -18,13 +18,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import os
 import sys
 
 from tchannel import thrift
 
+base = os.path.dirname(__file__)
 
 proxy = thrift.load(
-    path='tchannel/testing/vcr/proxy.thrift',
+    path=os.path.join(base, 'proxy.thrift'),
     service='proxy-server',
 )
 
