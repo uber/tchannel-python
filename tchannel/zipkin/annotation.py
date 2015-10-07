@@ -21,10 +21,10 @@
 from __future__ import absolute_import
 
 import collections
-import math
 import time
 
-from tchannel.zipkin.thrift import constants
+from . import glossary
+
 
 Endpoint = collections.namedtuple(
     'Endpoint',
@@ -70,25 +70,25 @@ class Annotation(_AnnotationBase):
 
 def timestamp(name, ts=None):
     if ts is None:
-        ts = math.trunc(time.time() * 1000)
-
+        ts = time.time() * 1000
+    ts = float(ts)
     return Annotation(name, ts, 'timestamp')
 
 
 def client_send(ts=None):
-    return timestamp(constants.CLIENT_SEND, ts)
+    return timestamp(glossary.CLIENT_SEND, ts)
 
 
 def client_recv(ts=None):
-    return timestamp(constants.CLIENT_RECV, ts)
+    return timestamp(glossary.CLIENT_RECV, ts)
 
 
 def server_send(ts=None):
-    return timestamp(constants.SERVER_SEND, ts)
+    return timestamp(glossary.SERVER_SEND, ts)
 
 
 def server_recv(ts=None):
-    return timestamp(constants.SERVER_RECV, ts)
+    return timestamp(glossary.SERVER_RECV, ts)
 
 
 def string(name, value):

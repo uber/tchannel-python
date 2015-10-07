@@ -177,18 +177,19 @@ class TChannelThriftModule(types.ModuleType):
         """
 
         self.service = service
-        self.module = module
         self.hostport = hostport
 
-        for service_cls in self.module.services:
+        self._module = module
+
+        for service_cls in self._module.services:
             name = service_cls.service_spec.name
             setattr(self, name, Service(service_cls, self))
 
     def __getattr__(self, name):
-        return getattr(self.module, name)
+        return getattr(self._module, name)
 
     def __str__(self):
-        return 'TChannelThriftModule(%s, %s)' % (self.service, self.module)
+        return 'TChannelThriftModule(%s, %s)' % (self.service, self._module)
 
     __repr__ = __str__
 

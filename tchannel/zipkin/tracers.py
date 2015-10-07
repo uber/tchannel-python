@@ -38,18 +38,15 @@ import logging
 import sys
 from collections import defaultdict
 
+from . import glossary
+from .tcollector import TCollector
 from .formatters import json_formatter
 from .formatters import thrift_formatter
 from .formatters import i64_to_base64
-from .thrift import TCollector
-from .thrift import constants
-from ..thrift import thrift_request_builder
 
 log = logging.getLogger('zipkin_tracing')
 
 zipkin_log = logging.getLogger('zipkin')
-
-TCollectorClient = thrift_request_builder('tcollector', TCollector)
 
 
 class EndAnnotationTracer(object):
@@ -60,7 +57,7 @@ class EndAnnotationTracer(object):
     """
 
     # Default list of end annotations.
-    DEFAULT_END_ANNOTATIONS = (constants.CLIENT_RECV, constants.SERVER_SEND)
+    DEFAULT_END_ANNOTATIONS = (glossary.CLIENT_RECV, glossary.SERVER_SEND)
 
     def __init__(self, tracer, end_annotations=None):
         """
@@ -153,7 +150,7 @@ class TChannelZipkinTracer(object):
         fus = []
         for (trace, annotations) in traces:
             f = self._tchannel.thrift(
-                TCollectorClient.submit(thrift_formatter(trace, annotations)),
+                TCollector.submit(thrift_formatter(trace, annotations)),
                 shard_key=i64_to_base64(trace.trace_id),
             )
             f.add_done_callback(submit_callback)

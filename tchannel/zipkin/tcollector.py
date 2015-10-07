@@ -18,4 +18,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-__all__ = ['ttypes', 'constants', 'TCollectorGo', 'TCollector']
+from __future__ import absolute_import, unicode_literals, print_function
+
+import os
+import sys
+
+from tchannel import thrift
+
+tcollector = thrift.load(
+    os.path.join(os.path.dirname(__file__), 'tcollector.thrift'),
+    service='tcollector',
+)
+
+# Replace this module with the generated module.
+sys.modules[__name__] = tcollector
