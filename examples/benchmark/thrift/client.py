@@ -41,6 +41,8 @@ kv = thrift_request_builder(
 local = threading.local()
 local.requests = 0
 
+data = os.urandom(4096)
+
 
 def report_work():
     print local.requests
@@ -50,27 +52,29 @@ def report_work():
 
 @gen.coroutine
 def do_work():
-    global requests
-
-    # TODO: make this configurable
-    data = os.urandom(4096)
-
     while True:
         yield tchannel.thrift(
             request=kv.setValue("key", data),
         )
-        local.requests += 1
 
-        # TODO: get/set ratio
-        yield tchannel.thrift(
-            request=kv.getValue("key"),
-        )
         local.requests += 1
 
 
 if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        concurrency = int(sys.argv[1])
+    else:
+        concurrency = 100
+
+    sys.stderr.write('using concurrency %s\n' % concurrency)
+    sys.stderr.flush()
+
+    for _ in xrange(concurrency):
+        do_work()
+
     ioloop.PeriodicCallback(report_work, 1000).start()
+
     try:
-        ioloop.IOLoop.current().run_sync(do_work)
+        ioloop.IOLoop.current().start()
     except KeyboardInterrupt:
         pass
