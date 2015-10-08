@@ -225,21 +225,21 @@ class Function(object):
     """
 
     __slots__ = (
-        'spec', 'func', 'service', 'request_cls', 'response_cls'
+        'spec', 'service', '_func', '_request_cls', '_response_cls'
     )
 
     def __init__(self, func_spec, service):
         self.spec = func_spec
-        self.func = func_spec.surface
         self.service = service
 
-        self.request_cls = self.func.request
-        self.response_cls = self.func.response
+        self._func = func_spec.surface
+        self._request_cls = self._func.request
+        self._response_cls = self._func.response
 
     @property
     def endpoint(self):
         """Endpoint name for this function."""
-        return '%s::%s' % (self.service.name, self.func.name)
+        return '%s::%s' % (self.service.name, self._func.name)
 
     @property
     def oneway(self):
@@ -263,13 +263,13 @@ class Function(object):
             )
 
         module = self.service._module
-        call_args = self.request_cls(*args, **kwargs)
+        call_args = self._request_cls(*args, **kwargs)
 
         return ThriftRWRequest(
             module=module,
             service=module.service,
             endpoint=self.endpoint,
-            result_type=self.response_cls,
+            result_type=self._response_cls,
             call_args=call_args,
             hostport=module.hostport,
         )
@@ -308,8 +308,8 @@ def register(dispatcher, service, handler=None, method=None):
         dispatcher.register(
             function.endpoint,
             handler,
-            ThriftRWSerializer(service._module, function.request_cls),
-            ThriftRWSerializer(service._module, function.response_cls),
+            ThriftRWSerializer(service._module, function._request_cls),
+            ThriftRWSerializer(service._module, function._response_cls),
         )
         return handler
 
@@ -324,7 +324,7 @@ def build_handler(function, handler):
     # function. It accepts one parameter for each exception defined on the
     # method and another parameter 'success' for the result of the call. The
     # success kwarg is absent if the function doesn't return anything.
-    response_cls = function.response_cls
+    response_cls = function._response_cls
     response_spec = response_cls.type_spec
 
     @gen.coroutine
