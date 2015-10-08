@@ -38,6 +38,8 @@ class TChannel(AsyncTChannel):
 
     .. code-block:: python
 
+        from tchannel.sync import TChannel
+
         tchannel = TChannel(name='my-synchronous-service')
 
         # Advertise with Hyperbahn.
@@ -53,6 +55,29 @@ class TChannel(AsyncTChannel):
         )
 
         result = future.result()
+
+    Fanout can be accomplished by using ``as_completed`` from the
+    ``concurrent.futures`` module:
+
+    .. code-block:: python
+
+        from concurrent.futures import as_completed
+
+        from tchannel.sync import TChannel
+
+        tchannel = TChannel(name='my-synchronous-service')
+
+        futures = [
+            tchannel.thrift(service.getItem(item))
+            for item in ('foo', 'bar')
+        ]
+
+        for future in as_completed(futures):
+            print future.result()
+
+    (``concurrent.futures`` is native to Python 3; ``pip install futures`` if
+    you're using Python 2.x.)
+
     """
 
     def __init__(
