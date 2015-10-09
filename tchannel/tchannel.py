@@ -25,7 +25,7 @@ from __future__ import (
 import json
 import logging
 
-from threading import Lock
+from threading import Lock, local
 from tornado import gen
 
 from . import schemes
@@ -43,6 +43,10 @@ from .tornado.dispatch import RequestDispatcher as DeprecatedDispatcher
 log = logging.getLogger('tchannel')
 
 __all__ = ['TChannel']
+
+# storage for thread-local tchannel singleton
+_local = local()
+_local.tchannel = None
 
 
 class TChannel(object):
@@ -117,6 +121,22 @@ class TChannel(object):
         self._listen_lock = Lock()
         # register default health endpoint
         self.thrift.register(Meta)(health)
+
+    @classmethod
+    def get_instance(cls, *args, **kwargs):
+        """Instantiate a TChannel singleton, when needed.
+
+        :returns TChannel: a per-process singleton instance
+        """
+
+        global _local
+
+        if hasattr(_local, 'tchannel') and _local.tchannel is not None:
+            return _local.tchannel
+
+        _local.tchannel = TChannel(*args, **kwargs)
+
+        return _local.tchannel
 
     def is_listening(self):
         return self._dep_tchannel.is_listening()
