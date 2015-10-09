@@ -32,7 +32,7 @@ from .proxy.ttypes import Request
 from .proxy.ttypes import Response
 
 
-__all__ = ['Cassette']
+__all__ = ['Cassette', 'DEFAULT_MATCHERS']
 
 
 # Version of the storage format.
@@ -78,12 +78,9 @@ _MATCHERS = {
 }
 
 
-# By default, two requests match if their service name, hostport, endpoint,
-# headers, body, and arg scheme match.
 DEFAULT_MATCHERS = (
     'serviceName', 'endpoint', 'headers', 'body', 'argScheme',
 )
-# TODO: protocol headers?
 
 
 class Cassette(object):
@@ -100,9 +97,7 @@ class Cassette(object):
         :param matchers:
             If specified, this is a collection of matcher names. These
             specify which attributes on two requests should match for them to
-            be considered equal. This may also be a function that transforms
-            a list of matcher names, in which case it will be applied to the
-            default list of matchers and the result will be used.
+            be considered equal.
         """
         # TODO move documentation around
         record_mode = record_mode or RecordMode.ONCE
@@ -117,8 +112,6 @@ class Cassette(object):
 
         if matchers is None:
             matchers = DEFAULT_MATCHERS
-        elif callable(matchers):
-            matchers = matchers(list(DEFAULT_MATCHERS))
 
         self._matchers = []
         for m in matchers:

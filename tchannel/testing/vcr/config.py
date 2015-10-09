@@ -147,34 +147,27 @@ def use_cassette(path, record_mode=None, inject=False, matchers=None):
         object will be injected into the function call as the first argument.
         Defaults to False.
     :param matchers:
-        Used to configure the request attributes which VCR matches on. This is
-        a list of request attributes or a function that accepts a list of
-        request attributes and returns a new list of attributes. This function
-        will be called with the default list of attributes used by VCR and the
-        result will be the list of matchers used. A recorded response will be
-        replayed if all specified attributes of the corresponding request
-        match the request that is being made. Valid attributes are:
-        ``serviceName``, ``hostPort``, ``endpoint``, ``headers``, ``body``,
-        ``argScheme``, and ``transportHeaders``.
+        Used to configure the request attributes which VCR matches on. A
+        recorded response will be replayed if all specified attributes of the
+        corresponding request match the request that is being made. Valid
+        attributes are: ``serviceName``, ``hostPort``, ``endpoint``,
+        ``headers``, ``body``, ``argScheme``, and ``transportHeaders``.
 
         For example,
 
         .. code-block:: python
 
-            @vcr.use_cassette('tests/data/foo.yaml', matchers=['body']):
+            MY_MATCHERS = list(vcr.DEFAULT_MATCHERS)
+            MY_MATCHERS.remove('headers')
+
+            @vcr.use_cassette('tests/data/foo.yaml', matchers=MY_MATCHERS):
             def test_foo():
-                # ...
-
-            def no_headers(matchers):
-                matchers.remove('headers')
-                return matchers
-
-            @vcr.use_cassette('tests/data/bar.yaml', matchers=no_headers):
-            def test_bar():
                 # ...
 
         By default, the following attributes are matched: ``serviceName``,
         ``endpoint``, ``headers``, ``body``, and ``argScheme``.
+        :py:data:`tchannel.testing.vcr.DEFAULT_MATCHERS` is a tuple of all
+        these matchers.
     """
 
     return _CassetteContext(
