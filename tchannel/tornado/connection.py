@@ -33,6 +33,7 @@ from .. import frame
 from .. import glossary
 from .. import messages
 from ..errors import FatalProtocolError
+from ..errors import InvalidChecksumError
 from ..errors import NetworkError
 from ..errors import TChannelError
 from ..event import EventType
@@ -224,8 +225,7 @@ class TornadoConnection(object):
             try:
                 message = yield self._recv()
             except tornado.iostream.StreamClosedError:
-                log.warning("Stream has been closed.")
-                break
+                pass
 
             if message.message_type in self.CALL_REQ_TYPES:
                 self._messages.put(message)
@@ -251,12 +251,14 @@ class TornadoConnection(object):
             )
             return
 
-        self.message_factory.build_inbound_response(message, response)
-
-        if (message.message_type in self.CALL_RES_TYPES and
-                message.flags == FlagsType.fragment):
-            # still streaming, keep it for record
-            self.incoming_responses[message.id] = response
+        try:
+            self.message_factory.build_inbound_response_cont(message, response)
+        except (FatalProtocolError, InvalidChecksumError) as e:
+            response.set_exception(e)
+        else:
+            if message.flags == FlagsType.fragment:
+                # still streaming, keep it for record
+                self.incoming_responses[message.id] = response
 
     def _handle_response(self, message):
         future = self._outstanding.pop(message.id)
@@ -270,13 +272,17 @@ class TornadoConnection(object):
             )
             return
 
-        response = self.message_factory.build_inbound_response(message, None)
-        if future.running():
-            future.set_result(response)
-        if (message.message_type in self.CALL_RES_TYPES and
-                message.flags == FlagsType.fragment):
-            # still streaming, keep it for record
-            self.incoming_responses[message.id] = response
+        try:
+            response = self.message_factory.build_inbound_response(message)
+        except (FatalProtocolError, InvalidChecksumError) as e:
+            if future.running():
+                future.set_exception(e)
+        else:
+            if future.running():
+                future.set_result(response)
+            if message.flags == FlagsType.fragment:
+                # still streaming, keep it for record
+                self.incoming_responses[message.id] = response
 
     # Basically, the only difference between send and write is that send
     # sets up a Future to get the response. That's ideal for peers making

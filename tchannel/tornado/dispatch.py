@@ -71,7 +71,7 @@ class RequestDispatcher(object):
 
     _HANDLER_NAMES = {
         Types.CALL_REQ: 'pre_call',
-        Types.CALL_REQ_CONTINUE: 'pre_call'
+        Types.CALL_REQ_CONTINUE: 'pre_call_cont'
     }
 
     def handle(self, message, connection):
@@ -84,9 +84,22 @@ class RequestDispatcher(object):
         handler_name = "handle_" + self._HANDLER_NAMES[message.message_type]
         return getattr(self, handler_name)(message, connection)
 
+    def handle_pre_call_cont(self, message, connection):
+        """Handle incoming CallRequestContinueMessage.
+
+        :param message: CallRequestContinueMessage
+        :param connection: tornado connection
+        """
+        try:
+            connection.message_factory.build_inbound_request_cont(
+                message, connection.get_incoming_request(message.id)
+            )
+        except TChannelError as e:
+            log.warn('Received a bad request.', exc_info=True)
+            connection.send_error(e.code, e.message, message.id)
+
     def handle_pre_call(self, message, connection):
-        """Handle incoming request message including CallRequestMessage and
-        CallRequestContinueMessage
+        """Handle incoming CallRequestMessage.
 
         This method will build the User friendly request object based on the
         incoming messages.
@@ -96,32 +109,24 @@ class RequestDispatcher(object):
         arg_1=argstream[0], the message_factory will return a request object.
         Then it will trigger the async call_handle call.
 
-        :param message: CallRequestMessage or CallRequestContinueMessage
+        :param message: CallRequestMessage
         :param connection: tornado connection
         """
         try:
             new_req = connection.message_factory.build_inbound_request(
-                message, connection.get_incoming_request(message.id)
+                message,
             )
-            # message_factory will create Request only when it receives
-            # CallRequestMessage. It will return None, if it receives
-            # CallRequestContinueMessage.
-            if new_req:
-                # process the new request
-                connection.add_incoming_request(new_req)
-                self.handle_call(new_req, connection).add_done_callback(
-                    lambda _: connection.remove_incoming_request(
-                        new_req.id
-                    )
+
+            # process the new request
+            connection.add_incoming_request(new_req)
+            self.handle_call(new_req, connection).add_done_callback(
+                lambda _: connection.remove_incoming_request(
+                    new_req.id
                 )
+            )
         except TChannelError as e:
             log.warn('Received a bad request.', exc_info=True)
-
-            connection.send_error(
-                e.code,
-                e.message,
-                message.id,
-            )
+            connection.send_error(e.code, e.message, message.id)
 
     @tornado.gen.coroutine
     def handle_call(self, request, connection):

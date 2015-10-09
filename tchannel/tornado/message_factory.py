@@ -23,8 +23,8 @@ from __future__ import absolute_import
 import logging
 
 from ..errors import InvalidChecksumError
-from ..errors import TChannelError
 from ..errors import FatalProtocolError
+from ..errors import TChannelError
 from ..messages import RW
 from ..messages import Types
 from ..messages import common
@@ -181,7 +181,7 @@ class MessageFactory(object):
     def build_request(self, message):
         """Build request object from protocol level message info
 
-        It is allowed to take incompleted CallRequestMessage. Therefore the
+        It is allowed to take incomplete CallRequestMessage. Therefore the
         created request may not contain whole three arguments.
 
         :param message: CallRequestMessage
@@ -216,7 +216,7 @@ class MessageFactory(object):
     def build_response(self, message):
         """Build response object from protocol level message info
 
-        It is allowed to take incompleted CallResponseMessage. Therefore the
+        It is allowed to take incomplete CallResponseMessage. Therefore the
         created request may not contain whole three arguments.
 
         :param message: CallResponseMessage
@@ -236,51 +236,68 @@ class MessageFactory(object):
         )
         return res
 
-    def build_inbound_response(self, message, response):
-        """buffer all the streaming messages based on the
-        message id. Reconstruct all fragments together.
+    def build_inbound_response(self, message):
+        """Build new response based on incoming call response message.
 
         :param message:
-            incoming message
-        :param response:
-            incoming response
-        :return: next complete message or None if streaming or fragmentation
-            is not done
+            Incoming call response message message.
+        :return:
+            New response object.
         """
-        if message.message_type == Types.CALL_RES:
+        if message.message_type != Types.CALL_RES:
+            raise FatalProtocolError(
+                "Receiving unexpected message type %d for message ID %d" %
+                (message.message_type, message.id)
+            )
+
+        self.verify_message(message)
+        response = self.build_response(message)
+        num = self._find_incomplete_stream(response)
+        self.close_argstream(response, num)
+        return response
+
+    def build_inbound_response_cont(self, message, response):
+        """Add incoming call response continue message's data into
+        corresponding pending response object.
+
+        :param message:
+            Incoming call response continue message.
+        :param response:
+            Corresponding pending response with same message Id.
+        """
+        if message.message_type != Types.CALL_RES_CONTINUE:
+            raise FatalProtocolError(
+                "Receiving unexpected message type %d for message ID %d" %
+                (message.message_type, message.id)
+            )
+
+        if response is None:
+            # missing call msg before continue msg
+            raise FatalProtocolError(
+                ("Received call response continuation for" +
+                 "unknown message %d" % message.id)
+            )
+
+        dst = self._find_incomplete_stream(response)
+        try:
             self.verify_message(message)
-            response = self.build_response(message)
-            num = self._find_incompleted_stream(response)
-            self.close_argstream(response, num)
-            return response
+        except InvalidChecksumError as e:
+            response.argstreams[dst].set_exception(e)
+            raise
 
-        elif message.message_type == Types.CALL_RES_CONTINUE:
-            if response is None:
-                # missing call msg before continue msg
-                raise FatalProtocolError(
-                    "missing call message after receiving continue message")
+        src = 0
+        while src < len(message.args):
+            response.argstreams[dst].write(message.args[src])
+            dst += 1
+            src += 1
 
-            dst = self._find_incompleted_stream(response)
-            try:
-                self.verify_message(message)
-            except InvalidChecksumError as e:
-                response.argstreams[dst].set_exception(e)
-                raise
+        if message.flags != FlagsType.fragment:
+            # get last fragment. mark it as completed
+            assert (len(response.argstreams) ==
+                    CallContinueMessage.max_args_num)
+            response.flags = FlagsType.none
 
-            src = 0
-            while src < len(message.args):
-                response.argstreams[dst].write(message.args[src])
-                dst += 1
-                src += 1
-
-            if message.flags != FlagsType.fragment:
-                # get last fragment. mark it as completed
-                assert (len(response.argstreams) ==
-                        CallContinueMessage.max_args_num)
-                response.flags = FlagsType.none
-
-            self.close_argstream(response, dst - 1)
-            return None
+        self.close_argstream(response, dst - 1)
 
     @classmethod
     def build_inbound_error(cls, message):
@@ -291,59 +308,71 @@ class MessageFactory(object):
             tracing=message.tracing
         )
 
-    def build_inbound_request(self, message, request):
-        """buffer all the streaming messages based on the
-        message id. Reconstruct all fragments together.
+    def build_inbound_request(self, message):
+        """Build inbound request based on incoming call request message.
 
         :param message:
-            incoming message
-        :param request:
-            incoming request
-        :return: next complete message or None if streaming or fragmentation
-            is not done
+            Incoming call request message.
+        :return:
+            New request object.
         """
-        if message.message_type == Types.CALL_REQ:
-            if request:
-                raise FatalProtocolError(
-                    "Already got an request with same message id.")
+        if message.message_type != Types.CALL_REQ:
+            raise FatalProtocolError(
+                "Receiving unexpected message type %d for message ID %d" %
+                (message.message_type, message.id)
+            )
 
+        self.verify_message(message)
+        request = self.build_request(message)
+        num = self._find_incomplete_stream(request)
+        self.close_argstream(request, num)
+        return request
+
+    def build_inbound_request_cont(self, message, request):
+        """Add incoming call request continue message's data into
+        corresponding pending request object.
+
+        :param message:
+            Incoming call request continue message.
+        :param request:
+            Corresponding pending response with same message Id.
+        """
+        if message.message_type != Types.CALL_REQ_CONTINUE:
+            raise FatalProtocolError(
+                "Receiving unexpected message type %d for message ID %d" %
+                (message.message_type, message.id)
+            )
+
+        if request is None:
+            # missing call msg before continue msg
+            raise FatalProtocolError(
+                "missing call message after receiving continue message"
+            )
+
+        dst = self._find_incomplete_stream(request)
+        try:
             self.verify_message(message)
-            request = self.build_request(message)
-            num = self._find_incompleted_stream(request)
-            self.close_argstream(request, num)
-            return request
+        except InvalidChecksumError as e:
+            request.argstreams[dst].set_exception(e)
+            raise
 
-        if message.message_type == Types.CALL_REQ_CONTINUE:
-            if request is None:
-                # missing call msg before continue msg
-                raise FatalProtocolError(
-                    "missing call message after receiving continue message")
+        src = 0
+        while src < len(message.args):
+            request.argstreams[dst].write(message.args[src])
+            dst += 1
+            src += 1
 
-            dst = self._find_incompleted_stream(request)
-            try:
-                self.verify_message(message)
-            except InvalidChecksumError as e:
-                request.argstreams[dst].set_exception(e)
-                raise
+        if message.flags != FlagsType.fragment:
+            # get last fragment. mark it as completed
+            assert (len(request.argstreams) ==
+                    CallContinueMessage.max_args_num)
+            request.flags = FlagsType.none
 
-            src = 0
-            while src < len(message.args):
-                request.argstreams[dst].write(message.args[src])
-                dst += 1
-                src += 1
-
-            if message.flags != FlagsType.fragment:
-                # get last fragment. mark it as completed
-                assert (len(request.argstreams) ==
-                        CallContinueMessage.max_args_num)
-                request.flags = FlagsType.none
-
-            self.close_argstream(request, dst - 1)
-            return None
+        self.close_argstream(request, dst - 1)
 
     @classmethod
-    def _find_incompleted_stream(cls, reqres):
-        # find the incompleted stream
+    def _find_incomplete_stream(cls, reqres):
+        # find the incomplete stream
         num = 0
         for i, arg in enumerate(reqres.argstreams):
             if arg.state != StreamState.completed:

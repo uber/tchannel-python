@@ -26,7 +26,7 @@ import pytest
 
 from tchannel import messages
 from tchannel.io import BytesIO
-from tchannel.messages import CallRequestMessage
+from tchannel.messages import CallRequestMessage, Types
 from tchannel.messages import CallResponseMessage
 from tchannel.messages.common import PROTOCOL_VERSION
 from tchannel.tornado.message_factory import MessageFactory
@@ -274,9 +274,10 @@ def test_message_fragment_request(arg2, arg3, connection):
     fragments = message_factory.fragment(msg)
     request = None
     for fragment in fragments:
-        output = message_factory.build_inbound_request(fragment, request)
-        if output:
-            request = output
+        if fragment.message_type == Types.CALL_REQ:
+            request = message_factory.build_inbound_request(fragment)
+        else:
+            message_factory.build_inbound_request_cont(fragment, request)
     header = yield request.get_header()
     body = yield request.get_body()
     assert header == origin_msg.args[1]
@@ -302,9 +303,10 @@ def test_message_fragment_response(arg2, arg3, connection):
     fragments = message_factory.fragment(msg)
     response = None
     for fragment in fragments:
-        output = message_factory.build_inbound_response(fragment, response)
-        if output:
-            response = output
+        if fragment.message_type == Types.CALL_RES:
+            response = message_factory.build_inbound_response(fragment)
+        else:
+            message_factory.build_inbound_response_cont(fragment, response)
     header = yield response.get_header()
     body = yield response.get_body()
     assert header == origin_msg.args[1]
