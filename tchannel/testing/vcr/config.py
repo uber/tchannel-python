@@ -149,12 +149,13 @@ def use_cassette(path, record_mode=None, inject=False, matchers=None):
     :param matchers:
         Used to configure the request attributes which VCR matches on. This is
         a list of request attributes or a function that accepts a list of
-        request attributes and returns a new list of attributes (this may be
-        used to transform the default list of matchers used by VCR).  A
-        recorded response is replayed if all specified attributes of the
-        corresponding request match the request that is being made. Valid
-        attirbutes are: ``serviceName``, ``hostPort``, ``endpoint``,
-        ``headers``, ``body``, ``argScheme``, and ``transportHeaders``.
+        request attributes and returns a new list of attributes. This function
+        will be called with the default list of attributes used by VCR and the
+        result will be the list of matchers used. A recorded response will be
+        replayed if all specified attributes of the corresponding request
+        match the request that is being made. Valid attributes are:
+        ``serviceName``, ``hostPort``, ``endpoint``, ``headers``, ``body``,
+        ``argScheme``, and ``transportHeaders``.
 
         For example,
 
@@ -172,7 +173,7 @@ def use_cassette(path, record_mode=None, inject=False, matchers=None):
             def test_bar():
                 # ...
 
-        By default, VCR matches on the attributes: ``serviceName``,
+        By default, the following attributes are matched: ``serviceName``,
         ``endpoint``, ``headers``, ``body``, and ``argScheme``.
     """
 
