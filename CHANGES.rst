@@ -6,6 +6,8 @@ Changes by Version
 
 - Added Thrift support to ``tcurl.py`` and re-worked the script's arguments.
 - Changed minimum required version of Tornado to 4.2.
+- Added the ability to customize the attributes ``tchannel.testing.vcr`` uses
+  to match requests for replaying responses.
 - **BREAKING** - headers for JSON handlers are not longer JSON blobs but are
   instead maps of strings to strings. This mirrors behavior for Thrift
   handlers.

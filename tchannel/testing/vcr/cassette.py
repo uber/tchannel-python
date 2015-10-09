@@ -100,7 +100,9 @@ class Cassette(object):
         :param matchers:
             If specified, this is a collection of matcher names. These
             specify which attributes on two requests should match for them to
-            be considered equal.
+            be considered equal. This may also be a function that transforms
+            a list of matcher names, in which case it will be applied to the
+            default list of matchers and the result will be used.
         """
         # TODO move documentation around
         record_mode = record_mode or RecordMode.ONCE
@@ -113,7 +115,11 @@ class Cassette(object):
         # this was a new cassette and the YAML file did not exist.
         self.existed = False
 
-        matchers = matchers or DEFAULT_MATCHERS
+        if matchers is None:
+            matchers = DEFAULT_MATCHERS
+        elif callable(matchers):
+            matchers = matchers(list(DEFAULT_MATCHERS))
+
         self._matchers = []
         for m in matchers:
             try:

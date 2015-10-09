@@ -186,3 +186,23 @@ def test_record_mode_all(path):
 
     with Cassette(str(path)) as cass:
         assert res2 == cass.replay(req)
+
+
+def test_matcher_transform(path):
+    def remove_headers(matchers):
+        # don't match on headers
+        matchers.remove('headers')
+        return matchers
+
+    request = requests.example()
+    response = responses.example()
+
+    with Cassette(str(path), matchers=remove_headers) as cass:
+        cass.record(request, response)
+
+    request.headers = 'foo'
+
+    with Cassette(str(path), matchers=remove_headers) as cass:
+        assert cass.can_replay(request)
+        assert cass.replay(request) == response
+        assert cass.play_count == 1
