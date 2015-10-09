@@ -30,8 +30,6 @@ from .exceptions import UnsupportedVersionError
 from .record_modes import RecordMode
 from . import proxy
 
-from thriftrw.wire.ttype import TType
-
 __all__ = ['Cassette']
 
 
@@ -39,45 +37,20 @@ __all__ = ['Cassette']
 VERSION = 1
 
 
-def primitive_struct(obj):
-    data = {}
-    for field in obj.type_spec.fields:
-        attr = getattr(obj, field.name)
-        if attr is not None:
-            data[field.name] = primitive(attr, field.ttype_code)
-
-    return data
-
-
-def primitive_list(obj):
-    # I think this is because our objects aren't hydrating with the correct
-    # subtypes.
-    if obj and isinstance(obj[0], (str, dict)):
-        return obj
-    return [primitive(v, v.type_spec.ttype_code) for v in obj]
-
-
-def primitive(value, ttype_code):
-    return ({
-        TType.LIST: lambda: primitive_list(value),
-        TType.STRUCT: lambda: primitive_struct(value),
-    }.get(ttype_code) or (lambda: value))()
-
-
 class Interaction(namedtuple('Interaction', 'request response')):
     """An interaction is a request-response pair."""
 
     def to_primitive(self):
         return {
-            'request': primitive(self.request, TType.STRUCT),
-            'response': primitive(self.response, TType.STRUCT),
+            'request': self.request.to_primitive(),
+            'response': self.response.to_primitive(),
         }
 
     @classmethod
     def to_native(cls, data):
         return cls(
-            request=proxy.Request(**data['request']),
-            response=proxy.Response(**data['response']),
+            request=proxy.Request.from_primitive(data['request']),
+            response=proxy.Response.from_primitive(data['response']),
         )
 
 
