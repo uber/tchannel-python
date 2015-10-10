@@ -6,6 +6,7 @@ Changes by Version
 
 - Fixed uses of ``add_done_callback`` that should have been ``add_future``.
   This was preventing propper request/response interleaving.
+- Added support for ``thriftrw`` 0.4.
 
 
 0.17.2 (2015-09-18)
