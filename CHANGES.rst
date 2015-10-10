@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.17.3 (unreleased)
+0.17.3 (2015-10-09)
 -------------------
 
 - Fixed uses of ``add_done_callback`` that should have been ``add_future``.
