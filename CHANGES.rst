@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.17.4 (unreleased)
+0.17.4 (2015-10-12)
 -------------------
 
 - Updated ``vcr`` to use ``thriftrw``-generated code. This should resolve some
