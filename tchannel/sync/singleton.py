@@ -18,3 +18,11 @@ class TChannel(TChannelSingleton):
     prepared = False
     args = None
     kwargs = None
+
+    @classmethod
+    def get_instance(cls):
+        """Get a configured, thread-safe, singleton TChannel instance.
+
+        :returns: tchannel.sync.TChannel
+        """
+        return supet(TChannel, cls).get_instance()

@@ -24,7 +24,8 @@ class TChannel(object):
     def prepare(cls, *args, **kwargs):
         """Set arguments to be used when instantiating a TChannel instance.
 
-        TODO somehow inherit TChannel.init docs
+        Arguments are the same as :py:meth:`tchannel.TChannel.__init__`
+
         """
         cls.args = args
         cls.kwargs = kwargs
