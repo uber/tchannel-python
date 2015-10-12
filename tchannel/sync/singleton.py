@@ -10,7 +10,11 @@ from .client import TChannel as SyncTChannel
 
 class TChannel(TChannelSingleton):
 
+    tchannel_cls = SyncTChannel
+
     local = local()
     local.tchannel = None
 
-    tchannel_cls = SyncTChannel
+    prepared = False
+    args = None
+    kwargs = None

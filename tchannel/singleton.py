@@ -5,20 +5,20 @@ from __future__ import (
 from threading import local
 
 from . import TChannel as AsyncTChannel
-from .errors import TChannelError
+from .errors import SingletonNotPreparedError
 
 
 class TChannel(object):
     """Maintain a single TChannel instance per-thread."""
 
-    prepared = False
-    args = None
-    kwargs = None
-
     tchannel_cls = AsyncTChannel
 
     local = local()
     local.tchannel = None
+
+    prepared = False
+    args = None
+    kwargs = None
 
     @classmethod
     def prepare(cls, *args, **kwargs):
@@ -29,6 +29,14 @@ class TChannel(object):
         cls.args = args
         cls.kwargs = kwargs
         cls.prepared = True
+
+    @classmethod
+    def reset(cls, *args, **kwargs):
+        """Undo call to prepare, useful for testing."""
+        cls.local.tchannel = None
+        cls.args = None
+        cls.kwargs = None
+        cls.prepared = False
 
     @classmethod
     def get_instance(cls):
@@ -47,8 +55,3 @@ class TChannel(object):
         cls.local.tchannel = cls.tchannel_cls(*cls.args, **cls.kwargs)
 
         return cls.local.tchannel
-
-
-class SingletonNotPreparedError(TChannelError):
-    """Raised when calling get_instance before calling prepare."""
-    pass
