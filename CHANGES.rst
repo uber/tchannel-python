@@ -4,6 +4,9 @@ Changes by Version
 0.18.0 (unreleased)
 -------------------
 
+- Added singleton facility for maintaining a single TChannel instance per thread.
+  See ``tchannel.singleton.TChannel``, ``tchannel.sync.singleton.TChannel``, or check
+  the guide for an example how of how to use. Note this feature is optional.
 - Added Thrift support to ``tcurl.py`` and re-worked the script's arguments.
 - Changed minimum required version of Tornado to 4.2.
 - **BREAKING** - headers for JSON handlers are not longer JSON blobs but are
