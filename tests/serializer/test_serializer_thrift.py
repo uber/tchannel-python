@@ -20,9 +20,10 @@
 
 import pytest
 from tchannel.serializer.thrift import ThriftSerializer
-from tchannel.testing.data.generated.ThriftTest.ThriftTest import \
-    testStruct_result
-from tchannel.testing.data.generated.ThriftTest.ttypes import Xtruct
+from tests.data.generated.ThriftTest.ThriftTest import (
+    testStruct_result,
+    Xtruct,
+)
 
 
 @pytest.mark.parametrize('v1', [
