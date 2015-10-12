@@ -39,16 +39,21 @@ VCRProxyClient = client_for('vcr', VCRProxy)
 class _CassetteContext(object):
     """Lets use_cassette be used as a context manager and a decorator."""
 
-    def __init__(self, path, record_mode, inject):
+    def __init__(self, path, record_mode, inject, matchers):
         self.path = path
         self.record_mode = record_mode
         self.inject = inject
+        self.matchers = matchers
 
         self._exit_stack = contextlib2.ExitStack()
 
     def __enter__(self):
         cassette = self._exit_stack.enter_context(
-            Cassette(path=self.path, record_mode=self.record_mode)
+            Cassette(
+                path=self.path,
+                record_mode=self.record_mode,
+                matchers=self.matchers,
+            )
         )
 
         server = self._exit_stack.enter_context(
@@ -99,7 +104,7 @@ class _CassetteContext(object):
                 return function(*args, **kwargs)
 
 
-def use_cassette(path, record_mode=None, inject=False):
+def use_cassette(path, record_mode=None, inject=False, matchers=None):
     """Use or create a cassette to record/replay TChannel requests.
 
     This may be used as a context manager or a decorator.
@@ -141,8 +146,36 @@ def use_cassette(path, record_mode=None, inject=False):
         If True, when ``use_cassette`` is used as a decorator, the cassette
         object will be injected into the function call as the first argument.
         Defaults to False.
+    :param matchers:
+        Used to configure the request attributes which VCR matches on. A
+        recorded response will be replayed if all specified attributes of the
+        corresponding request match the request that is being made. Valid
+        attributes are: ``serviceName``, ``hostPort``, ``endpoint``,
+        ``headers``, ``body``, ``argScheme``, and ``transportHeaders``.
+
+        For example,
+
+        .. code-block:: python
+
+            MY_MATCHERS = list(vcr.DEFAULT_MATCHERS)
+            MY_MATCHERS.remove('headers')
+
+            @vcr.use_cassette('tests/data/foo.yaml', matchers=MY_MATCHERS):
+            def test_foo():
+                # ...
+
+        By default, the following attributes are matched: ``serviceName``,
+        ``endpoint``, ``headers``, ``body``, and ``argScheme``.
+        :py:data:`tchannel.testing.vcr.DEFAULT_MATCHERS` is a tuple of all
+        these matchers.
     """
-    return _CassetteContext(path=path, record_mode=record_mode, inject=inject)
+
+    return _CassetteContext(
+        path=path,
+        record_mode=record_mode,
+        inject=inject,
+        matchers=matchers,
+    )
 
     # TODO create some sort of configurable VCR object which implements
     # use_cassette. Top-level use_cassette can just use a default instance.

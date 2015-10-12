@@ -6,6 +6,8 @@ Changes by Version
 
 - Added Thrift support to ``tcurl.py`` and re-worked the script's arguments.
 - Changed minimum required version of Tornado to 4.2.
+- Specify which request components to match on with VCR, for example, 'header',
+  'body', etc. See ``tchannel.testing.vcr.use_cassette``.
 - **BREAKING** - headers for JSON handlers are not longer JSON blobs but are
   instead maps of strings to strings. This mirrors behavior for Thrift
   handlers.

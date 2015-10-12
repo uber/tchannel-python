@@ -32,7 +32,7 @@ from .proxy.ttypes import Request
 from .proxy.ttypes import Response
 
 
-__all__ = ['Cassette']
+__all__ = ['Cassette', 'DEFAULT_MATCHERS']
 
 
 # Version of the storage format.
@@ -78,12 +78,9 @@ _MATCHERS = {
 }
 
 
-# By default, two requests match if their service name, hostport, endpoint,
-# headers, body, and arg scheme match.
 DEFAULT_MATCHERS = (
     'serviceName', 'endpoint', 'headers', 'body', 'argScheme',
 )
-# TODO: protocol headers?
 
 
 class Cassette(object):
@@ -113,7 +110,9 @@ class Cassette(object):
         # this was a new cassette and the YAML file did not exist.
         self.existed = False
 
-        matchers = matchers or DEFAULT_MATCHERS
+        if matchers is None:
+            matchers = DEFAULT_MATCHERS
+
         self._matchers = []
         for m in matchers:
             try:
