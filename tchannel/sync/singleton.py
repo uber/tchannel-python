@@ -5,7 +5,6 @@ from __future__ import (
 from threading import local
 
 from tchannel.singleton import TChannel as TChannelSingleton
-
 from .client import TChannel as SyncTChannel
 
 
