@@ -4,7 +4,8 @@ Changes by Version
 0.17.4 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Updated ``vcr`` to use ``thriftrw``-generated code. This should resolve some
+  unicode errors during testing with ``vcr``.
 
 
 0.17.3 (2015-10-09)
