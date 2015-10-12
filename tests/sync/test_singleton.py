@@ -12,6 +12,9 @@ from tchannel.errors import SingletonNotPreparedError
 
 def test_stored_seperately_from_async_singleton():
 
+    TChannel.reset()
+    AsyncSingleton.reset()
+
     AsyncSingleton.prepare('async-app')
 
     with pytest.raises(SingletonNotPreparedError):
