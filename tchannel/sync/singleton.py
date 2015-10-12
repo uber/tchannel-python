@@ -25,4 +25,4 @@ class TChannel(TChannelSingleton):
 
         :returns: tchannel.sync.TChannel
         """
-        return supet(TChannel, cls).get_instance()
+        return super(TChannel, cls).get_instance()
