@@ -398,7 +398,7 @@ class TChannel(object):
 
 
 class TChannelServer(tornado.tcpserver.TCPServer):
-    __slots__ = ('tchannel', 'draining')
+    __slots__ = ('tchannel',)
 
     def __init__(self, tchannel):
         super(TChannelServer, self).__init__()

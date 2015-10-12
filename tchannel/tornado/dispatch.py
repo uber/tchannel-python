@@ -38,6 +38,10 @@ from ..event import EventType
 from ..messages import Types
 from ..messages.error import ErrorCode
 from ..serializer.raw import RawSerializer
+from .message_factory import (
+    build_inbound_request_cont,
+    build_inbound_request,
+)
 from .response import Response as DeprecatedResponse
 
 log = logging.getLogger('tchannel')
@@ -69,20 +73,14 @@ class RequestDispatcher(object):
         self.register(self.FALLBACK, self.not_found)
         self._handler_returns_response = _handler_returns_response
 
-    _HANDLER_NAMES = {
-        Types.CALL_REQ: 'pre_call',
-        Types.CALL_REQ_CONTINUE: 'pre_call_cont'
-    }
-
     def handle(self, message, connection):
         # TODO assert that the handshake was already completed
         assert message, "message must not be None"
-        if message.message_type not in self._HANDLER_NAMES:
+        if message.message_type not in self._HANDLERS:
             # TODO handle this more gracefully
             raise NotImplementedError("Unexpected message: %s" % str(message))
 
-        handler_name = "handle_" + self._HANDLER_NAMES[message.message_type]
-        return getattr(self, handler_name)(message, connection)
+        return self._HANDLERS[message.message_type](self, message, connection)
 
     def handle_pre_call_cont(self, message, connection):
         """Handle incoming CallRequestContinueMessage.
@@ -91,7 +89,7 @@ class RequestDispatcher(object):
         :param connection: tornado connection
         """
         try:
-            connection.message_factory.build_inbound_request_cont(
+            build_inbound_request_cont(
                 message, connection.get_incoming_request(message.id)
             )
         except TChannelError as e:
@@ -113,8 +111,8 @@ class RequestDispatcher(object):
         :param connection: tornado connection
         """
         try:
-            new_req = connection.message_factory.build_inbound_request(
-                message,
+            new_req = build_inbound_request(
+                message, connection.remote_host, connection.remote_host_port,
             )
 
             # process the new request
@@ -173,7 +171,7 @@ class RequestDispatcher(object):
         request.serializer = handler.req_serializer
         response = DeprecatedResponse(
             id=request.id,
-            checksum=request.checksum,
+            checksum=(request.checksum[0], 0),
             tracing=request.tracing,
             connection=connection,
             headers={'as': request.headers.get('as', 'raw')},
@@ -242,6 +240,11 @@ class RequestDispatcher(object):
             tchannel.event_emitter.fire(EventType.on_exception, request, e)
 
         raise gen.Return(response)
+
+    _HANDLERS = {
+        Types.CALL_REQ: handle_pre_call,
+        Types.CALL_REQ_CONTINUE: handle_pre_call_cont,
+    }
 
     def register(
             self,

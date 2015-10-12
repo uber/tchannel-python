@@ -29,7 +29,10 @@ from tchannel.io import BytesIO
 from tchannel.messages import CallRequestMessage, Types
 from tchannel.messages import CallResponseMessage
 from tchannel.messages.common import PROTOCOL_VERSION
-from tchannel.tornado.message_factory import MessageFactory
+from tchannel.tornado import Response, Request
+from tchannel.tornado.message_factory import build_inbound_request_cont, \
+    build_inbound_response_cont, build_inbound_response
+from tchannel.tornado.message_factory import build_inbound_request, fragment
 from tests.util import big_arg
 
 
@@ -267,17 +270,16 @@ def test_equality_check_against_none(init_request_with_headers):
 ],
     ids=lambda arg: str(len(arg))
 )
-def test_message_fragment_request(arg2, arg3, connection):
+def test_message_fragment_request(arg2, arg3):
     msg = CallRequestMessage(args=["", arg2, arg3])
     origin_msg = CallRequestMessage(args=["", arg2, arg3])
-    message_factory = MessageFactory(connection)
-    fragments = message_factory.fragment(msg)
+    fragments = fragment(msg, Request())
     request = None
-    for fragment in fragments:
-        if fragment.message_type == Types.CALL_REQ:
-            request = message_factory.build_inbound_request(fragment)
+    for f in fragments:
+        if f.message_type == Types.CALL_REQ:
+            request = build_inbound_request(f)
         else:
-            message_factory.build_inbound_request_cont(fragment, request)
+            build_inbound_request_cont(f, request)
     header = yield request.get_header()
     body = yield request.get_body()
     assert header == origin_msg.args[1]
@@ -296,17 +298,16 @@ def test_message_fragment_request(arg2, arg3, connection):
 ],
     ids=lambda arg: str(len(arg))
 )
-def test_message_fragment_response(arg2, arg3, connection):
+def test_message_fragment_response(arg2, arg3):
     msg = CallResponseMessage(args=["", arg2, arg3])
     origin_msg = CallResponseMessage(args=["", arg2, arg3])
-    message_factory = MessageFactory(connection)
-    fragments = message_factory.fragment(msg)
+    fragments = fragment(msg, Response())
     response = None
-    for fragment in fragments:
-        if fragment.message_type == Types.CALL_RES:
-            response = message_factory.build_inbound_response(fragment)
+    for f in fragments:
+        if f.message_type == Types.CALL_RES:
+            response = build_inbound_response(f)
         else:
-            message_factory.build_inbound_response_cont(fragment, response)
+            build_inbound_response_cont(f, response)
     header = yield response.get_header()
     body = yield response.get_body()
     assert header == origin_msg.args[1]
