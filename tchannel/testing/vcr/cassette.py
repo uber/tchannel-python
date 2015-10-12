@@ -28,9 +28,7 @@ from . import yaml
 from .exceptions import RequestNotFoundError
 from .exceptions import UnsupportedVersionError
 from .record_modes import RecordMode
-from .proxy.ttypes import Request
-from .proxy.ttypes import Response
-
+from . import proxy
 
 __all__ = ['Cassette']
 
@@ -51,8 +49,8 @@ class Interaction(namedtuple('Interaction', 'request response')):
     @classmethod
     def to_native(cls, data):
         return cls(
-            request=Request.to_native(data['request']),
-            response=Response.to_native(data['response']),
+            request=proxy.Request.from_primitive(data['request']),
+            response=proxy.Response.from_primitive(data['response']),
         )
 
 

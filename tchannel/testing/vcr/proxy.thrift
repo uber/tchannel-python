@@ -12,8 +12,8 @@ enum ArgScheme {
 }
 
 struct TransportHeader {
-    1: binary key
-    2: binary value
+    1: required binary key
+    2: required binary value
 }
 
 struct Request {
@@ -29,7 +29,7 @@ struct Request {
      */
     5: optional binary hostPort = ""
     6: optional ArgScheme argScheme = ArgScheme.RAW
-    7: optional list<TransportHeader> transportHeaders = {}
+    7: optional list<TransportHeader> transportHeaders = []
 
     /**
      * List of known peers of the TChannel at the time the request was made.

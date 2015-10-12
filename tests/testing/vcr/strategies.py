@@ -28,19 +28,19 @@ from hypothesis.strategies import (
     text,
 )
 
-from tchannel.testing.vcr.proxy import VCRProxy
+from tchannel.testing.vcr import proxy
 
-arg_schemes = sampled_from(VCRProxy.ArgScheme.values())
+arg_schemes = sampled_from(proxy.ArgScheme.values)
 
 transport_headers = builds(
-    VCRProxy.TransportHeader,
+    proxy.TransportHeader,
     key=binary(),
     value=binary(),
 )
 
 
 requests = builds(
-    VCRProxy.Request,
+    proxy.Request,
     serviceName=text(),
     hostPort=sampled_from(('localhost', '')),
     endpoint=text(min_size=1),
@@ -52,8 +52,8 @@ requests = builds(
 
 
 responses = builds(
-    VCRProxy.Response,
-    code=sampled_from(VCRProxy.StatusCode.values()),
+    proxy.Response,
+    code=sampled_from(proxy.StatusCode.values),
     headers=binary(),
     body=binary(),
 )
