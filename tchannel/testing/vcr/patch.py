@@ -85,7 +85,7 @@ class PatchedClientOperation(object):
         vcr_request = proxy.Request(
             serviceName=self.service.encode('utf-8'),
             hostPort=self.hostport,
-            knownPeers=[bytes(h) for h in self.original_tchannel.peers.hosts],
+            knownPeers=self.original_tchannel.peers.hosts,
             endpoint=endpoint,
             headers=(yield read_full(arg2)),
             body=(yield read_full(arg3)),
@@ -99,7 +99,6 @@ class PatchedClientOperation(object):
         # TODO what to do with traceflag, attempt-times, ttl
         # TODO catch protocol errors
 
-        # from tchannel import TChannel
         from tchannel import TChannel
         tchannel = TChannel('proxy-client')
 
@@ -120,7 +119,7 @@ class PatchedClientOperation(object):
             )
 
         response = Response(
-            code=vcr_response.status,
+            code=vcr_response.body.code,
             argstreams=[
                 maybe_stream(endpoint),
                 maybe_stream(vcr_response.body.headers),

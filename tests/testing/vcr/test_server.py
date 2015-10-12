@@ -104,7 +104,7 @@ def test_replay(cassette, call):
     )
 
     response = yield call('endpoint', 'request body')
-    assert response.status == 0
+    assert response.body.code == 0
     assert response.body.body == 'response body'
     assert response.body.headers == '{key: value}'
 
