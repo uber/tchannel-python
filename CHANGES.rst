@@ -4,7 +4,7 @@ Changes by Version
 0.17.5 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Set default checksum to ``CRC32C``.
 
 
 0.17.4 (2015-10-12)
@@ -12,7 +12,6 @@ Changes by Version
 
 - Updated ``vcr`` to use ``thriftrw``-generated code. This should resolve some
   unicode errors during testing with ``vcr``.
-- Set default checksum to ``CRC32C``.
 
 
 0.17.3 (2015-10-09)
