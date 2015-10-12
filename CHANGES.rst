@@ -12,6 +12,7 @@ Changes by Version
 
 - Updated ``vcr`` to use ``thriftrw``-generated code. This should resolve some
   unicode errors during testing with ``vcr``.
+- Set default checksum to ``CRC32C``.
 
 
 0.17.3 (2015-10-09)

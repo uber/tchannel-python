@@ -25,6 +25,7 @@ import tornado.gen
 
 from ..enum import enum
 from ..errors import TChannelError
+from ..messages.common import ChecksumType
 from ..messages.common import FlagsType
 from ..messages.common import StreamState
 from ..serializer.raw import RawSerializer
@@ -62,7 +63,7 @@ class Response(object):
         self.flags = flags or FlagsType.none
         self.code = code or StatusCode.ok
         self.tracing = tracing
-        self.checksum = checksum
+        self.checksum = checksum or (ChecksumType.crc32c, 0)
         # argstreams is a list of InMemStream/PipeStream objects
         self.argstreams = argstreams or [InMemStream(),
                                          InMemStream(),
