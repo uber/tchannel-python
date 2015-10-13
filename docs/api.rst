@@ -9,6 +9,9 @@ TChannel
     :special-members: __init__
     :members:
 
+.. autoclass:: tchannel.singleton.TChannel
+    :members:
+
 .. autoclass:: tchannel.Request
     :members:
 
@@ -67,6 +70,10 @@ Synchronous Client
 ------------------
 
 .. autoclass:: tchannel.sync.TChannel
+    :inherited-members:
+    :members:
+
+.. autoclass:: tchannel.sync.singleton.TChannel
     :inherited-members:
     :members:
 
