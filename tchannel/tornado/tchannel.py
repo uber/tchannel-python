@@ -33,6 +33,7 @@ import tornado.tcpserver
 from tornado.netutil import bind_sockets
 
 from . import hyperbahn
+from ..deprecate import deprecate
 from ..enum import enum
 from ..errors import AlreadyListeningError
 from ..event import EventEmitter
@@ -65,7 +66,8 @@ class TChannel(object):
     FALLBACK = RequestDispatcher.FALLBACK
 
     def __init__(self, name, hostport=None, process_name=None,
-                 known_peers=None, trace=False, dispatcher=None):
+                 known_peers=None, trace=False, dispatcher=None,
+                 _from_new_api=False):
         """Build or re-use a TChannel.
 
         :param name:
@@ -90,6 +92,7 @@ class TChannel(object):
             Flag to turn on/off zipkin trace. It can be a bool variable or
             a function that return true or false.
         """
+
         self._state = State.ready
 
         if not dispatcher:
@@ -127,6 +130,14 @@ class TChannel(object):
 
         # server created from calling listen()
         self._server = None
+
+        # warn if customers are still using this old and soon to be delted api
+        if _from_new_api is False:
+            deprecate(
+                "tchannel.tornado.TChannel is deprecated and will be removed" +
+                " in a a future version - please switch usage to " +
+                "tchannel.TChannel object. Thank you."
+            )
 
     @property
     def trace(self):

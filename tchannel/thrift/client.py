@@ -26,10 +26,12 @@ from collections import namedtuple
 from tornado import gen
 
 from tchannel import schemes
+from tchannel.deprecate import deprecated
 from tchannel.errors import OneWayNotSupportedError
 
 from ..serializer.thrift import ThriftSerializer
 from .reflection import get_service_methods
+
 
 # Generated clients will use this base class.
 _ClientBase = namedtuple(
@@ -38,6 +40,11 @@ _ClientBase = namedtuple(
 )
 
 
+@deprecated(
+    "client_for is deprecated and will be removed in 0.19.0, " +
+    "please switch usage to tchannel.thrift.load in conjunction " +
+    "with tchannel.TChannel or tchannel.sync.TChannel."
+)
 def client_for(service, service_module, thrift_service_name=None):
     """Build a client class for the given Thrift service.
 

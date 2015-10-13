@@ -25,6 +25,7 @@ from __future__ import (
 import inspect
 import types
 
+from tchannel.deprecate import deprecated
 from tchannel.errors import ValueExpectedError
 from tchannel.errors import OneWayNotSupportedError
 from tchannel.serializer.thrift import ThriftSerializer
@@ -32,6 +33,10 @@ from tchannel.serializer.thrift import ThriftSerializer
 from .reflection import get_service_methods, get_module_name
 
 
+@deprecated(
+    "thrift_request_builder is deprecated and will be removed in 0.19.0. " +
+    "please switch usage to tchannel.load."
+)
 def thrift_request_builder(service, thrift_module, hostport=None,
                            thrift_class_name=None):
     """Provide TChannel compatibility with Thrift-generated modules.

@@ -106,6 +106,7 @@ class TChannel(object):
             known_peers=known_peers,
             trace=trace,
             dispatcher=DeprecatedDispatcher(_handler_returns_response=True),
+            _from_new_api=True,
         )
 
         self.name = name
