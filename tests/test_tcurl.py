@@ -24,11 +24,12 @@ import mock
 import tornado.gen
 import pytest
 
-from tchannel import TChannel
+from tchannel import TChannel, thrift
 from tchannel.tcurl import _catch_errors
 from tchannel.tcurl import main
 from tchannel.tcurl import parse_args
-from tchannel.testing.data.generated.ThriftTest import ThriftTest
+
+service = thrift.load('tests/data/idls/ThriftTest.thrift')
 
 
 @pytest.mark.parametrize('input, expectations', [
@@ -173,7 +174,7 @@ def test_tcurl_health():
 def test_tcurl_thrift():
     server = TChannel(name='server')
 
-    @server.thrift.register(ThriftTest)
+    @server.thrift.register(service.ThriftTest)
     def testString(request):
         return request.body.thing
 
