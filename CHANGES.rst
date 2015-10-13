@@ -17,7 +17,7 @@ Changes by Version
   handlers.
 
 
-0.17.5 (unreleased)
+0.17.5 (2015-10-12)
 -------------------
 
 - Set default checksum to ``CRC32C``.
