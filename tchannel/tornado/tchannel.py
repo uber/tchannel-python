@@ -131,7 +131,7 @@ class TChannel(object):
         # server created from calling listen()
         self._server = None
 
-        # warn if customers are still using this old and soon to be delted api
+        # warn if customers are still using this old and soon to be deleted api
         if _from_new_api is False:
             deprecate(
                 "tchannel.tornado.TChannel is deprecated and will be removed" +

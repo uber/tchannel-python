@@ -6,7 +6,7 @@ Changes by Version
 
 - Deprecated warnings will now sound for ``tchannel.thrift.client_for``,
   ``tchannel.thrift_request_builder``, and ``tchannel.tornado.TChannel`` - these
-  will be removed soon - be sure to move to ``tchannel.thrift.load`` in
+  APIs will be removed soon - be sure to move to ``tchannel.thrift.load`` in
   conjunction with ``tchannel.TChannel``.
 - Added singleton facility for maintaining a single TChannel instance per thread.
   See ``tchannel.singleton.TChannel``, ``tchannel.sync.singleton.TChannel``, or check

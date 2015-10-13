@@ -34,8 +34,8 @@ from .reflection import get_service_methods, get_module_name
 
 
 @deprecated(
-    "thrift_request_builder is deprecated and will be removed in 0.19.0. " +
-    "please switch usage to tchannel.load."
+    "thrift_request_builder is deprecated and will be removed in 0.19.0. "
+    "please switch usage to tchannel.thrift.load."
 )
 def thrift_request_builder(service, thrift_module, hostport=None,
                            thrift_class_name=None):
