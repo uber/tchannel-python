@@ -4,7 +4,7 @@ Changes by Version
 0.17.5 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Set default checksum to ``CRC32C``.
 
 
 0.17.4 (2015-10-12)

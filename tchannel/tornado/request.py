@@ -29,6 +29,7 @@ from tchannel import retry
 
 from ..glossary import DEFAULT_TIMEOUT
 from ..messages import ErrorCode
+from ..messages.common import ChecksumType
 from ..messages.common import FlagsType
 from ..messages.common import StreamState
 from ..serializer.raw import RawSerializer
@@ -68,7 +69,7 @@ class Request(object):
         self.argstreams = argstreams or [InMemStream(),
                                          InMemStream(),
                                          InMemStream()]
-        self.checksum = checksum
+        self.checksum = checksum or (ChecksumType.crc32c, 0)
         self.id = id
         self.headers = headers or {}
         self.state = StreamState.init
