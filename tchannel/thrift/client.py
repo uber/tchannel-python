@@ -23,7 +23,6 @@ from __future__ import absolute_import
 import inspect
 from collections import namedtuple
 
-from thrift import Thrift
 from tornado import gen
 
 from tchannel import schemes
@@ -217,6 +216,7 @@ def generate_method(service_module, service_name, method_name):
 
         # Expected a result but nothing was present in the object. Something
         # went wrong.
+        from thrift import Thrift
         raise Thrift.TApplicationException(
             Thrift.TApplicationException.MISSING_RESULT,
             '%s failed: did not receive a result as expected' % method_name
