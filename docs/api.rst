@@ -31,8 +31,6 @@ Thrift
 .. autoclass:: tchannel.schemes.ThriftArgScheme
     :members: __call__, register
 
-.. autofunction:: tchannel.thrift_request_builder
-
 .. autofunction:: tchannel.thrift.load
 
 JSON
