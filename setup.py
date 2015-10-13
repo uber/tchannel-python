@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='tchannel',
-    version='0.17.3.dev0',
+    version='0.17.5.dev0',
     author='Abhinav Gupta, Aiden Scandella, Bryce Lampe, Grayson Koonce, Junchao Wu',
     author_email='abg@uber.com',
     description='Network multiplexing and framing protocol for RPC',
@@ -23,7 +23,7 @@ setup(
         'tornado>=4.2,<5',
 
         # tchannel deps
-        'thriftrw>=0.3,<0.4',
+        'thriftrw>=0.4,<0.5',
         'threadloop>=1,<2',
     ],
     extras_require={

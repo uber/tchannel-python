@@ -14,11 +14,25 @@ Changes by Version
   handlers.
 
 
-0.17.3 (unreleased)
+0.17.5 (unreleased)
+-------------------
+
+- Set default checksum to ``CRC32C``.
+
+
+0.17.4 (2015-10-12)
+-------------------
+
+- Updated ``vcr`` to use ``thriftrw``-generated code. This should resolve some
+  unicode errors during testing with ``vcr``.
+
+
+0.17.3 (2015-10-09)
 -------------------
 
 - Fixed uses of ``add_done_callback`` that should have been ``add_future``.
   This was preventing propper request/response interleaving.
+- Added support for ``thriftrw`` 0.4.
 
 
 0.17.2 (2015-09-18)

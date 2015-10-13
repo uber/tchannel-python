@@ -28,9 +28,9 @@ from tornado import gen
 from tornado.ioloop import IOLoop
 
 from tchannel.errors import TChannelError
-from tchannel.tornado import TChannel
+from tchannel import TChannel
 
-from .proxy import VCRProxy
+from . import proxy
 
 
 def wrap_uncaught(func=None, reraise=None):
@@ -53,7 +53,7 @@ def wrap_uncaught(func=None, reraise=None):
                     # TODO maybe use traceback.format_exc to also send a
                     # traceback?
                     raise e
-                raise VCRProxy.VCRServiceError(e.message)
+                raise proxy.VCRServiceError(e.message)
             else:
                 raise gen.Return(result)
 
@@ -85,15 +85,15 @@ class VCRProxyService(object):
         self._running = threading.Event()
 
     @wrap_uncaught(reraise=(
-        VCRProxy.CannotRecordInteractionsError,
-        VCRProxy.NoPeersAvailableError,
-        VCRProxy.RemoteServiceError,
-        VCRProxy.VCRServiceError,
+        proxy.CannotRecordInteractionsError,
+        proxy.NoPeersAvailableError,
+        proxy.RemoteServiceError,
+        proxy.VCRServiceError,
     ))
     @gen.coroutine
-    def send(self, request, response):
+    def send(self, request):
         cassette = self.cassette
-        request = request.args.request
+        request = request.body.request
 
         # TODO decode requests and responses based on arg scheme into more
         # readable formats.
@@ -108,7 +108,7 @@ class VCRProxyService(object):
             raise gen.Return(vcr_response)
 
         if cassette.write_protected:
-            raise VCRProxy.CannotRecordInteractionsError(
+            raise proxy.CannotRecordInteractionsError(
                 'Could not find a matching response for request %s and the '
                 'record mode %s prevents new interactions from being '
                 'recorded. Your test may be performing an unexpected '
@@ -122,18 +122,18 @@ class VCRProxyService(object):
             peers = request.knownPeers
 
         if not peers:
-            raise VCRProxy.NoPeersAvailableError(
+            raise proxy.NoPeersAvailableError(
                 'Both, hostPort and knownPeers were empty or unset. '
                 'One of them must be specified and non-empty.'
             )
 
-        arg_scheme = VCRProxy.ArgScheme.to_name(request.argScheme).lower()
+        arg_scheme = proxy.ArgScheme.name_of(request.argScheme).lower()
 
         with self.unpatch():
             # TODO propagate other request and response parameters
             # TODO might make sense to tag all VCR requests with a protocol
             # header of some kind
-            response_future = self.tchannel.request(
+            response_future = self.tchannel._dep_tchannel.request(
                 service=request.serviceName,
                 arg_scheme=arg_scheme,
                 hostport=random.choice(peers),
@@ -148,17 +148,17 @@ class VCRProxyService(object):
         try:
             response = yield response_future
         except TChannelError as e:
-            raise VCRProxy.RemoteServiceError(
+            raise proxy.RemoteServiceError(
                 code=e.code,
                 message=e.message,
             )
         response_headers = yield response.get_header()
         response_body = yield response.get_body()
 
-        vcr_response = VCRProxy.Response(
-            response.status_code,
-            response_headers,
-            response_body,
+        vcr_response = proxy.Response(
+            code=response.status_code,
+            headers=response_headers,
+            body=response_body,
         )
         cassette.record(request, vcr_response)
         raise gen.Return(vcr_response)
@@ -172,7 +172,14 @@ class VCRProxyService(object):
         self.io_loop.make_current()
 
         self.tchannel = TChannel('proxy-server')
-        self.tchannel.register(VCRProxy, handler=self.send)
+
+        # Hack around legacy TChannel
+        from tchannel.thrift import rw as thriftrw
+        thriftrw.register(
+            self.tchannel._dep_tchannel._handler,
+            proxy.VCRProxy,
+            handler=self.send,
+        )
 
         self.tchannel.listen()
         self._running.set()
@@ -185,7 +192,7 @@ class VCRProxyService(object):
         self._running.wait(1)
 
     def stop(self):
-        self.tchannel.close()
+        self.tchannel._dep_tchannel.close()
         self.tchannel = None
 
         self.io_loop.stop()

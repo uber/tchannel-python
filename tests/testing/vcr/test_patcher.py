@@ -21,16 +21,16 @@
 from __future__ import absolute_import
 
 import pytest
-from doubles import InstanceDouble
 
 from tchannel.tornado import TChannel
+from tchannel.testing.vcr import proxy
 from tchannel.testing.vcr.patch import Patcher
 from tchannel.testing.vcr.patch import PatchedClientOperation
 
 
 @pytest.fixture
 def vcr_client():
-    return InstanceDouble('tchannel.testing.vcr.config.VCRProxyClient')
+    return proxy.VCRProxy
 
 
 def test_patching_as_context_manager(vcr_client):

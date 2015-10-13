@@ -33,7 +33,7 @@ from tchannel.tornado.response import Response
 from tchannel.tornado.stream import maybe_stream
 from tchannel.tornado.stream import read_full
 
-from .proxy import VCRProxy
+from . import proxy
 
 
 _TChannel_request = TChannel.request
@@ -62,7 +62,7 @@ class PatchedClientOperation(object):
         score_threshold=None,
     ):
         self.vcr_client = vcr_client
-        self.hostport = hostport
+        self.hostport = hostport or ''
         self.service = service or ''
         self.arg_scheme = arg_scheme or schemes.DEFAULT
         self.original_tchannel = original_tchannel
@@ -82,27 +82,34 @@ class PatchedClientOperation(object):
         headers = headers or {}
         headers.setdefault('as', self.arg_scheme)
 
-        vcr_request = VCRProxy.Request(
+        vcr_request = proxy.Request(
             serviceName=self.service.encode('utf-8'),
             hostPort=self.hostport,
             knownPeers=self.original_tchannel.peers.hosts,
             endpoint=endpoint,
             headers=(yield read_full(arg2)),
             body=(yield read_full(arg3)),
-            argScheme=getattr(VCRProxy.ArgScheme, self.arg_scheme.upper()),
+            argScheme=getattr(proxy.ArgScheme, self.arg_scheme.upper()),
             transportHeaders=[
-                VCRProxy.TransportHeader(k, v) for k, v in headers.items()
+                proxy.TransportHeader(bytes(k), bytes(v))
+                for k, v in headers.items()
             ],
         )
 
         # TODO what to do with traceflag, attempt-times, ttl
         # TODO catch protocol errors
 
+        from tchannel import TChannel
+        tchannel = TChannel('proxy-client')
+
+        thrift_request = self.vcr_client.send(vcr_request)
+
         with force_reset():
-            vcr_response_future = self.vcr_client.send(vcr_request)
+            vcr_response_future = tchannel.thrift(thrift_request)
+
         try:
             vcr_response = yield vcr_response_future
-        except VCRProxy.RemoteServiceError as e:
+        except proxy.RemoteServiceError as e:
             raise TChannelError.from_code(
                 e.code,
                 description=(
@@ -110,12 +117,13 @@ class PatchedClientOperation(object):
                     e.message
                 )
             )
+
         response = Response(
-            code=vcr_response.code,
+            code=vcr_response.body.code,
             argstreams=[
                 maybe_stream(endpoint),
-                maybe_stream(vcr_response.headers),
-                maybe_stream(vcr_response.body),
+                maybe_stream(vcr_response.body.headers),
+                maybe_stream(vcr_response.body.body),
             ],
             # TODO headers=vcr_response.transportHeaders,
         )

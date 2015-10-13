@@ -25,15 +25,10 @@ import inspect
 import wrapt
 import sys
 
-from tchannel.tornado import TChannel
-from tchannel.thrift import client_for
-
 from .cassette import Cassette
 from .patch import Patcher, force_reset
-from .server import VCRProxyService, VCRProxy
-
-
-VCRProxyClient = client_for('vcr', VCRProxy)
+from .proxy import VCRProxy
+from .server import VCRProxyService
 
 
 class _CassetteContext(object):
@@ -62,11 +57,11 @@ class _CassetteContext(object):
 
         # TODO Maybe instead of using this instance of the TChannel client, we
         # should use the one being patched to make the requests?
-        client = VCRProxyClient(
-            tchannel=TChannel('proxy-client'),
-            hostport=server.hostport,
-        )
-        self._exit_stack.enter_context(Patcher(client))
+
+        # Need a better way to set hostport after loading!!
+        VCRProxy._module.hostport = server.hostport
+
+        self._exit_stack.enter_context(Patcher(VCRProxy))
 
         return cassette
 

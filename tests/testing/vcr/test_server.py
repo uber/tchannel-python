@@ -25,11 +25,11 @@ from doubles import InstanceDouble, allow, expect
 
 from contextlib2 import contextmanager
 
-from tchannel.thrift import client_for
+# from tchannel.thrift import client_for
 from tchannel.errors import TChannelError
-from tchannel.tornado import TChannel
+from tchannel import TChannel
 from tchannel.tornado.stream import InMemStream
-from tchannel.testing.vcr.proxy import VCRProxy
+from tchannel.testing.vcr import proxy
 from tchannel.testing.vcr.server import VCRProxyService
 
 
@@ -62,9 +62,8 @@ def vcr_service(cassette, unpatch, io_loop):
 
 @pytest.fixture
 def client(vcr_service):
-    return client_for('vcr', VCRProxy)(
-        TChannel('proxy-client'), hostport=vcr_service.hostport
-    )
+    proxy.VCRProxy._module.hostport = vcr_service.hostport
+    return proxy.VCRProxy
 
 
 @pytest.fixture(params=[True, False], ids=['hostPort', 'knownPeers'])
@@ -75,6 +74,8 @@ def use_known_peers(request):
 @pytest.fixture
 def call(client, mock_server, use_known_peers):
     """A fixture that returns a function to send a call through the system."""
+
+    tchannel = TChannel('proxy-client')
 
     def f(endpoint, body, headers=None, service=None):
         kwargs = {
@@ -87,8 +88,8 @@ def call(client, mock_server, use_known_peers):
             kwargs['knownPeers'] = [mock_server.hostport]
         else:
             kwargs['hostPort'] = mock_server.hostport
-        vcr_request = VCRProxy.Request(**kwargs)
-        return client.send(vcr_request)
+        vcr_request = proxy.Request(**kwargs)
+        return tchannel.thrift(client.send(vcr_request))
 
     return f
 
@@ -97,22 +98,22 @@ def call(client, mock_server, use_known_peers):
 def test_replay(cassette, call):
     allow(cassette).can_replay.and_return(True)
     expect(cassette).replay.and_return(
-        VCRProxy.Response(
+        proxy.Response(
             code=0, headers='{key: value}', body='response body'
         )
     )
 
     response = yield call('endpoint', 'request body')
-    assert response.code == 0
-    assert response.headers == '{key: value}'
-    assert response.body == 'response body'
+    assert response.body.code == 0
+    assert response.body.body == 'response body'
+    assert response.body.headers == '{key: value}'
 
 
 @pytest.mark.gen_test
 def test_record(vcr_service, cassette, call, mock_server, use_known_peers):
     allow(cassette).can_replay.and_return(False)
     expect(cassette).record.with_args(
-        VCRProxy.Request(
+        proxy.Request(
             serviceName='service',
             endpoint='endpoint',
             headers='headers',
@@ -120,7 +121,11 @@ def test_record(vcr_service, cassette, call, mock_server, use_known_peers):
             knownPeers=[mock_server.hostport] if use_known_peers else [],
             hostPort='' if use_known_peers else mock_server.hostport,
         ),
-        VCRProxy.Response(0, 'response headers', 'response body'),
+        proxy.Response(
+            code=0,
+            headers='response headers',
+            body='response body',
+        ),
     )
 
     mock_server.expect_call('endpoint').and_write(
@@ -135,8 +140,8 @@ def test_record(vcr_service, cassette, call, mock_server, use_known_peers):
         body='body',
     )
 
-    assert response.headers == 'response headers'
-    assert response.body == 'response body'
+    assert response.body.headers == 'response headers'
+    assert response.body.body == 'response body'
 
 
 @pytest.mark.gen_test
@@ -145,28 +150,28 @@ def test_write_protected(vcr_service, cassette, call):
     cassette.write_protected = True
     allow(cassette).can_replay.and_return(False)
 
-    with pytest.raises(VCRProxy.CannotRecordInteractionsError):
+    with pytest.raises(proxy.CannotRecordInteractionsError):
         yield call('endpoint', 'request body')
 
 
 @pytest.mark.gen_test
 def test_no_peers(vcr_service, cassette, client):
     allow(cassette).can_replay.and_return(False)
-    vcr_request = VCRProxy.Request(
+    vcr_request = proxy.Request(
         serviceName='hello_service',
         endpoint='hello',
         headers='',
         body='body',
     )
-    with pytest.raises(VCRProxy.NoPeersAvailableError):
-        yield client.send(vcr_request)
+    with pytest.raises(proxy.NoPeersAvailableError):
+        yield TChannel('foo').thrift(client.send(vcr_request))
 
 
 @pytest.mark.gen_test
 def test_unexpected_error(vcr_service, cassette, call):
     allow(cassette).can_replay.and_raise(SomeException("great sadness"))
 
-    with pytest.raises(VCRProxy.VCRServiceError) as exc_info:
+    with pytest.raises(proxy.VCRServiceError) as exc_info:
         yield call('endpoint', 'body')
 
     assert 'great sadness' in str(exc_info)
@@ -181,7 +186,7 @@ def test_protocol_error(vcr_service, cassette, call, mock_server):
         TChannelError.from_code(1, description='great sadness')
     )
 
-    with pytest.raises(VCRProxy.RemoteServiceError) as exc_info:
+    with pytest.raises(proxy.RemoteServiceError) as exc_info:
         yield call('endpoint', 'body')
 
     assert 'great sadness' in str(exc_info)

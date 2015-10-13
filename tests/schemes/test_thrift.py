@@ -1013,7 +1013,7 @@ def test_call_unexpected_error_should_result_in_unexpected_error(
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_value_expected_but_none_returned_should_error(
-    server, service, ThriftTest, use_thriftrw_server
+    server, service, ThriftTest, use_thriftrw_server, use_thriftrw_client
 ):
 
     # Given this test server:
@@ -1032,7 +1032,13 @@ def test_value_expected_but_none_returned_should_error(
         # values.
         exc = UnexpectedError
     else:
-        exc = ValueExpectedError
+        # If server is using thrift, it will be able to return an invalid
+        # response. thriftrw will fail with a TypeError on invalid values. For
+        # thrift, we'll check manually and raise ValueExpectedError.
+        if use_thriftrw_client:
+            exc = TypeError
+        else:
+            exc = ValueExpectedError
 
     with pytest.raises(exc) as exc_info:
         yield tchannel.thrift(
@@ -1040,8 +1046,11 @@ def test_value_expected_but_none_returned_should_error(
         )
 
     if not use_thriftrw_server:
-        assert 'Expected a value to be returned' in str(exc_info)
-        assert 'ThriftTest::testString' in str(exc_info)
+        if use_thriftrw_client:
+            assert 'did not receive any values' in str(exc_info)
+        else:
+            assert 'Expected a value to be returned' in str(exc_info)
+            assert 'ThriftTest::testString' in str(exc_info)
 
 
 @pytest.mark.gen_test
