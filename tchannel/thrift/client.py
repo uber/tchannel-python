@@ -32,7 +32,6 @@ from tchannel.errors import OneWayNotSupportedError
 from ..serializer.thrift import ThriftSerializer
 from .reflection import get_service_methods
 
-
 # Generated clients will use this base class.
 _ClientBase = namedtuple(
     '_ClientBase',
