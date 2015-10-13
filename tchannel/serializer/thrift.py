@@ -23,9 +23,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from thrift.protocol import TBinaryProtocol
-from thrift.transport import TTransport
-
 from tchannel.schemes import THRIFT
 
 from .. import io
@@ -70,6 +67,8 @@ class ThriftSerializer(object):
         #    result, TMemoryBuffer(body),(result_type, result_type.thrift_spec)
         # )
         #
+        from thrift.protocol import TBinaryProtocol
+        from thrift.transport import TTransport
         trans = TTransport.TMemoryBuffer()
         proto = TBinaryProtocol.TBinaryProtocolAccelerated(trans)
         call_args.write(proto)
@@ -78,6 +77,8 @@ class ThriftSerializer(object):
         return result
 
     def deserialize_body(self, body):
+        from thrift.protocol import TBinaryProtocol
+        from thrift.transport import TTransport
         trans = TTransport.TMemoryBuffer(body)
         proto = TBinaryProtocol.TBinaryProtocolAccelerated(trans)
 
