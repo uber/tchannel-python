@@ -295,9 +295,9 @@ class Peer(object):
         :return:
             A future containing a connection to this host.
         """
-        # Prefer recently created outgoing connections over everything else.
+        # Prefer incoming connection over outgoing connection.
         conns = (
-            conn for conn in chain(self._out_conns, self._in_conns)
+            conn for conn in chain(self._in_conns, self._out_conns)
             if not conn.closed
         )
         try:

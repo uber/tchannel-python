@@ -25,9 +25,10 @@ from __future__ import absolute_import
 
 import mock
 import pytest
+from tchannel.tornado.peer import Peer
 from tornado import gen
 
-from tchannel.tornado import peer as tpeer
+from tchannel.tornado import peer as tpeer, TChannel
 from tchannel.tornado.stream import InMemStream
 from tchannel.tornado.stream import read_full
 
@@ -145,3 +146,17 @@ def test_peer_connection_failure():
         assert got is connection
 
         assert MockConnection.outgoing.call_count == 2
+
+
+@pytest.mark.gen_test
+def test_peer_selection():
+    peer = Peer(TChannel('teste'), '127.0.0.1:8000')
+    out_conn = mock.MagicMock()
+    out_conn.closed = False
+    in_conn = mock.MagicMock()
+    in_conn.closed = False
+
+    peer._in_conns.append(in_conn)
+    peer._out_conns.append(out_conn)
+    conn = yield peer.connect()
+    assert conn == in_conn
