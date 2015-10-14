@@ -311,22 +311,23 @@ class TornadoConnection(object):
 
         future = tornado.gen.Future()
         self._outstanding[message.id] = future
-        self._write(message)
+        self.write(message)
         return future
 
-    def write(self, fragments):
-        """Writes the given message up the wire.
+    def write_all(self, fragments):
+        """Writes the collection of messages up the wire.
 
         Does not expect a response back for the message.
 
         :param fragments:
-            A generator that will return fragment messages
+            A generator that will return fragment messages. It should be
+            iterable.
         """
         assert not self.closed
 
-        return chain(fragments, self._write)
+        return chain(fragments, self.write)
 
-    def _write(self, message):
+    def write(self, message):
         """Writes the given message up the wire.
 
         The message must be small enough to fit in a single frame.
@@ -361,7 +362,7 @@ class TornadoConnection(object):
             A future that resolves (with a value of None) when the handshake
             is complete.
         """
-        self._write(messages.InitRequestMessage(
+        self.write(messages.InitRequestMessage(
             version=PROTOCOL_VERSION,
             headers=headers
         ))
@@ -393,7 +394,7 @@ class TornadoConnection(object):
             )
         self._extract_handshake_headers(init_req)
 
-        self._write(
+        self.write(
             messages.InitResponseMessage(
                 PROTOCOL_VERSION, headers, init_req.id),
         )
@@ -500,7 +501,7 @@ class TornadoConnection(object):
         if code not in ErrorMessage.ERROR_CODES.keys():
             raise FatalProtocolError(code)
 
-        return self._write(
+        return self.write(
             ErrorMessage(
                 code=code,
                 description=description,
@@ -509,18 +510,21 @@ class TornadoConnection(object):
         )
 
     def ping(self):
-        return self._write(messages.PingRequestMessage())
+        return self.write(messages.PingRequestMessage())
 
     def pong(self):
-        return self._write(messages.PingResponseMessage())
+        return self.write(messages.PingResponseMessage())
 
     def add_incoming_request(self, request):
+        """Add request into the pending incoming requests list."""
         self.incoming_requests[request.id] = request
 
     def get_incoming_request(self, id):
+        """Get the pending incoming request based on the request ID."""
         return self.incoming_requests.get(id, None)
 
     def remove_incoming_request(self, id):
+        """Remove a pending incoming request based on the request ID."""
         req = self.incoming_requests.pop(id, None)
         return req
 
@@ -578,13 +582,13 @@ class StreamConnection(TornadoConnection):
                 chunk = yield argstream.read()
                 while chunk:
                     message = build_raw_message(context, args)
-                    yield self.write(fragment(message, context))
+                    yield self.write_all(fragment(message, context))
                     args = [chunk]
                     chunk = yield argstream.read()
 
             # last piece of request/response.
             message = build_raw_message(context, args, is_completed=True)
-            yield self.write(fragment(message, context))
+            yield self.write_all(fragment(message, context))
             context.state = StreamState.completed
         # Stop streamming immediately if exception occurs on the handler side
         except TChannelError as e:
