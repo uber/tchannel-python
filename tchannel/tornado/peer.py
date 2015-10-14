@@ -26,9 +26,7 @@ import logging
 from collections import deque
 from itertools import chain
 from random import random
-
 from tornado import gen
-from tornado.locks import Condition
 
 from ..schemes import DEFAULT as DEFAULT_SCHEME
 from ..retry import (
@@ -87,7 +85,6 @@ class PeerGroup(object):
     def __str__(self):
         return "<PeerGroup peers=%s>" % str(self._peers)
 
-    @gen.coroutine
     def clear(self):
         """Reset this PeerGroup.
 
@@ -98,23 +95,12 @@ class PeerGroup(object):
             A Future that resolves with a value of None when the operation
             has finished
         """
-        if self._resetting:
-            # If someone else is already resetting the PeerGroup, just block
-            # on them to be finished.
-            yield self._reset_condition.wait()
-            raise gen.Return(None)
-
-        self._resetting = True
-        if self._reset_condition is None:
-            self._reset_condition = Condition()
-
         try:
             for peer in self._peers.values():
                 peer.close()
         finally:
             self._peers = {}
             self._resetting = False
-            self._reset_condition.notify_all()
 
     def get(self, hostport):
         """Get a Peer for the given destination.
