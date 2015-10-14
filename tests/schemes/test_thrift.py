@@ -43,7 +43,8 @@ from tchannel.sync import TChannel as SyncTChannel
 from tchannel.sync.thrift import client_for as sync_client_for
 from tchannel.thrift import client_for
 from tchannel.tornado import TChannel as DeprecatedTChannel
-from tchannel.testing.data.generated.ThriftTest import (
+
+from tests.data.generated.ThriftTest import (
     SecondService as _SecondService,
     ThriftTest as _ThriftTest,
     ttypes as _ttypes,

@@ -23,10 +23,10 @@ from __future__ import absolute_import
 import inspect
 from collections import namedtuple
 
-from thrift import Thrift
 from tornado import gen
 
 from tchannel import schemes
+from tchannel.deprecate import deprecated
 from tchannel.errors import OneWayNotSupportedError
 
 from ..serializer.thrift import ThriftSerializer
@@ -39,6 +39,11 @@ _ClientBase = namedtuple(
 )
 
 
+@deprecated(
+    "client_for is deprecated and will be removed in 0.19.0, "
+    "please switch usage to tchannel.thrift.load in conjunction "
+    "with tchannel.TChannel or tchannel.sync.TChannel."
+)
 def client_for(service, service_module, thrift_service_name=None):
     """Build a client class for the given Thrift service.
 
@@ -217,6 +222,7 @@ def generate_method(service_module, service_name, method_name):
 
         # Expected a result but nothing was present in the object. Something
         # went wrong.
+        from thrift import Thrift
         raise Thrift.TApplicationException(
             Thrift.TApplicationException.MISSING_RESULT,
             '%s failed: did not receive a result as expected' % method_name

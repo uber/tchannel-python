@@ -90,7 +90,7 @@ def test_json_server(json_server, sample_json):
     endpoint = "json_echo"
     tchannel = TChannel(name='test')
 
-    header = sample_json
+    header = {'ab': 'bc'}
     body = sample_json
     resp = yield tchannel.json(
         service='endpoint1',

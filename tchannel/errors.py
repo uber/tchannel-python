@@ -191,3 +191,8 @@ class OneWayNotSupportedError(BadRequestError):
 class ValueExpectedError(BadRequestError):
     """Raised when a non-void Thrift response contains no value."""
     pass
+
+
+class SingletonNotPreparedError(TChannelError):
+    """Raised when calling get_instance before calling prepare."""
+    pass

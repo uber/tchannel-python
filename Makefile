@@ -19,16 +19,16 @@ env/bin/activate:
 	virtualenv env
 
 env_install: env/bin/activate
-	./env/bin/pip install -r requirements-test.txt --download-cache $(HOME)/.cache/pip
+	./env/bin/pip install -r requirements-test.txt
 	./env/bin/python setup.py develop
 
 .PHONY: tox_install
 tox_install:
-	pip install -r requirements-test.txt --download-cache $(HOME)/.cache/pip
+	pip install -r requirements-test.txt
 	python setup.py develop
 
 .PHONY: install
-install:
+install: clean
 ifdef TOX_ENV
 	make tox_install
 else
@@ -56,7 +56,7 @@ testhtml: clean
 clean:
 	rm -rf dist/
 	rm -rf build/
-	@find $(project) -name "*.pyc" -delete
+	@find $(project) tests -name "*.pyc" -delete
 
 .PHONY: lint
 lint:

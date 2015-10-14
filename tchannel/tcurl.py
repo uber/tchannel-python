@@ -18,264 +18,278 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+# Here's a good reference if you're touching this file and
+# unfamiliar with argparse:
+#
+#   https://mkaz.github.io/2014/07/26/python-argparse-cookbook/
+#
+
+"""
+tcurl: curl for tchannel applications
+
+examples:
+
+    Health check the "larry" service:
+
+      tcurl.py --health --service larry
+
+
+    Send a Thrift request to "larry":
+
+      tcurl.py --thrift larry.thrift --service larry --endpoint Larry::nyuck \\
+      --body '{"nyuck": "nyuck"}'
+"""
+
 from __future__ import absolute_import
 
 import argparse
-import collections
-import contextlib
-import cProfile
-import itertools
 import logging
-import pstats
+import json
+import os
 import sys
-import time
+import traceback
 
 import tornado.ioloop
+import tornado.gen
 
-from .tornado import TChannel
+from . import TChannel
+from . import thrift
 
 log = logging.getLogger('tchannel')
 
 
+class Formatter(
+    argparse.ArgumentDefaultsHelpFormatter,
+    argparse.RawDescriptionHelpFormatter,
+):
+    pass
+
+
 def parse_args(args=None):
+
     args = args or sys.argv[1:]
 
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--host",
-        dest="host",
-        default="localhost:8888/",
-        nargs='+',
-        help="Hostname, port, and optional endpoint (arg1) to hit.",
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=Formatter,
     )
 
     parser.add_argument(
-        "-d", "--body",
-        dest="body",
-        default=[None],
-        nargs='*',
-        help=(
-            "arg3. Can be specified multiple times to trigger simultaneous "
-            "requests."
-        ),
-    )
-
-    parser.add_argument(
-        "-s", "--service",
+        "--service", "-s",
         dest="service",
         default=None,
+        required=True,
         help=(
-            "Name of destination service (for tchannel routing)."
+            "Name of destination service for Hyperbahn routing."
         ),
     )
 
     parser.add_argument(
-        "-H", "--headers",
+        "--host", "-p",
+        dest="host",
+        default="localhost:21300",
+        help="Hostname and port to contact.",
+    )
+
+    parser.add_argument(
+        "--endpoint", "-1",
+        dest="endpoint",
+        default="",
+        help=(
+            "Name of destination service for Hyperbahn routing."
+        ),
+    )
+
+    parser.add_argument(
+        "--headers", "-2",
         dest="headers",
-        default=[None],
-        nargs='*',
-        help=(
-            "arg2. Can be speecified multiple time to trigger simultaneous "
-            "requests."
-        ),
-    )
-
-    parser.add_argument(
-        "-r", "--rps",
-        dest="rps",
-        type=int,
         default=None,
         help=(
-            "Throttle outgoing requests to this many per second."
+            "A JSON blob unless --raw was specified, e.g., --headers "
+            "'{\"foo\": \"bar\"}'."
+        ),
+    )
+
+    parser.add_argument(
+        "--body", "-3",
+        dest="body",
+        default=None,
+        help=(
+            "A JSON blob unless --raw was specified. This is coerced into a "
+            "Thrift structure when --thrift is given."
+        ),
+    )
+
+    parser.add_argument(
+        "--timeout",
+        dest="timeout",
+        default=1.0,
+        type=float,
+        help=(
+            "Timeout, in seconds, for the request."
+        ),
+    )
+
+    parser.add_argument(
+        "--health",
+        action="store_true",
+        help=(
+            "Perform a health check against the given service. This overrides "
+            "--endpoint."
         ),
     )
 
     parser.add_argument(
         "-v", "--verbose",
         dest="verbose",
-        action="store_true"
-    )
-
-    parser.add_argument(
-        "-q", "--quiet",
-        dest="quiet",
         action="store_true",
-        help="Don't display request/response information.",
+        help="Say more.",
     )
 
-    parser.add_argument(
-        "--batch-size",
-        dest="batch_size",
-        type=int,
-        default=100,
-        help="Maximum number of outstanding requests.",
+    thrift_group = parser.add_argument_group('thrift')
+
+    thrift_group.add_argument(
+        "--thrift", "-t",
+        dest="thrift",
+        type=argparse.FileType('r'),
+        help=(
+            "Path to a Thrift IDL file. Incompatible with --raw."
+        ),
     )
 
-    parser.add_argument(
-        "--profile",
-        dest="profile",
-        action="store_true"
+    raw_group = parser.add_argument_group('raw')
+
+    raw_group.add_argument(
+        "--raw",
+        dest="raw",
+        action="store_true",
+        help=(
+            "Treats --body as a binary blob instead of JSON."
+        ),
     )
 
     args = parser.parse_args(args)
 
-    # Allow a body/header to specified once and shared across multiple
-    # requests.
-    if args.headers and args.body and len(args.headers) != len(args.body):
-        if len(args.headers) == 1:
-            args.headers = args.headers * len(args.body)
+    if not args.raw:
+        try:
+            args.body = json.loads(args.body) if args.body else {}
+        except ValueError:
+            return parser.error("--body isn't valid JSON")
 
-        elif len(args.body) == 1:
-            args.body = args.body * len(args.headers)
+        try:
+            args.headers = json.loads(args.headers) if args.headers else {}
+        except ValueError:
+            return parser.error("--headers isn't valid JSON")
 
-        else:
-            parser.error(
-                "Multiple header/body arguments given "
-                "but not of the same degree."
-            )
+    if args.thrift and not args.endpoint:
+        return parser.error("--thrift must be used with --endpoint")
 
-    if len(args.host) != max(1, len(args.headers), len(args.body)):
-        if len(args.host) != 1:
-            parser.error(
-                "Number of hosts specified doesn't agree with the number of "
-                "header/body arguments."
-            )
+    if args.thrift and '::' not in args.endpoint:
+        return parser.error(
+            "--endpoint should be of the form ThriftService::methodName"
+        )
 
-        args.host = args.host * max(len(args.headers), len(args.body))
-
-    # Transform something like "localhost:8888" into "localhost:8888/" so we
-    # consider it as the '' endpoint.
-    args.host = (h if '/' in h else h + '/' for h in args.host)
+    if args.thrift and args.raw:
+        return parser.error("can't use --thrift and --raw together")
 
     return args
-
-
-def chunk(iterable, n):
-    while True:
-        chunk = tuple(itertools.islice(iterable, n))
-        if not chunk:
-            return
-        yield chunk
-
-
-@tornado.gen.coroutine
-def multi_tcurl(
-    tchannel,
-    hostports,
-    headers,
-    bodies,
-    service,
-    profile=False,
-    rps=None,
-    quiet=False,
-    batch_size=100,
-):
-    all_requests = getattr(itertools, 'izip', zip)(hostports, headers, bodies)
-
-    with timing(profile):
-        for requests in chunk(all_requests, batch_size):
-            futures = []
-
-            for hostport, header, body in requests:
-                futures.append(
-                    tcurl(tchannel, hostport, header, body, service, quiet)
-                )
-
-                if rps:
-                    yield tornado.gen.sleep(1.0 / rps)
-
-            wait_iterator = tornado.gen.WaitIterator(*futures)
-            results = []
-
-            while not wait_iterator.done():
-                try:
-                    results.append((yield wait_iterator.next()))
-                except Exception:
-                    raise
-
-    raise tornado.gen.Return(results)
-
-
-@tornado.gen.coroutine
-def tcurl(tchannel, hostport, headers, body, service, quiet=False):
-    host, endpoint = hostport.split('/', 1)
-
-    if not quiet:
-        log.debug("> Host: %s" % host)
-        log.debug("> Arg1: %s" % endpoint)
-        log.debug("> Arg2: %s" % headers)
-        log.debug("> Arg3: %s" % body)
-
-    request = tchannel.request(host, service)
-
-    response = yield request.send(
-        endpoint,
-        headers,
-        body,
-    )
-
-    if not quiet:
-        log.debug("< Host: %s" % host)
-        log.debug("<  Msg: %s" % response.id)
-
-    raise tornado.gen.Return(response)
-
-
-@contextlib.contextmanager
-def timing(profile=False):
-    start = time.time()
-
-    profiler = None
-
-    if profile:
-        profiler = cProfile.Profile()
-        profiler.enable()
-
-    info = collections.Counter()
-
-    yield info
-
-    if profiler:
-        profiler.disable()
-        profiler.create_stats()
-        stats = pstats.Stats(profiler)
-        stats.sort_stats('time').print_stats(15)
-
-    stop = time.time()
-
-    log.info("took %.2fs seconds" % (stop - start))
 
 
 @tornado.gen.coroutine
 def main(argv=None):
     args = parse_args(argv)
 
-    logging.basicConfig(
-        format="%(name)s[%(process)s] %(levelname)s: %(message)s",
-        stream=sys.stdout,
-        level=logging.INFO,
-    )
-
-    log.setLevel(logging.INFO)
-    if args.verbose:
-        log.setLevel(logging.DEBUG)
-
+    # Should this be my username?
     tchannel = TChannel(name='tcurl.py')
 
-    results = yield multi_tcurl(
-        tchannel,
-        args.host,
-        args.headers,
-        args.body,
-        args.service,
-        profile=args.profile,
-        rps=args.rps,
-        quiet=args.quiet,
-        batch_size=args.batch_size,
-    )
+    if args.health:
 
-    raise tornado.gen.Return(results)
+        args.thrift = open(
+            os.path.join(os.path.dirname(__file__), 'health/meta.thrift'),
+            'r',
+        )
+        args.endpoint = "Meta::health"
+
+    if args.thrift:
+
+        thrift_service_name, thrift_method_name = args.endpoint.split('::')
+
+        thrift_module = thrift.load(
+            path=args.thrift.name,
+            service=args.service,
+            hostport=args.host,
+        )
+        thrift_service = getattr(thrift_module, thrift_service_name)
+        thrift_method = getattr(thrift_service, thrift_method_name)
+
+        body = args.body or {}
+
+        result = yield _catch_errors(
+            tchannel.thrift(
+                thrift_method(**body),
+                headers=args.headers,
+                timeout=args.timeout,
+            ),
+            verbose=args.verbose,
+        )
+
+    elif args.raw:
+
+        result = yield _catch_errors(
+            tchannel.raw(
+                service=args.service,
+                endpoint=args.endpoint,
+                body=args.body,
+                headers=args.headers,
+                timeout=args.timeout,
+                hostport=args.host,
+            ),
+            verbose=args.verbose,
+        )
+
+    else:
+
+        result = yield _catch_errors(
+            tchannel.json(
+                service=args.service,
+                endpoint=args.endpoint,
+                body=args.body,
+                headers=args.headers,
+                timeout=args.timeout,
+                hostport=args.host,
+            ),
+            verbose=args.verbose,
+        )
+
+    if not args.raw:
+        print json.dumps(result.body, default=_dictify)
+    else:
+        print result.body
+
+    raise tornado.gen.Return(result)
+
+
+@tornado.gen.coroutine
+def _catch_errors(future, verbose, exit=sys.exit):
+    try:
+        result = yield future
+    except Exception, e:
+        if verbose:
+            traceback.print_exc(file=sys.stderr)
+        else:
+            print >> sys.stderr, str(e)
+        exit(1)
+
+    raise tornado.gen.Return(result)
+
+
+def _dictify(thrift_obj):
+    result = {}
+    for field in thrift_obj.type_spec.fields:
+        value = getattr(thrift_obj, field.name)
+        result[field.name] = value
+
+    return result
 
 
 def start_ioloop():  # pragma: no cover

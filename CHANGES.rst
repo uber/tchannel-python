@@ -1,10 +1,24 @@
 Changes by Version
 ==================
 
-0.17.6 (unreleased)
+0.18.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Deprecated warnings will now sound for ``tchannel.thrift.client_for``,
+  ``tchannel.thrift_request_builder``, and ``tchannel.tornado.TChannel`` - these
+  APIs will be removed soon - be sure to move to ``tchannel.thrift.load`` in
+  conjunction with ``tchannel.TChannel``.
+- Added singleton facility for maintaining a single TChannel instance per thread.
+  See ``tchannel.singleton.TChannel``, ``tchannel.sync.singleton.TChannel``, or check
+  the guide for an example how of how to use. Note this feature is optional.
+- Added Thrift support to ``tcurl.py`` and re-worked the script's arguments.
+- Specify which request components to match on with VCR, for example, 'header',
+  'body', etc. See ``tchannel.testing.vcr.use_cassette``.
+- Removed ``tchannel.testing.data`` module.
+- Changed minimum required version of Tornado to 4.2.
+- **BREAKING** - headers for JSON handlers are not longer JSON blobs but are
+  instead maps of strings to strings. This mirrors behavior for Thrift
+  handlers.
 
 
 0.17.5 (2015-10-12)
