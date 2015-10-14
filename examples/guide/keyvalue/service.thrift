@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 exception NotFoundError {
-    1: optional string key,
+    1: required string key,
 }
 
 service KeyValue {

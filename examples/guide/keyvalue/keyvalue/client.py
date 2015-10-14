@@ -21,7 +21,7 @@
 from tornado import gen, ioloop
 from tchannel import TChannel, thrift
 
-tchannel = TChannel('keyvalue-client')
+tchannel = TChannel('keyvalue-consumer')
 service = thrift.load(
     path='examples/guide/keyvalue/service.thrift',
     service='keyvalue-server',
