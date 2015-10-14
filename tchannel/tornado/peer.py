@@ -599,7 +599,14 @@ class PeerClientOperation(object):
         self.tchannel.event_emitter.fire(EventType.before_send_request, req)
         response_future = connection.send_request(req)
 
-        with timeout(response_future, req.ttl):
+        # TODO in 0.19, refactor timeouts so that:
+        # 1 - timeouts are DRY, and knowledge about them is centralized
+        # 2 - in Python-space, timeouts are second-based (idiomatic)
+        # 3 - over the wire, timeouts are milliseconds
+        # 4 - s/DEFAULT_TIMEOUT/DEFAULT_TIMEOUT_SECONDS/
+        ttl_in_seconds = req.ttl / 1000
+
+        with timeout(response_future, ttl_in_seconds):
             try:
                 response = yield response_future
             except TChannelError as error:
