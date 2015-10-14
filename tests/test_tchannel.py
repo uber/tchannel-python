@@ -26,12 +26,12 @@ from __future__ import unicode_literals
 import subprocess
 import textwrap
 from mock import MagicMock, patch
+import mock
 
 import psutil
 import pytest
-
 from tchannel import TChannel, Request, Response, schemes, errors
-from tchannel.errors import AlreadyListeningError
+from tchannel.errors import AlreadyListeningError, TimeoutError
 from tchannel.event import EventHook
 from tchannel.response import TransportHeaders
 
@@ -296,3 +296,25 @@ def test_listen_duplicate_ports():
     port = int(server.hostport.rsplit(":")[1])
     server.listen(port)
     server.listen()
+
+
+@pytest.mark.gen_test
+def test_tll():
+
+    server = TChannel(name='server')
+    server.listen()
+
+    tchannel = TChannel(name='client')
+
+    with mock.patch(
+        "tchannel.tornado.dispatch.RequestDispatcher.handle", autospec=True
+    ) as mock_handle:
+        with pytest.raises(TimeoutError):
+            yield tchannel.call(
+                scheme=schemes.RAW,
+                service='server',
+                arg1='endpoint',
+                hostport=server.hostport,
+                timeout=9,
+            )
+        assert mock_handle.call_args[0][1].ttl == 9
