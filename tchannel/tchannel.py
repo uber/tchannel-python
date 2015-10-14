@@ -268,7 +268,7 @@ class TChannel(object):
             other services will use to make contact with you.
 
         :param timeout:
-            The timeout (in sec) for the initial advertise attempt.
+            The timeout (in seconds) for the initial advertise attempt.
             Defaults to 30 seconds.
 
         :returns:

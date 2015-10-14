@@ -5,7 +5,6 @@ Changes by Version
 -------------------
 
 - Fixed a bug that was converting units for timeouts incorrectly.
-  The unit for ttl is set to millisecond.
 
 
 0.16.6 (2015-09-14)
