@@ -1,6 +1,13 @@
 Changes by Version
 ==================
 
+0.16.7 (unreleased)
+-------------------
+
+- Fixed a bug that the time unit for ttl is unclear. The unit for ttl is set
+  to millisecond.
+
+
 0.16.6 (2015-09-14)
 -------------------
 
