@@ -38,6 +38,10 @@ from ..event import EventType
 from ..messages import Types
 from ..messages.error import ErrorCode
 from ..serializer.raw import RawSerializer
+from .message_factory import (
+    build_inbound_request_cont,
+    build_inbound_request,
+)
 from .response import Response as DeprecatedResponse
 
 log = logging.getLogger('tchannel')
@@ -69,25 +73,31 @@ class RequestDispatcher(object):
         self.register(self.FALLBACK, self.not_found)
         self._handler_returns_response = _handler_returns_response
 
-    _HANDLER_NAMES = {
-        Types.CALL_REQ: 'pre_call',
-        Types.CALL_REQ_CONTINUE: 'pre_call'
-    }
-
     def handle(self, message, connection):
         # TODO assert that the handshake was already completed
         assert message, "message must not be None"
-
-        if message.message_type not in self._HANDLER_NAMES:
+        if message.message_type not in self._HANDLERS:
             # TODO handle this more gracefully
             raise NotImplementedError("Unexpected message: %s" % str(message))
 
-        handler_name = "handle_" + self._HANDLER_NAMES[message.message_type]
-        return getattr(self, handler_name)(message, connection)
+        return self._HANDLERS[message.message_type](self, message, connection)
+
+    def handle_pre_call_cont(self, message, connection):
+        """Handle incoming CallRequestContinueMessage.
+
+        :param message: CallRequestContinueMessage
+        :param connection: tornado connection
+        """
+        try:
+            build_inbound_request_cont(
+                message, connection.get_incoming_request(message.id)
+            )
+        except TChannelError as e:
+            log.warn('Received a bad request.', exc_info=True)
+            connection.send_error(e.code, e.message, message.id)
 
     def handle_pre_call(self, message, connection):
-        """Handle incoming request message including CallRequestMessage and
-        CallRequestContinueMessage
+        """Handle incoming CallRequestMessage.
 
         This method will build the User friendly request object based on the
         incoming messages.
@@ -97,25 +107,24 @@ class RequestDispatcher(object):
         arg_1=argstream[0], the message_factory will return a request object.
         Then it will trigger the async call_handle call.
 
-        :param message: CallRequestMessage or CallRequestContinueMessage
+        :param message: CallRequestMessage
         :param connection: tornado connection
         """
         try:
-            req = connection.request_message_factory.build(message)
-            # message_factory will create Request only when it receives
-            # CallRequestMessage. It will return None, if it receives
-            # CallRequestContinueMessage.
-            if req:
-                self.handle_call(req, connection)
+            new_req = build_inbound_request(
+                message, connection.remote_host, connection.remote_host_port,
+            )
 
+            # process the new request
+            connection.add_incoming_request(new_req)
+            self.handle_call(new_req, connection).add_done_callback(
+                lambda _: connection.remove_incoming_request(
+                    new_req.id
+                )
+            )
         except TChannelError as e:
             log.warn('Received a bad request.', exc_info=True)
-
-            connection.send_error(
-                e.code,
-                e.message,
-                message.id,
-            )
+            connection.send_error(e.code, e.message, message.id)
 
     @tornado.gen.coroutine
     def handle_call(self, request, connection):
@@ -127,13 +136,13 @@ class RequestDispatcher(object):
         # request.endpoint. The original argstream[0] is no longer valid. If
         # user still tries read from it, it will return empty.
         chunk = yield request.argstreams[0].read()
-        response = None
         while chunk:
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
 
         log.debug('Received a call to %s.', request.endpoint)
 
+        response = None
         tchannel = connection.tchannel
 
         # event: receive_request
@@ -162,13 +171,12 @@ class RequestDispatcher(object):
         request.serializer = handler.req_serializer
         response = DeprecatedResponse(
             id=request.id,
-            checksum=request.checksum,
+            checksum=(request.checksum[0], 0),
             tracing=request.tracing,
             connection=connection,
             headers={'as': request.headers.get('as', 'raw')},
             serializer=handler.resp_serializer,
         )
-
         connection.post_response(response)
 
         try:
@@ -220,22 +228,23 @@ class RequestDispatcher(object):
 
             response.flush()
         except TChannelError as e:
-            connection.send_error(
-                e.code,
-                e.message,
-                request.id,
-            )
+            response.set_exception(e)
+            connection.send_error(e.code, e.message, request.id)
         except Exception as e:
             msg = "An unexpected error has occurred from the handler"
             log.exception(msg)
 
             response.set_exception(TChannelError(e.message))
-            connection.request_message_factory.remove_buffer(response.id)
 
             connection.send_error(ErrorCode.unexpected, msg, response.id)
             tchannel.event_emitter.fire(EventType.on_exception, request, e)
 
         raise gen.Return(response)
+
+    _HANDLERS = {
+        Types.CALL_REQ: handle_pre_call,
+        Types.CALL_REQ_CONTINUE: handle_pre_call_cont,
+    }
 
     def register(
             self,

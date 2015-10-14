@@ -32,8 +32,9 @@ from .. import errors
 from .. import frame
 from .. import glossary
 from .. import messages
-from ..errors import NetworkError
 from ..errors import FatalProtocolError
+from ..errors import InvalidChecksumError
+from ..errors import NetworkError
 from ..errors import TChannelError
 from ..event import EventType
 from ..io import BytesIO
@@ -42,7 +43,13 @@ from ..messages.common import FlagsType
 from ..messages.common import StreamState
 from ..messages.error import ErrorMessage
 from ..messages.types import Types
-from .message_factory import MessageFactory
+from .message_factory import (
+    build_inbound_error,
+    build_inbound_response,
+    build_inbound_response_cont,
+    build_raw_message,
+    fragment,
+)
 from .util import chain
 
 try:
@@ -103,13 +110,6 @@ class TornadoConnection(object):
         # Tracks message IDs for this connection.
         self._id_sequence = 0
 
-        # We need to use two separate message factories to avoid message ID
-        # collision while assembling fragmented messages.
-        self.request_message_factory = MessageFactory(self.remote_host,
-                                                      self.remote_host_port)
-        self.response_message_factory = MessageFactory(self.remote_host,
-                                                       self.remote_host_port)
-
         # Queue of unprocessed incoming calls.
         self._messages = queues.Queue()
 
@@ -122,6 +122,15 @@ class TornadoConnection(object):
 
         self.tchannel = tchannel
 
+        # Map from message ID to inflight requests on the server side.
+        self.incoming_requests = {}
+        # Map from message ID to inflight responses on the client side.
+        # When client sends a request, it will first put ID and a future for
+        # response in the _outstanding map. After it gets response message,
+        # but not a completed response, it will put ID and response obj in the
+        # incoming_response.
+        self.incoming_responses = {}
+
         connection.set_close_callback(self._on_close)
 
     def next_message_id(self):
@@ -130,7 +139,6 @@ class TornadoConnection(object):
 
     def _on_close(self):
         self.closed = True
-
         for message_id, future in self._outstanding.iteritems():
             future.set_exception(
                 NetworkError(
@@ -138,7 +146,6 @@ class TornadoConnection(object):
                 )
             )
         self._outstanding = {}
-
         try:
             while True:
                 message = self._messages.get_nowait()
@@ -195,6 +202,8 @@ class TornadoConnection(object):
 
             if isinstance(exception, tornado.iostream.StreamClosedError):
                 self.close()
+            if message_future.running():
+                message_future.set_exception(exception)
 
         size_width = frame.frame_rw.size_rw.width()
         read_bytes_future = self.connection.read_bytes(size_width)
@@ -213,50 +222,69 @@ class TornadoConnection(object):
         #
         # Must be started only after the handshake has been performed.
         self._loop_running = True
+
         while not self.closed:
-            message = yield self._recv()
-            # TODO: There should probably be a try-catch on the yield.
+            try:
+                message = yield self._recv()
+            except tornado.iostream.StreamClosedError:
+                pass
+
             if message.message_type in self.CALL_REQ_TYPES:
                 self._messages.put(message)
-                continue
-
             elif message.id in self._outstanding:
-                # set exception if receive error message
-                if message.message_type == Types.ERROR:
-                    future = self._outstanding.pop(message.id)
-                    if future.running():
-                        error = TChannelError.from_code(
-                            message.code,
-                            description=message.description,
-                        )
-                        future.set_exception(error)
-                    else:
-                        protocol_exception = (
-                            self.response_message_factory.build(message)
-                        )
-                        if protocol_exception:
-                            self.event_emitter.fire(
-                                EventType.after_receive_error,
-                                protocol_exception,
-                            )
-                    continue
+                # This should just handle CALL_RES or ERROR message.
+                # It is invalid if any CALL_RES_CONTINUE message goes here.
+                self._handle_response(message)
+            elif message.id in self.incoming_responses:
+                # This should just handle CALL_RES_CONTINUE or ERROR message.
+                # It is invalid if any CALL_RES message goes here.
+                self._handle_continuing_response(message)
+            else:
+                log.warn('Unconsumed message %s', message)
 
-                response = self.response_message_factory.build(message)
+    def _handle_continuing_response(self, message):
+        response = self.incoming_responses.pop(message.id)
+        if message.message_type == Types.ERROR:
+            error = build_inbound_error(message)
+            response.set_exception(error)
 
-                # keep continue message in the list
-                # pop all other type messages including error message
-                if (message.message_type in self.CALL_RES_TYPES and
-                        message.flags == FlagsType.fragment):
-                    # still streaming, keep it for record
-                    future = self._outstanding.get(message.id)
-                else:
-                    future = self._outstanding.pop(message.id)
+            self.tchannel.event_emitter.fire(
+                EventType.after_receive_error, error,
+            )
+            return
 
-                if response and future.running():
-                    future.set_result(response)
-                continue
+        try:
+            build_inbound_response_cont(message, response)
+        except (FatalProtocolError, InvalidChecksumError) as e:
+            response.set_exception(e)
+        else:
+            if message.flags == FlagsType.fragment:
+                # still streaming, keep it for record
+                self.incoming_responses[message.id] = response
 
-            log.warn('Unconsumed message %s', message)
+    def _handle_response(self, message):
+        future = self._outstanding.pop(message.id)
+        if message.message_type == Types.ERROR:
+            error = build_inbound_error(message)
+            if future.running():
+                future.set_exception(error)
+
+            self.tchannel.event_emitter.fire(
+                EventType.after_receive_error, error,
+            )
+            return
+
+        try:
+            response = build_inbound_response(message)
+        except (FatalProtocolError, InvalidChecksumError) as e:
+            if future.running():
+                future.set_exception(e)
+        else:
+            if future.running():
+                future.set_result(response)
+            if message.flags == FlagsType.fragment:
+                # still streaming, keep it for record
+                self.incoming_responses[message.id] = response
 
     # Basically, the only difference between send and write is that send
     # sets up a Future to get the response. That's ideal for peers making
@@ -286,28 +314,20 @@ class TornadoConnection(object):
         self.write(message)
         return future
 
-    def write(self, message):
-        """Writes the given message up the wire.
+    def write_all(self, fragments):
+        """Writes the collection of messages up the wire.
 
         Does not expect a response back for the message.
 
-        :param message:
-            Message to write.
+        :param fragments:
+            A generator that will return fragment messages. It should be
+            iterable.
         """
         assert not self.closed
 
-        message.id = message.id or self.next_message_id()
+        return chain(fragments, self.write)
 
-        if message.message_type in self.CALL_REQ_TYPES:
-            message_factory = self.request_message_factory
-        else:
-            message_factory = self.response_message_factory
-
-        fragments = message_factory.fragment(message)
-
-        return chain(fragments, self._write)
-
-    def _write(self, message):
+    def write(self, message):
         """Writes the given message up the wire.
 
         The message must be small enough to fit in a single frame.
@@ -342,7 +362,7 @@ class TornadoConnection(object):
             A future that resolves (with a value of None) when the handshake
             is complete.
         """
-        self._write(messages.InitRequestMessage(
+        self.write(messages.InitRequestMessage(
             version=PROTOCOL_VERSION,
             headers=headers
         ))
@@ -374,7 +394,7 @@ class TornadoConnection(object):
             )
         self._extract_handshake_headers(init_req)
 
-        self._write(
+        self.write(
             messages.InitResponseMessage(
                 PROTOCOL_VERSION, headers, init_req.id),
         )
@@ -460,10 +480,8 @@ class TornadoConnection(object):
         """
         assert handler, "handler is required"
         assert self._loop_running, "Finish the handshake first"
-
         while not self.closed:
             message = yield self.await()
-
             try:
                 handler(message, self)
             except Exception:
@@ -483,7 +501,7 @@ class TornadoConnection(object):
         if code not in ErrorMessage.ERROR_CODES.keys():
             raise FatalProtocolError(code)
 
-        return self._write(
+        return self.write(
             ErrorMessage(
                 code=code,
                 description=description,
@@ -492,10 +510,23 @@ class TornadoConnection(object):
         )
 
     def ping(self):
-        return self._write(messages.PingRequestMessage())
+        return self.write(messages.PingRequestMessage())
 
     def pong(self):
-        return self._write(messages.PingResponseMessage())
+        return self.write(messages.PingResponseMessage())
+
+    def add_incoming_request(self, request):
+        """Add request into the pending incoming requests list."""
+        self.incoming_requests[request.id] = request
+
+    def get_incoming_request(self, id):
+        """Get the pending incoming request based on the request ID."""
+        return self.incoming_requests.get(id, None)
+
+    def remove_incoming_request(self, id):
+        """Remove a pending incoming request based on the request ID."""
+        req = self.incoming_requests.pop(id, None)
+        return req
 
 
 class StreamConnection(TornadoConnection):
@@ -515,7 +546,7 @@ class StreamConnection(TornadoConnection):
     """
 
     @tornado.gen.coroutine
-    def _stream(self, context, message_factory):
+    def _stream(self, context):
         """write request/response into frames
 
         Transform request/response into protocol level message objects based on
@@ -543,22 +574,21 @@ class StreamConnection(TornadoConnection):
         :param context: Request or Response object
         """
         args = []
+        context.id = context.id or self.next_message_id()
         try:
             for argstream in context.argstreams:
                 chunk = yield argstream.read()
                 args.append(chunk)
                 chunk = yield argstream.read()
                 while chunk:
-                    message = (message_factory.
-                               build_raw_message(context, args))
-                    yield self.write(message)
+                    message = build_raw_message(context, args)
+                    yield self.write_all(fragment(message, context))
                     args = [chunk]
                     chunk = yield argstream.read()
 
             # last piece of request/response.
-            message = (message_factory.
-                       build_raw_message(context, args, is_completed=True))
-            yield self.write(message)
+            message = build_raw_message(context, args, is_completed=True)
+            yield self.write_all(fragment(message, context))
             context.state = StreamState.completed
         # Stop streamming immediately if exception occurs on the handler side
         except TChannelError as e:
@@ -569,7 +599,7 @@ class StreamConnection(TornadoConnection):
     def post_response(self, response):
         try:
             # TODO: before_send_response
-            yield self._stream(response, self.response_message_factory)
+            yield self._stream(response)
 
             # event: send_response
             self.tchannel.event_emitter.fire(
@@ -583,7 +613,7 @@ class StreamConnection(TornadoConnection):
         """send the given request and response is not required"""
         request.close_argstreams()
 
-        stream_future = self._stream(request, self.request_message_factory)
+        stream_future = self._stream(request)
 
         tornado.ioloop.IOLoop.current().add_future(
             stream_future,

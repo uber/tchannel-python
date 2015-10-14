@@ -95,6 +95,7 @@ class Request(object):
             ]
         self.state = StreamState.init
         self.tracing = Trace()
+        self.checksum = (self.checksum[0], 0)
 
     @property
     def arg_scheme(self):

@@ -22,6 +22,7 @@ from __future__ import absolute_import
 
 import pytest
 import tornado.ioloop
+from tornado.iostream import StreamClosedError
 import tornado.testing
 
 from tchannel.messages import Types
@@ -61,3 +62,12 @@ class ConnectionTestCase(tornado.testing.AsyncTestCase):
 
         pong = yield self.client.await()
         assert pong.message_type == Types.PING_RES
+
+    @tornado.testing.gen_test
+    def test_close(self):
+        """Verify the error got thrown when connection is closed"""
+        self.client.ping()
+        yield self.server.await()
+        self.client.connection.close()
+        with pytest.raises(StreamClosedError):
+            yield self.server.await()

@@ -19,16 +19,22 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
-from tchannel.messages import CallRequestMessage, CallResponseMessage
-from tchannel.messages.common import StreamState, FlagsType
-from tchannel.tornado import Request, Response
-from tchannel.tornado.message_factory import MessageFactory
+
+from tchannel.messages import CallRequestMessage
+from tchannel.messages import CallResponseMessage
+from tchannel.messages import ErrorMessage
+from tchannel.messages.common import FlagsType
+from tchannel.messages.common import StreamState
+from tchannel.tornado import Request
+from tchannel.tornado import Response
+from tchannel.tornado.message_factory import build_raw_request_message, \
+    build_raw_response_message, build_request, build_response, \
+    build_inbound_error
 from tchannel.tornado.response import StatusCode
 from tchannel.zipkin.trace import Trace
 
 
 def test_build_raw_request_message():
-    message_factory = MessageFactory()
     req = Request(
         ttl=32,
         service="test",
@@ -36,7 +42,7 @@ def test_build_raw_request_message():
         id=1111,
     )
     req.state = StreamState.init
-    message = message_factory.build_raw_request_message(req, None, True)
+    message = build_raw_request_message(req, None, True)
     assert message.ttl / 1000.0 == req.ttl
     assert message.flags == req.flags
     assert message.id == req.id
@@ -45,7 +51,6 @@ def test_build_raw_request_message():
 
 
 def test_build_raw_response_message():
-    message_factory = MessageFactory()
     resp = Response(
         flags=FlagsType.none,
         code=StatusCode.ok,
@@ -54,7 +59,7 @@ def test_build_raw_response_message():
         id=1111,
     )
     resp.state = StreamState.init
-    message = message_factory.build_raw_response_message(resp, None, True)
+    message = build_raw_response_message(resp, None, True)
     assert message.code == resp.code
     assert message.flags == resp.flags
     assert message.id == resp.id
@@ -62,7 +67,6 @@ def test_build_raw_response_message():
 
 
 def test_build_request():
-    message_factory = MessageFactory()
     message = CallRequestMessage(
         flags=FlagsType.none,
         ttl=100,
@@ -71,7 +75,7 @@ def test_build_request():
         id=12,
     )
 
-    req = message_factory.build_request(message)
+    req = build_request(message)
     assert req.ttl == message.ttl / 1000.0
     assert req.flags == message.flags
     assert req.headers == message.headers
@@ -80,7 +84,6 @@ def test_build_request():
 
 
 def test_build_response():
-    message_factory = MessageFactory()
     message = CallResponseMessage(
         flags=FlagsType.none,
         code=StatusCode.ok,
@@ -88,8 +91,17 @@ def test_build_response():
         id=12,
     )
 
-    req = message_factory.build_response(message)
+    req = build_response(message)
     assert req.code == message.code
     assert req.flags == message.flags
     assert req.headers == message.headers
     assert req.id == message.id
+
+
+def test_build_inbound_error():
+    message = ErrorMessage(code=0, tracing=Trace(), description="test")
+    error = build_inbound_error(message)
+
+    assert error.code == message.code
+    assert error.description == message.description
+    assert error.tracing == message.tracing
