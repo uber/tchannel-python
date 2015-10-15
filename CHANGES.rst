@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.16.8 (unreleased)
+0.16.8 (2015-10-14)
 -------------------
 
 - Rollback the ttl change.
