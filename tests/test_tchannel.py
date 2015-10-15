@@ -29,6 +29,7 @@ from mock import MagicMock, patch
 
 import psutil
 import pytest
+from tornado import gen
 
 from tchannel import TChannel, Request, Response, schemes, errors
 from tchannel.errors import AlreadyListeningError, TimeoutError
