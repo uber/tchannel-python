@@ -4,7 +4,7 @@ Changes by Version
 0.17.8 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Rollback timeout changes from 0.17.6 version.
 
 
 0.17.7 (2015-10-14)
