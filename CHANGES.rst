@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.16.9 (unreleased)
+0.16.9 (2015-10-15)
 -------------------
 
 - Network failures while connecting to randomly selected hosts should be
