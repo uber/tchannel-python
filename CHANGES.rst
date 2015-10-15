@@ -1,10 +1,10 @@
 Changes by Version
 ==================
 
-0.17.8 (unreleased)
+0.17.8 (2015-10-14)
 -------------------
 
-- Nothing changed yet.
+- Revert timeout changes from 0.17.6 due to client incompatibilities.
 
 
 0.17.7 (2015-10-14)
@@ -79,7 +79,7 @@ Changes by Version
 0.16.8 (2015-10-14)
 -------------------
 
-- Rollback the ttl change.
+- Revert timeout changes from 0.16.7 due to client incompatibilities.
 
 
 0.16.7 (2015-10-14)
