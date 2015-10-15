@@ -69,6 +69,12 @@ Changes by Version
   is listening or not.
 
 
+0.16.8 (unreleased)
+-------------------
+
+- Rollback the ttl change.
+
+
 0.16.7 (2015-10-14)
 -------------------
 
