@@ -537,7 +537,6 @@ class PeerClientOperation(object):
         # If we can't find available peer at the first time, we throw
         # NoAvailablePeerError. Later during retry, if we can't find available
         # peer, we throw exceptions from retry not NoAvailablePeerError.
-
         peer, connection = yield self._get_peer_connection()
 
         arg1, arg2, arg3 = (

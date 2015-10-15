@@ -20,6 +20,13 @@ Changes by Version
   instead maps of strings to strings. This mirrors behavior for Thrift
   handlers.
 
+
+0.17.9 (2015-10-15)
+-------------------
+
+- Fix default timeout incorrectly set to 16 minutes, now 30 seconds.
+
+
 0.17.8 (2015-10-14)
 -------------------
 
@@ -86,6 +93,12 @@ Changes by Version
   of the router list.
 - Add ``TChannel.is_listening`` method to return whether the tchannel instance
   is listening or not.
+
+
+0.16.10 (2015-10-15)
+--------------------
+
+- Fix default timeout incorrectly set to 16 minutes, now 30 seconds.
 
 
 0.16.9 (2015-10-15)
