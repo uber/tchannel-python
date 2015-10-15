@@ -1,6 +1,18 @@
 Changes by Version
 ==================
 
+0.16.8 (unreleased)
+-------------------
+
+- Rollback the ttl change.
+
+
+0.16.7 (2015-10-14)
+-------------------
+
+- Fixed a bug that was converting units for timeouts incorrectly.
+
+
 0.16.6 (2015-09-14)
 -------------------
 
