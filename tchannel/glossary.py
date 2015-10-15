@@ -24,4 +24,4 @@
 MAX_MESSAGE_ID = 0xfffffffe
 
 # CallRequestMessage uses it as the default TTL value for the message.
-DEFAULT_TIMEOUT = 1000  # ms
+DEFAULT_TIMEOUT = 30  # seconds
