@@ -34,7 +34,7 @@ import pytest
 from tornado import gen
 
 from tchannel import TChannel, Request, Response, schemes, errors
-from tchannel.errors import AlreadyListeningError
+from tchannel.errors import AlreadyListeningError, TimeoutError
 from tchannel.event import EventHook
 from tchannel.response import TransportHeaders
 
@@ -93,6 +93,45 @@ def test_call_should_get_response():
     assert isinstance(resp.transport, TransportHeaders)
     assert resp.transport.scheme == schemes.RAW
     assert resp.transport.failure_domain is None
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
+def test_timeout_should_raise_timeout_error():
+
+    # Given this test server:
+
+    server = TChannel(name='server')
+
+    @server.register(scheme=schemes.RAW)
+    @gen.coroutine
+    def endpoint(request):
+        yield gen.sleep(0.05)
+        raise gen.Return('hello')
+
+    server.listen()
+
+    # Make a call:
+
+    tchannel = TChannel(name='client')
+
+    # timeout is less than server, should timeout
+    with pytest.raises(TimeoutError):
+        yield tchannel.call(
+            scheme=schemes.RAW,
+            service='server',
+            arg1='endpoint',
+            hostport=server.hostport,
+            timeout=0.02,
+        )
+
+    # timeout is more than server, should not timeout
+    yield tchannel.raw(
+        service='server',
+        endpoint='endpoint',
+        hostport=server.hostport,
+        timeout=0.1,
+    )
 
 
 def test_uninitialized_tchannel_is_fork_safe():

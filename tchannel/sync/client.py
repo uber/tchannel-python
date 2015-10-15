@@ -51,7 +51,7 @@ class TChannel(AsyncTChannel):
         # thrift_service is the result of a call to ``thrift_request_builder``
         future = tchannel.thrift(
             thrift_service.getItem('foo'),
-            timeout=1000,  #  1 second
+            timeout=0.5,  #  0.5 seconds
         )
 
         result = future.result()
