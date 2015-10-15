@@ -37,7 +37,7 @@ def test_build_raw_request_message():
     )
     req.state = StreamState.init
     message = message_factory.build_raw_request_message(req, None, True)
-    assert message.ttl / 1000.0 == req.ttl
+    assert message.ttl == req.ttl
     assert message.flags == req.flags
     assert message.id == req.id
     assert message.service == req.service
@@ -72,7 +72,7 @@ def test_build_request():
     )
 
     req = message_factory.build_request(message)
-    assert req.ttl == message.ttl / 1000.0
+    assert req.ttl == message.ttl
     assert req.flags == message.flags
     assert req.headers == message.headers
     assert req.id == message.id

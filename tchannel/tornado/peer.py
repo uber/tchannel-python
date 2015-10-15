@@ -37,6 +37,7 @@ from tchannel.glossary import DEFAULT_TIMEOUT
 from ..context import get_current_context
 from ..errors import NoAvailablePeerError
 from ..errors import TChannelError
+from ..errors import NetworkError
 from ..zipkin.annotation import Endpoint
 from ..zipkin.trace import Trace
 from .connection import StreamConnection
@@ -463,6 +464,44 @@ class PeerClientOperation(object):
         return peer
 
     @gen.coroutine
+    def _get_peer_connection(self, blacklist=None):
+        """Find a peer and connect to it.
+
+        Returns a ``(peer, connection)`` tuple.
+
+        Raises ``NoAvailablePeerError`` if no healthy peers are found.
+
+        :param blacklist:
+            If given, a set of hostports for peers that we must not try.
+        """
+
+        blacklist = blacklist or set()
+
+        peer = None
+        connection = None
+
+        while connection is None:
+            peer = self._choose(blacklist)
+
+            if not peer:
+                raise NoAvailablePeerError(
+                    "Can't find an available peer for '%s'" % self.service
+                )
+
+            try:
+                connection = yield peer.connect()
+            except NetworkError as e:
+                log.info(
+                    'Failed to connect to %s. Trying a different host.',
+                    peer.hostport,
+                    exc_info=e,
+                )
+                connection = None
+                blacklist.add(peer.hostport)
+
+        raise gen.Return((peer, connection))
+
+    @gen.coroutine
     def send(
         self, arg1, arg2, arg3,
         headers=None,
@@ -498,13 +537,8 @@ class PeerClientOperation(object):
         # If we can't find available peer at the first time, we throw
         # NoAvailablePeerError. Later during retry, if we can't find available
         # peer, we throw exceptions from retry not NoAvailablePeerError.
-        peer = self._choose()
-        if not peer:
-            raise NoAvailablePeerError(
-                "Can't find an available peer for '%s'" % self.service
-            )
 
-        connection = yield peer.connect()
+        peer, connection = yield self._get_peer_connection()
 
         arg1, arg2, arg3 = (
             maybe_stream(arg1), maybe_stream(arg2), maybe_stream(arg3)
@@ -580,7 +614,7 @@ class PeerClientOperation(object):
         self.tchannel.event_emitter.fire(EventType.before_send_request, req)
         response_future = connection.send_request(req)
 
-        with timeout(response_future, req.ttl):
+        with timeout(response_future, req.ttl / 1000.0):
             try:
                 response = yield response_future
             except TChannelError as error:

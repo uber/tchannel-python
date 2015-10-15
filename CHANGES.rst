@@ -21,6 +21,19 @@ Changes by Version
   handlers.
 
 
+0.17.7 (2015-10-14)
+-------------------
+
+- Network failures while connecting to randomly selected hosts should be
+  retried with other hosts.
+
+
+0.17.6 (2015-10-14)
+-------------------
+
+- Fixed an issue where timeouts were being incorrectly converted to seconds.
+
+
 0.17.5 (2015-10-12)
 -------------------
 
@@ -68,6 +81,12 @@ Changes by Version
   of the router list.
 - Add ``TChannel.is_listening`` method to return whether the tchannel instance
   is listening or not.
+
+
+0.16.7 (2015-10-14)
+-------------------
+
+- Fixed an issue where timeouts were being incorrectly converted to seconds.
 
 
 0.16.6 (2015-09-14)
