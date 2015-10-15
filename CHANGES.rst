@@ -69,6 +69,19 @@ Changes by Version
   is listening or not.
 
 
+0.16.9 (2015-10-15)
+-------------------
+
+- Network failures while connecting to randomly selected hosts should be
+  retried with other hosts.
+
+
+0.16.8 (2015-10-14)
+-------------------
+
+- Rollback the ttl change.
+
+
 0.16.7 (2015-10-14)
 -------------------
 
