@@ -4,7 +4,7 @@ Changes by Version
 0.17.8 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Rollback timeout changes from 0.17.6 version.
 
 
 0.17.7 (2015-10-14)
@@ -67,6 +67,12 @@ Changes by Version
   of the router list.
 - Add ``TChannel.is_listening`` method to return whether the tchannel instance
   is listening or not.
+
+
+0.16.8 (unreleased)
+-------------------
+
+- Rollback the ttl change.
 
 
 0.16.7 (2015-10-14)
