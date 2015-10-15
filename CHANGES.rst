@@ -4,7 +4,7 @@ Changes by Version
 0.16.10 (unreleased)
 -------------------
 
-- Change default timeout to 30 seconds, from 16 minutes.
+- Fix default timeout incorrectly set to 16 minutes, now 30 seconds.
 
 
 0.16.9 (2015-10-15)
