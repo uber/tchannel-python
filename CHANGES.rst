@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.17.8 (unreleased)
+0.17.8 (2015-10-14)
 -------------------
 
 - Rollback timeout changes from 0.17.6 version.
