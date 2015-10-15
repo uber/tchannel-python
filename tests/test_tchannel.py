@@ -101,6 +101,7 @@ def test_timeout_should_raise_timeout_error():
     server = TChannel(name='server')
 
     @server.register(scheme=schemes.RAW)
+    @gen.coroutine
     def endpoint(request):
         yield gen.sleep(0.05)
         raise gen.Return('hello')
@@ -122,12 +123,11 @@ def test_timeout_should_raise_timeout_error():
         )
 
     # timeout is greater than sleep, should get resp
-    yield tchannel.call(
-        scheme=schemes.RAW,
+    yield tchannel.raw(
         service='server',
-        arg1='endpoint',
+        endpoint='endpoint',
         hostport=server.hostport,
-        timeout=1,
+        timeout=0.1,
     )
 
 
