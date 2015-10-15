@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.17.9 (unreleased)
+0.17.9 (2015-10-15)
 -------------------
 
 - Fix default timeout incorrectly set to 16 minutes, now 30 seconds.
