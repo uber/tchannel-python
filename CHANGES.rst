@@ -11,7 +11,7 @@ Changes by Version
 0.17.6 (2015-10-14)
 -------------------
 
-- Port ttl change from 0.16.7 .
+- Fixed an issue where timeouts were being incorrectly converted to seconds.
 
 
 0.17.5 (2015-10-12)
@@ -63,11 +63,10 @@ Changes by Version
   is listening or not.
 
 
-0.16.7 (unreleased)
+0.16.7 (2015-10-14)
 -------------------
 
-- Fixed a bug that the time unit for ttl is unclear. The unit for ttl is set
-  to millisecond.
+- Fixed an issue where timeouts were being incorrectly converted to seconds.
 
 
 0.16.6 (2015-09-14)
