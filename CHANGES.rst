@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.17.6 (unreleased)
+0.17.6 (2015-10-14)
 -------------------
 
 - Port ttl change from 0.16.7 .
