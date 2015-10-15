@@ -1,12 +1,6 @@
 Changes by Version
 ==================
 
-0.16.7 (unreleased)
--------------------
-
-- Fixed a bug that was converting units for timeouts incorrectly.
-
-
 0.16.6 (2015-09-14)
 -------------------
 
