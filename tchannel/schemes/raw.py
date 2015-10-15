@@ -73,9 +73,9 @@ class RawArgScheme(object):
             A raw body to provide to the endpoint.
         :param string headers:
             A raw headers block to provide to the endpoint.
-        :param int timeout:
-            How long to wait (in ms) before raising a ``TimeoutError`` - this
-            defaults to ``tchannel.glossary.DEFAULT_TIMEOUT``.
+        :param float timeout:
+            How long to wait (in seconds) before raising a ``TimeoutError`` -
+            this defaults to ``tchannel.glossary.DEFAULT_TIMEOUT``.
         :param string retry_on:
             What events to retry on - valid values can be found in
             ``tchannel.retry``.
