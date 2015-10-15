@@ -115,7 +115,7 @@ def test_timeout_should_raise_timeout_error():
 
     tchannel = TChannel(name='client')
 
-    # timeout is less than sleep, should get error
+    # timeout is less than server, should timeout
     with pytest.raises(TimeoutError):
         yield tchannel.call(
             scheme=schemes.RAW,
@@ -125,7 +125,7 @@ def test_timeout_should_raise_timeout_error():
             timeout=0.02,
         )
 
-    # timeout is greater than sleep, should get resp
+    # timeout is more than server, should not timeout
     yield tchannel.raw(
         service='server',
         endpoint='endpoint',
