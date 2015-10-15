@@ -4,7 +4,8 @@ Changes by Version
 0.17.7 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Network failures while connecting to randomly selected hosts should be
+  retried with other hosts.
 
 
 0.17.6 (2015-10-14)

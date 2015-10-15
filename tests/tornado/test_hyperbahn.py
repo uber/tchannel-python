@@ -25,7 +25,7 @@ import json
 import pytest
 import tornado
 
-from tchannel.errors import NetworkError
+from tchannel.errors import NoAvailablePeerError
 from tchannel.tornado import TChannel
 from tchannel.tornado import hyperbahn
 
@@ -98,7 +98,7 @@ def test_request():
 
     # Just want to make sure all the plumbing fits together.
 
-    with pytest.raises(NetworkError):
+    with pytest.raises(NoAvailablePeerError):
         yield channel.request(service='bar').send(
             arg1='baz',
             arg2='bam',

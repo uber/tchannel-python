@@ -27,6 +27,9 @@ import mock
 import pytest
 from tornado import gen
 
+from tchannel import TChannel
+from tchannel.errors import NoAvailablePeerError
+
 from tchannel.tornado import peer as tpeer
 from tchannel.tornado.stream import InMemStream
 from tchannel.tornado.stream import read_full
@@ -145,3 +148,65 @@ def test_peer_connection_failure():
         assert got is connection
 
         assert MockConnection.outgoing.call_count == 2
+
+
+@pytest.mark.gen_test
+def test_peer_connection_network_failure():
+    # Network errors in connecting to a peer must be retried with a different
+    # peer.
+
+    healthy = TChannel('healthy-server')
+    healthy.listen()
+
+    unhealthy = TChannel('unhealthy-server')
+    unhealthy.listen()
+
+    # register the endpoint on the healthy host only to ensure that the
+    # request wasn't made to the unhealthy one.
+    @healthy.raw.register('hello')
+    def endpoint(request):
+        return 'world'
+
+    known_peers = [healthy.hostport, unhealthy.hostport]
+    client = TChannel('client', known_peers=known_peers)
+
+    with mock.patch.object(tpeer.PeerGroup, 'choose') as mock_choose:
+
+        def fake_choose(*args, **kwargs):
+            if mock_choose.call_count == 1:
+                # First choose the unhealthy host.
+                hostport = unhealthy.hostport
+            else:
+                hostport = healthy.hostport
+            # TODO need access to peers in new TChannel
+            return client._dep_tchannel.peers.get(hostport)
+
+        mock_choose.side_effect = fake_choose
+
+        # TODO New TChannel doesn't have close() and old one doesn't call
+        # stop() on server.
+        unhealthy._dep_tchannel._server.stop()
+
+        resp = yield client.raw('server', 'hello', 'foo')
+        assert resp.body == 'world'
+
+
+@pytest.mark.gen_test
+def test_peer_connection_failure_exhausted_peers():
+    # If we run out of healthy peers while trying to connect, raise
+    # NoAvailablePeerError.
+
+    servers = [TChannel('server-%d' % n) for n in xrange(10)]
+    for server in servers:
+        server.listen()
+
+    known_peers = [server.hostport for server in servers]
+    client = TChannel('client', known_peers=known_peers)
+
+    for server in servers:
+        # TODO New TChannel doesn't have close() and old one doesn't call
+        # stop() on server.
+        server._dep_tchannel._server.stop()
+
+    with pytest.raises(NoAvailablePeerError):
+        yield client.raw('server', 'hello', 'foo')
