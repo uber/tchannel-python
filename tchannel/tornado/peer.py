@@ -633,7 +633,7 @@ class PeerClientOperation(object):
         self.tchannel.event_emitter.fire(EventType.before_send_request, req)
         response_future = connection.send_request(req)
 
-        with timeout(response_future, req.ttl / 1000.0):
+        with timeout(response_future, req.ttl):
             try:
                 response = yield response_future
             except TChannelError as error:
