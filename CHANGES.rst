@@ -20,6 +20,11 @@ Changes by Version
   instead maps of strings to strings. This mirrors behavior for Thrift
   handlers.
 
+0.17.8 (2015-10-14)
+-------------------
+
+- Revert timeout changes from 0.17.6 due to client incompatibilities.
+
 
 0.17.7 (2015-10-14)
 -------------------
@@ -81,6 +86,19 @@ Changes by Version
   of the router list.
 - Add ``TChannel.is_listening`` method to return whether the tchannel instance
   is listening or not.
+
+
+0.16.9 (2015-10-15)
+-------------------
+
+- Network failures while connecting to randomly selected hosts should be
+  retried with other hosts.
+
+
+0.16.8 (2015-10-14)
+-------------------
+
+- Revert timeout changes from 0.16.7 due to client incompatibilities.
 
 
 0.16.7 (2015-10-14)
