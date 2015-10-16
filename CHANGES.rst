@@ -4,7 +4,7 @@ Changes by Version
 0.17.10 (unreleased)
 --------------------
 
-- Nothing changed yet.
+- Support thriftrw 0.5.
 
 
 0.17.9 (2015-10-15)
