@@ -62,7 +62,7 @@ def vcr_service(cassette, unpatch, io_loop):
 
 @pytest.fixture
 def client(vcr_service):
-    proxy.VCRProxy._module.hostport = vcr_service.hostport
+    proxy.hostport = vcr_service.hostport
     return proxy.VCRProxy
 
 
