@@ -73,8 +73,8 @@ class JsonArgScheme(object):
             Endpoint to call on service.
         :param string body:
             A raw body to provide to the endpoint.
-        :param string headers:
-            A raw headers block to provide to the endpoint.
+        :param dict headers:
+            Dictionary of header key-value pairs.
         :param float timeout:
             How long to wait (in seconds) before raising a ``TimeoutError`` -
             this defaults to ``tchannel.glossary.DEFAULT_TIMEOUT``.

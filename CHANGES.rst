@@ -22,6 +22,9 @@ Changes by Version
   handlers.
 - Fixed bug that caused server to continue listening for incoming connections
   despite closing the channel.
+- Explicit destinations for ``ThriftArgScheme`` may now be specified on a
+  per-request basis by using the ``hostport`` keyword argument.
+
 
 0.17.9 (2015-10-15)
 -------------------

@@ -61,9 +61,8 @@ def vcr_service(cassette, unpatch, io_loop):
 
 
 @pytest.fixture
-def client(vcr_service):
-    proxy.VCRProxy._module.hostport = vcr_service.hostport
-    return proxy.VCRProxy
+def vcr_hostport(vcr_service):
+    return vcr_service.hostport
 
 
 @pytest.fixture(params=[True, False], ids=['hostPort', 'knownPeers'])
@@ -72,7 +71,7 @@ def use_known_peers(request):
 
 
 @pytest.fixture
-def call(client, mock_server, use_known_peers):
+def call(mock_server, use_known_peers, vcr_hostport):
     """A fixture that returns a function to send a call through the system."""
 
     tchannel = TChannel('proxy-client')
@@ -89,7 +88,10 @@ def call(client, mock_server, use_known_peers):
         else:
             kwargs['hostPort'] = mock_server.hostport
         vcr_request = proxy.Request(**kwargs)
-        return tchannel.thrift(client.send(vcr_request))
+        return tchannel.thrift(
+            proxy.VCRProxy.send(vcr_request),
+            hostport=vcr_hostport,
+        )
 
     return f
 
@@ -155,7 +157,7 @@ def test_write_protected(vcr_service, cassette, call):
 
 
 @pytest.mark.gen_test
-def test_no_peers(vcr_service, cassette, client):
+def test_no_peers(vcr_service, cassette, vcr_hostport):
     allow(cassette).can_replay.and_return(False)
     vcr_request = proxy.Request(
         serviceName='hello_service',
@@ -164,7 +166,10 @@ def test_no_peers(vcr_service, cassette, client):
         body='body',
     )
     with pytest.raises(proxy.NoPeersAvailableError):
-        yield TChannel('foo').thrift(client.send(vcr_request))
+        yield TChannel('foo').thrift(
+            proxy.VCRProxy.send(vcr_request),
+            hostport=vcr_hostport,
+        )
 
 
 @pytest.mark.gen_test

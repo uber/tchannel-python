@@ -27,7 +27,6 @@ import sys
 
 from .cassette import Cassette
 from .patch import Patcher, force_reset
-from .proxy import VCRProxy
 from .server import VCRProxyService
 
 
@@ -58,10 +57,7 @@ class _CassetteContext(object):
         # TODO Maybe instead of using this instance of the TChannel client, we
         # should use the one being patched to make the requests?
 
-        # Need a better way to set hostport after loading!!
-        VCRProxy._module.hostport = server.hostport
-
-        self._exit_stack.enter_context(Patcher(VCRProxy))
+        self._exit_stack.enter_context(Patcher(server.hostport))
 
         return cassette
 

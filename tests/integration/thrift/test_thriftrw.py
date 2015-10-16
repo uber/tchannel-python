@@ -54,17 +54,28 @@ def server(keyvalue, request, io_loop):  # need io_loop for server to work
     return server
 
 
-@pytest.fixture
-def client(request, server):
-    return TChannel(
-        request.node.name + '.client',
-        known_peers=[server.hostport],
-    )
+@pytest.fixture(params=[True, False], ids=['known_peers', 'hostport'])
+def call(request, server):
+    if request.param:
+        # use known_peers
+        return TChannel(
+            request.node.name + '.client',
+            known_peers=[server.hostport]
+        ).thrift
+    else:
+        # use hostport kwarg
+
+        client = TChannel(request.node.name + '.client')
+
+        def f(*args, **kwargs):
+            return client.thrift(*args, hostport=server.hostport, **kwargs)
+
+        return f
 
 
 @pytest.mark.gen_test
-def test_call_success(keyvalue, client):
-    response = yield client.thrift(
+def test_call_success(keyvalue, call):
+    response = yield call(
         keyvalue.Service.getItem('foo')
     )
     assert response.body == keyvalue.Item(
@@ -73,9 +84,9 @@ def test_call_success(keyvalue, client):
 
 
 @pytest.mark.gen_test
-def test_call_thrift_exception(keyvalue, client):
+def test_call_thrift_exception(keyvalue, call):
     with pytest.raises(keyvalue.ItemAlreadyExists) as exc_info:
-        yield client.thrift(
+        yield call(
             keyvalue.Service.putItem(
                 keyvalue.Item('hello', keyvalue.Value(stringValue='foo')),
                 True,

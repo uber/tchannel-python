@@ -20,34 +20,26 @@
 
 from __future__ import absolute_import
 
-import pytest
-
 from tchannel.tornado import TChannel
-from tchannel.testing.vcr import proxy
 from tchannel.testing.vcr.patch import Patcher
 from tchannel.testing.vcr.patch import PatchedClientOperation
 
 
-@pytest.fixture
-def vcr_client():
-    return proxy.VCRProxy
-
-
-def test_patching_as_context_manager(vcr_client):
+def test_patching_as_context_manager():
     chan = TChannel('client')
-    with Patcher(vcr_client):
+    with Patcher('localhost:4040'):
         ops = chan.request(service='foo')
         assert isinstance(ops, PatchedClientOperation)
-        assert ops.vcr_client is vcr_client
+        assert ops.vcr_hostport == 'localhost:4040'
 
 
-def test_patching_as_decorator(vcr_client):
+def test_patching_as_decorator():
     chan = TChannel('client')
 
-    @Patcher(vcr_client)
+    @Patcher('localhost:4040')
     def f():
         ops = chan.request(service='foo')
         assert isinstance(ops, PatchedClientOperation)
-        assert ops.vcr_client is vcr_client
+        assert ops.vcr_hostport == 'localhost:4040'
 
     f()

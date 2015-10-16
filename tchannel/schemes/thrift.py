@@ -73,11 +73,38 @@ class ThriftArgScheme(object):
         request,
         headers=None,
         timeout=None,
+        hostport=None,
         retry_on=None,
         retry_limit=None,
         shard_key=None,
         trace=None,
     ):
+        """Make a Thrift TChannel request.
+
+        Returns a ``Response`` containing the return value of the Thrift
+        call (if any). If the remote server responded with a Thrift exception,
+        that exception is raised.
+
+        :param string request:
+            Request obtained by calling a method on service objects generated
+            by :py:func:`tchannel.thrift.load`.
+        :param dict headers:
+            Dictionary of header key-value pairs.
+        :param float timeout:
+            How long to wait (in seconds) before raising a ``TimeoutError`` -
+            this defaults to ``tchannel.glossary.DEFAULT_TIMEOUT``.
+        :param string hostport:
+            A 'host:port' value to use when making a request directly to a
+            TChannel service, bypassing Hyperbahn. This value takes precedence
+            over the ``hostport`` specified to
+            :py:func:`tchannel.thrift.load`.
+        :param string retry_on:
+            What events to retry on - valid values can be found in
+            ``tchannel.retry``.
+        :param string retry_limit:
+            How many times to retry before
+        :rtype: Response
+        """
         if not headers:
             headers = {}
 
@@ -104,7 +131,7 @@ class ThriftArgScheme(object):
             timeout=timeout,
             retry_on=retry_on,
             retry_limit=retry_limit,
-            hostport=request.hostport,
+            hostport=hostport or request.hostport,
             shard_key=shard_key,
             trace=trace,
         )
