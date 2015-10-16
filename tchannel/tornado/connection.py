@@ -474,13 +474,12 @@ class TornadoConnection(object):
         """Convenience method for writing Error frames up the wire.
 
         :param error:
-            TChannel Error.
+            TChannel Error. :py:class`tchannel.errors.TChannelError`.
         """
 
         error_message = build_raw_error_message(error)
         write_future = self._write(error_message)
-        tornado.ioloop.IOLoop.current().add_future(
-            write_future,
+        write_future.add_done_callback(
             lambda f: self.tchannel.event_emitter.fire(
                 EventType.after_send_error,
                 error,

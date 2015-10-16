@@ -149,10 +149,10 @@ class RequestDispatcher(object):
         if request.endpoint in self.handlers and requested_as != expected_as:
             connection.send_error(BadRequestError(
                 description=(
-                    "Your serialization was '%s' but the server expected '%s'"
+                    "Server expected a '%s' but request is '%s'"
                     % (
-                        requested_as,
                         expected_as,
+                        requested_as,
                     )
                 ),
                 id=request.id,
@@ -226,7 +226,7 @@ class RequestDispatcher(object):
             e.id = request.id
             connection.send_error(e)
         except Exception as e:
-            log.exception("Unexpected Error: {0}".format(e.message))
+            log.exception("Unexpected Error: '%s'" % e.message)
 
             error = UnexpectedError(
                 description='An unexpected error occurred from the handler',

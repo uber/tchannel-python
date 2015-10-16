@@ -82,7 +82,6 @@ def test_after_send_error_event_called():
                 hostport=tchannel.hostport,
                 timeout=0.02,
             )
-
         mock_fire.assert_any_call(
             mock.ANY, EventType.after_send_error, mock.ANY,
         )
