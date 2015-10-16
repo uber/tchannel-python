@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.17.10 (unreleased)
+0.17.10 (2015-10-16)
 --------------------
 
 - Support thriftrw 0.5.
