@@ -187,14 +187,13 @@ class TChannel(object):
     def closed(self):
         return self._state == State.closed
 
-    @tornado.gen.coroutine
     def close(self):
         if self._state in [State.closed, State.closing]:
-            raise tornado.gen.Return(None)
+            return
 
         self._state = State.closing
         try:
-            yield self.peers.clear()
+            self.peers.clear()
         finally:
             self._state = State.closed
 

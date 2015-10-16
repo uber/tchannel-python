@@ -16,6 +16,7 @@ Changes by Version
   'body', etc. See ``tchannel.testing.vcr.use_cassette``.
 - Removed ``tchannel.testing.data`` module.
 - Changed minimum required version of Tornado to 4.2.
+- ``tchannel.tornado.TChannel.close`` is no longer a coroutine.
 - **BREAKING** - headers for JSON handlers are not longer JSON blobs but are
   instead maps of strings to strings. This mirrors behavior for Thrift
   handlers.
