@@ -31,26 +31,34 @@ from . import THRIFT
 class ThriftArgScheme(object):
     """Handler registration and serialization for Thrift.
 
-    To register a Thrift handler:
+    Use :py:func:`tchannel.thrift.load` to parse your Thrift IDL and compile
+    it into a module dynamically.
 
     .. code:: python
 
-        @tchannel.thrift(GeneratedThriftModule)
-        def method(request):
-            print request.body.some_arg
+        from tchannel import thrift
 
-    When calling a remote service, generated Thrift types need to be wrapped
-    with :py:func:`thrift_request_builder` to provide TChannel compatibility:
+        keyvalue = thrift.load('keyvalue.thrift', service='keyvalue')
+
+    To register a Thrift handler, use the ``register()`` decorator, providing
+    a reference to the compiled service as an argument. The name of the
+    service method should match the name of the decorated function.
 
     .. code:: python
 
-        thrift_service = thrift_request_builder(
-            service='service-identifier',
-            thrift_module=GeneratedThriftModule,
-        )
+        tchannel = TChannel(...)
+
+        @tchannel.thrift.register(keyvalue.KeyValue)
+        def setValue(request):
+            data[request.body.key] = request.body.value
+
+    Use methods on the compiled service to generate requests to remote
+    services and execute them via ``TChannel.thrift()``.
+
+    .. code:: python
 
         response = yield tchannel.thrift(
-            thrift_service.method(some_arg='foo'),
+            keyvalue.KeyValue.setValue(key='foo', value='bar')
         )
     """
 

@@ -48,9 +48,9 @@ class TChannel(AsyncTChannel):
         # advertisement.
         tchannel.advertise(routers)
 
-        # thrift_service is the result of a call to ``thrift_request_builder``
+        # keyvalue is the result of a call to ``tchannel.thrift.load``.
         future = tchannel.thrift(
-            thrift_service.getItem('foo'),
+            keyvalue.KeyValue.getItem('foo'),
             timeout=0.5,  #  0.5 seconds
         )
 
