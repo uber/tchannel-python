@@ -70,3 +70,9 @@ def test_should_error_if_call_listen_twice(tchannel):
 
     with pytest.raises(AlreadyListeningError):
         tchannel.listen()
+
+
+def test_close_does_not_raise():
+    s = TChannel(name='test')
+    s.listen()
+    s.close()
