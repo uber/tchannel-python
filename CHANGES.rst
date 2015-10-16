@@ -20,7 +20,8 @@ Changes by Version
 - **BREAKING** - headers for JSON handlers are not longer JSON blobs but are
   instead maps of strings to strings. This mirrors behavior for Thrift
   handlers.
-
+- Fixed bug that caused server to continue listening for incoming connections
+  despite closing the channel.
 
 0.17.9 (2015-10-15)
 -------------------
