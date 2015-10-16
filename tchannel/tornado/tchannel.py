@@ -194,6 +194,8 @@ class TChannel(object):
         self._state = State.closing
         try:
             self.peers.clear()
+            if self._server:
+                self._server.stop()
         finally:
             self._state = State.closed
 
