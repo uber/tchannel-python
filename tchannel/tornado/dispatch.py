@@ -33,10 +33,10 @@ from tchannel.request import TransportHeaders
 from tchannel.response import response_from_mixed
 from ..context import request_context
 from ..errors import BadRequestError
+from ..errors import UnexpectedError
 from ..errors import TChannelError
 from ..event import EventType
 from ..messages import Types
-from ..messages.error import ErrorCode
 from ..serializer.raw import RawSerializer
 from .response import Response as DeprecatedResponse
 
@@ -100,6 +100,7 @@ class RequestDispatcher(object):
         :param message: CallRequestMessage or CallRequestContinueMessage
         :param connection: tornado connection
         """
+        req = None
         try:
             req = connection.request_message_factory.build(message)
             # message_factory will create Request only when it receives
@@ -110,12 +111,9 @@ class RequestDispatcher(object):
 
         except TChannelError as e:
             log.warn('Received a bad request.', exc_info=True)
-
-            connection.send_error(
-                e.code,
-                e.message,
-                message.id,
-            )
+            if req:
+                e.tracing = req.tracing
+            connection.send_error(e)
 
     @tornado.gen.coroutine
     def handle_call(self, request, connection):
@@ -149,14 +147,18 @@ class RequestDispatcher(object):
         expected_as = handler.req_serializer.name
 
         if request.endpoint in self.handlers and requested_as != expected_as:
-            connection.send_error(
-                ErrorCode.bad_request,
-                "Your serialization was '%s' but the server expected '%s'" % (
-                    requested_as,
-                    expected_as,
+            connection.send_error(BadRequestError(
+                description=(
+                    "Your serialization was '%s' but the server expected '%s'"
+                    % (
+                        requested_as,
+                        expected_as,
+                    )
                 ),
-                request.id,
-            )
+                id=request.id,
+                tracing=request.tracing,
+            ))
+
             raise gen.Return(None)
 
         request.serializer = handler.req_serializer
@@ -220,20 +222,22 @@ class RequestDispatcher(object):
 
             response.flush()
         except TChannelError as e:
-            connection.send_error(
-                e.code,
-                e.message,
-                request.id,
-            )
+            e.tracing = request.tracing
+            e.id = request.id
+            connection.send_error(e)
         except Exception as e:
-            msg = "An unexpected error has occurred from the handler"
-            log.exception(msg)
+            log.exception("Unexpected Error: {0}".format(e.message))
 
-            response.set_exception(TChannelError(e.message))
+            error = UnexpectedError(
+                description='An unexpected error occurred from the handler',
+                id=request.id,
+                tracing=request.tracing,
+            )
+            response.set_exception(error)
             connection.request_message_factory.remove_buffer(response.id)
 
-            connection.send_error(ErrorCode.unexpected, msg, response.id)
-            tchannel.event_emitter.fire(EventType.on_exception, request, e)
+            connection.send_error(error)
+            tchannel.event_emitter.fire(EventType.on_exception, request, error)
 
         raise gen.Return(response)
 

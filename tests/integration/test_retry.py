@@ -40,11 +40,7 @@ from tchannel.tornado.stream import InMemStream
 @tornado.gen.coroutine
 def handler_error(request, response):
     yield tornado.gen.sleep(0.01)
-    response.connection.send_error(
-        ErrorCode.busy,
-        "retry",
-        response.id,
-    )
+    response.connection.send_error(BusyError("retry", request.id))
     # stop normal response streams
     response.set_exception(TChannelError("stop stream"))
 

@@ -33,15 +33,14 @@ from .. import frame
 from .. import glossary
 from .. import messages
 from ..errors import NetworkError
-from ..errors import FatalProtocolError
 from ..errors import TChannelError
 from ..event import EventType
 from ..io import BytesIO
 from ..messages.common import PROTOCOL_VERSION
 from ..messages.common import FlagsType
 from ..messages.common import StreamState
-from ..messages.error import ErrorMessage
 from ..messages.types import Types
+from .message_factory import build_raw_error_message
 from .message_factory import MessageFactory
 from .util import chain
 
@@ -471,25 +470,21 @@ class TornadoConnection(object):
                 # TODO Send error frame back
                 logging.exception("Failed to process %s", repr(message))
 
-    def send_error(self, code, description, message_id):
+    def send_error(self, error):
         """Convenience method for writing Error frames up the wire.
 
-        :param code:
-            Error code
-        :param description:
-            Error description
-        :param message_id:
-            Message in response to which this error is being sent
+        :param error:
+            TChannel Error.
         """
-        if code not in ErrorMessage.ERROR_CODES.keys():
-            raise FatalProtocolError(code)
 
-        return self._write(
-            ErrorMessage(
-                code=code,
-                description=description,
-                id=message_id,
-            ),
+        error_message = build_raw_error_message(error)
+        write_future = self._write(error_message)
+        tornado.ioloop.IOLoop.current().add_future(
+            write_future,
+            lambda f: self.tchannel.event_emitter.fire(
+                EventType.after_send_error,
+                error,
+            )
         )
 
     def ping(self):
