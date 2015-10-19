@@ -73,11 +73,11 @@ class ThriftArgScheme(object):
         request,
         headers=None,
         timeout=None,
-        hostport=None,
         retry_on=None,
         retry_limit=None,
         shard_key=None,
         trace=None,
+        hostport=None,
     ):
         """Make a Thrift TChannel request.
 
