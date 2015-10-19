@@ -4,7 +4,8 @@ Changes by Version
 0.17.11 (unreleased)
 --------------------
 
-- Nothing changed yet.
+- Fix a bug that caused ``after_send_error`` event to never be fired.
+- Request tracing information is now propagated to error responses.
 
 
 0.17.10 (2015-10-16)
