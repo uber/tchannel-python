@@ -68,7 +68,7 @@ def test_handle_call(dispatcher, req, connection):
 def test_default_fallback_behavior(dispatcher, req, connection):
     """Undefined endpoints return 'Bad Request' errors."""
     yield dispatcher.handle_call(req, connection)
-    assert connection.send_error.call_args[0][0] == ErrorCode.bad_request
+    assert connection.send_error.call_args[0][0].code == ErrorCode.bad_request
 
 
 @pytest.mark.gen_test

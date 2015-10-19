@@ -20,9 +20,13 @@
 
 from __future__ import absolute_import
 
+import mock
 import pytest
 from mock import MagicMock
 
+from tchannel import TChannel
+from tchannel import schemes
+from tchannel.errors import BadRequestError
 from tchannel.event import EventEmitter
 from tchannel.event import EventHook
 from tchannel.event import EventRegistrar
@@ -60,3 +64,24 @@ def test_decorator_registration():
 
     assert called[0] is True
     assert called[1] is True
+
+
+@pytest.mark.gen_test
+def test_after_send_error_event_called():
+    tchannel = TChannel('test')
+    tchannel.listen()
+    with mock.patch(
+        'tchannel.event.EventEmitter.fire', autospec=True,
+    ) as mock_fire:
+        mock_fire.return_value = None
+        with pytest.raises(BadRequestError):
+            yield tchannel.call(
+                scheme=schemes.RAW,
+                service='test',
+                arg1='endpoint',
+                hostport=tchannel.hostport,
+                timeout=0.02,
+            )
+        mock_fire.assert_any_call(
+            mock.ANY, EventType.after_send_error, mock.ANY,
+        )

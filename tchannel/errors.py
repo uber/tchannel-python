@@ -20,6 +20,8 @@
 
 from __future__ import absolute_import
 
+from tchannel.zipkin.trace import Trace
+
 
 #: The request timed out.
 TIMEOUT = 0x01
@@ -77,7 +79,7 @@ class TChannelError(Exception):
         tracing=None,
     ):
         super(TChannelError, self).__init__(description)
-        self.tracing = tracing
+        self.tracing = tracing or Trace()
         self.id = id
         self.description = description
 
