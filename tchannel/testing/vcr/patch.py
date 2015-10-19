@@ -52,7 +52,7 @@ class PatchedClientOperation(object):
 
     def __init__(
         self,
-        vcr_client,
+        vcr_hostport,
         original_tchannel,
         hostport=None,
         service=None,
@@ -61,7 +61,7 @@ class PatchedClientOperation(object):
         parent_tracing=None,
         score_threshold=None,
     ):
-        self.vcr_client = vcr_client
+        self.vcr_hostport = vcr_hostport
         self.hostport = hostport or ''
         self.service = service or ''
         self.arg_scheme = arg_scheme or schemes.DEFAULT
@@ -102,10 +102,11 @@ class PatchedClientOperation(object):
         from tchannel import TChannel
         tchannel = TChannel('proxy-client')
 
-        thrift_request = self.vcr_client.send(vcr_request)
-
         with force_reset():
-            vcr_response_future = tchannel.thrift(thrift_request)
+            vcr_response_future = tchannel.thrift(
+                proxy.VCRProxy.send(vcr_request),
+                hostport=self.vcr_hostport,
+            )
 
         try:
             vcr_response = yield vcr_response_future
@@ -134,12 +135,12 @@ class PatchedClientOperation(object):
 class Patcher(object):
     """Monkey patches classes to use a VCRProxyClient to send requests."""
 
-    def __init__(self, vcr_client):
+    def __init__(self, vcr_hostport):
         """
-        :param vcr_client:
-            The VCRProxyClient through which requests will be made.
+        :param vcr_hostport:
+            Hostport at which VCRProxyService is running.
         """
-        self.vcr_client = vcr_client
+        self.vcr_hostport = vcr_hostport
         self._exit_stack = contextlib2.ExitStack()
 
     def _patch_request(self):
@@ -147,7 +148,7 @@ class Patcher(object):
         @wraps(_TChannel_request)
         def request(channel, *args, **kwargs):
             return PatchedClientOperation(
-                self.vcr_client, channel, *args, **kwargs
+                self.vcr_hostport, channel, *args, **kwargs
             )
 
         return mock.patch.object(TChannel, 'request', request)
