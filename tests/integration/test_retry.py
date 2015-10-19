@@ -119,7 +119,7 @@ def test_retry_on_error_fail():
                 headers={
                     're': retry.CONNECTION_ERROR_AND_TIMEOUT
                 },
-                ttl=0.001,
+                ttl=1,
                 retry_limit=2,
             )
 
