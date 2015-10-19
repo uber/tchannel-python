@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.17.11 (unreleased)
+0.17.11 (2015-10-19)
 --------------------
 
 - Fix a bug that caused ``after_send_error`` event to never be fired.
