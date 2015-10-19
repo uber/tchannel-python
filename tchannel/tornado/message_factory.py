@@ -52,6 +52,7 @@ log = logging.getLogger('tchannel')
 def build_raw_error_message(protocol_exception):
     """build protocol level error message based on Error object"""
     message = ErrorMessage(
+        id=protocol_exception.id,
         code=protocol_exception.code,
         tracing=Tracing(
             protocol_exception.tracing.span_id,
@@ -281,7 +282,9 @@ class MessageFactory(object):
             if context is None:
                 # missing call msg before continue msg
                 raise FatalProtocolError(
-                    "missing call message after receiving continue message")
+                    "missing call message after receiving continue message",
+                    message.id,
+                )
 
             # find the incompleted stream
             dst = 0
@@ -388,7 +391,10 @@ class MessageFactory(object):
                 self.in_checksum.pop(message.id)
         else:
             self.in_checksum.pop(message.id, None)
-            raise InvalidChecksumError("Checksum does not match!")
+            raise InvalidChecksumError(
+                description="Checksum does not match!",
+                id=message.id,
+            )
 
     @staticmethod
     def close_argstream(request, num):
@@ -408,7 +414,9 @@ class MessageFactory(object):
         if reqres is None:
             # missing call msg before continue msg
             raise FatalProtocolError(
-                "missing call message after receiving continue message")
+                "missing call message after receiving continue message",
+                id=protocol_error.id,
+            )
 
         # find the incompleted stream
         dst = 0

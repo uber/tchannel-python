@@ -23,6 +23,20 @@ Changes by Version
 - Fixed bug that caused server to continue listening for incoming connections
   despite closing the channel.
 
+
+0.17.11 (2015-10-19)
+--------------------
+
+- Fix a bug that caused ``after_send_error`` event to never be fired.
+- Request tracing information is now propagated to error responses.
+
+
+0.17.10 (2015-10-16)
+--------------------
+
+- Support thriftrw 0.5.
+
+
 0.17.9 (2015-10-15)
 -------------------
 
