@@ -25,80 +25,49 @@ from tornado import gen
 from functools import partial
 
 from tchannel.errors import UnexpectedError
-from tchannel.thrift import client_for
 from tchannel.testing import vcr
 
 
-@pytest.fixture(params=[True, False], ids=('old', 'new'))
-def use_old_api(request):
-    return request.param
+@pytest.fixture
+def get_body():
+    @gen.coroutine
+    def new_get_body(r):
+        return r.body
+    return new_get_body
 
 
 @pytest.fixture
-def get_body(use_old_api):
-    if use_old_api:
-        return (lambda r: r.get_body())
-    else:
-        @gen.coroutine
-        def new_get_body(r):
-            return r.body
-        return new_get_body
+def call(mock_server):
+    from tchannel import TChannel
 
+    channel = TChannel('test-client')
 
-@pytest.fixture
-def call(mock_server, use_old_api):
-    if use_old_api:
-        from tchannel.tornado import TChannel
-
-        channel = TChannel('test-client')
-
-        def old_f(endpoint, body, headers=None, service=None, scheme=None):
-            return channel.request(
-                hostport=mock_server.hostport,
-                service=service,
-                arg_scheme=scheme,
-            ).send(endpoint, headers or '', body)
-
-        return old_f
-    else:
-        from tchannel import TChannel
-
-        channel = TChannel('test-client')
-
-        def new_f(endpoint, body, headers=None, service=None, scheme=None):
-            scheme = scheme or 'raw'
-            return channel.call(
-                hostport=mock_server.hostport,
-                scheme=scheme,
-                service=service,
-                arg1=endpoint,
-                arg2=headers or '',
-                arg3=body,
-            )
-
-        return new_f
-
-
-@pytest.fixture
-def thrift_client(thrift_service, mock_server, use_old_api):
-    if use_old_api:
-        from tchannel.tornado import TChannel
-
-        return client_for('myservice', thrift_service)(
-            tchannel=TChannel('thrift-client'),
+    def new_f(endpoint, body, headers=None, service=None, scheme=None):
+        scheme = scheme or 'raw'
+        return channel.call(
             hostport=mock_server.hostport,
+            scheme=scheme,
+            service=service,
+            arg1=endpoint,
+            arg2=headers or '',
+            arg3=body,
         )
-    else:
-        from tchannel import TChannel
-        from tchannel.thrift import thrift_request_builder
 
-        myservice = thrift_request_builder(
-            'myservice', thrift_service, hostport=mock_server.hostport
-        )
-        return mk_fake_client(
-            TChannel('thrift-client'),
-            myservice
-        )
+    return new_f
+
+
+@pytest.fixture
+def thrift_client(thrift_service, mock_server):
+    from tchannel import TChannel
+    from tchannel.thrift import thrift_request_builder
+
+    myservice = thrift_request_builder(
+        'myservice', thrift_service, hostport=mock_server.hostport
+    )
+    return mk_fake_client(
+        TChannel('thrift-client'),
+        myservice
+    )
 
 
 def mk_fake_client(channel, builder):
