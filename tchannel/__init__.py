@@ -30,4 +30,3 @@ __version__ = '0.20.1.dev0'
 from .response import Response  # noqa
 from .request import Request  # noqa
 from .tchannel import TChannel  # noqa
-from .thrift import thrift_request_builder  # noqa
