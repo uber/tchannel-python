@@ -273,6 +273,7 @@ class TChannel(object):
             self._port,
             # ipv6 causes random address already in use (socket.error w errno
             # == 98) when getaddrinfo() returns multiple values
+            # @see https://github.com/uber/tchannel-python/pull/257
             family=socket.AF_INET,
         )
         assert sockets, "No sockets bound for port %d" % self._port
