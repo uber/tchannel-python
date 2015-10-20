@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.18.0 (unreleased)
+0.18.0 (2015-10-20)
 -------------------
 
 - Deprecated warnings will now sound for ``tchannel.thrift.client_for``,
