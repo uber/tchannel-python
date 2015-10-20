@@ -25,7 +25,6 @@ from __future__ import unicode_literals
 
 import pytest
 from tornado import gen
-from tornado import concurrent
 
 from tchannel import (
     TChannel,
@@ -39,9 +38,6 @@ from tchannel.response import TransportHeaders
 from tchannel.errors import OneWayNotSupportedError
 from tchannel.errors import UnexpectedError
 from tchannel.errors import ValueExpectedError
-from tchannel.sync import TChannel as SyncTChannel
-from tchannel.thrift import client_for
-from tchannel.tornado import TChannel as DeprecatedTChannel
 
 from tests.data.generated.ThriftTest import (
     SecondService as _SecondService,
@@ -1074,26 +1070,6 @@ def test_headers_should_be_a_map_of_strings(headers, service):
             request=service.testString('howdy'),
             headers=headers,
         )
-
-
-@pytest.mark.gen_test
-@pytest.mark.call
-@pytest.mark.parametrize('ClientTChannel', [TChannel, DeprecatedTChannel])
-def test_client_for(ClientTChannel, server, ThriftTest):
-
-    @server.thrift.register(ThriftTest)
-    def testString(request):
-        return request.body.thing.encode('rot13')
-
-    tchannel = ClientTChannel(name='client')
-
-    client = client_for('server', _ThriftTest)(
-        tchannel=tchannel,
-        hostport=server.hostport,
-    )
-
-    resp = yield client.testString(thing='foo')
-    assert resp == 'sbb'
 
 
 @pytest.mark.gen_test
