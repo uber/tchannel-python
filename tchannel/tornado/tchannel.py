@@ -23,6 +23,7 @@ from __future__ import absolute_import
 import inspect
 import logging
 import os
+import socket
 import sys
 from functools import partial
 
@@ -268,7 +269,12 @@ class TChannel(object):
         assert self._handler, "Call .host with a RequestHandler first"
         server = TChannelServer(self)
 
-        sockets = bind_sockets(self._port)
+        sockets = bind_sockets(
+            self._port,
+            # ipv6 causes random address already in use (socket.error w errno
+            # == 98) when getaddrinfo() returns multiple values
+            family=socket.AF_INET,
+        )
         assert sockets, "No sockets bound for port %d" % self._port
 
         # If port was 0, the OS probably assigned something better.
