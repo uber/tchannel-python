@@ -528,7 +528,7 @@ class PeerClientOperation(object):
            Maximum number of retries will perform on the message. If the number
            is 0, it means no retry.
         :param ttl:
-            Timeout for each request (ms).
+            Timeout for each request (second).
         :return:
             Future that contains the response from the peer.
         """
