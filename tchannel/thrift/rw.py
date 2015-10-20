@@ -34,7 +34,7 @@ from tchannel.errors import ValueExpectedError
 from tchannel.response import Response, response_from_mixed
 from tchannel.serializer.thrift import ThriftRWSerializer
 
-from .module import ThriftRequest
+from .request import ThriftRequest
 
 
 def load(path, service=None, hostport=None, module_name=None):
