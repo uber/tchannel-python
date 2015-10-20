@@ -4,7 +4,8 @@ Changes by Version
 0.21.0 (unreleased)
 -------------------
 
-- No changes yet.
+- **BREAKING** - removed ``tchannel.thrift.client_for`` and
+  ``tchannel.sync.thrift.client_for`` as planned in 0.18.
 
 
 0.20.0 (2015-11-10)
