@@ -40,7 +40,6 @@ from tchannel.errors import OneWayNotSupportedError
 from tchannel.errors import UnexpectedError
 from tchannel.errors import ValueExpectedError
 from tchannel.sync import TChannel as SyncTChannel
-from tchannel.sync.thrift import client_for as sync_client_for
 from tchannel.thrift import client_for
 from tchannel.tornado import TChannel as DeprecatedTChannel
 
@@ -1094,35 +1093,6 @@ def test_client_for(ClientTChannel, server, ThriftTest):
     )
 
     resp = yield client.testString(thing='foo')
-    assert resp == 'sbb'
-
-
-@pytest.mark.gen_test
-@pytest.mark.call
-def test_client_for_with_sync_tchannel(server, ThriftTest):
-
-    @server.thrift.register(ThriftTest)
-    def testString(request):
-        return request.body.thing.encode('rot13')
-
-    tchannel = SyncTChannel(name='client')
-
-    client = sync_client_for('server', _ThriftTest)(
-        tchannel=tchannel,
-        hostport=server.hostport,
-    )
-
-    future = client.testString(thing='foo')
-
-    assert not isinstance(future, concurrent.Future)
-
-    # Our server is sharing our IO loop so let it handle the
-    # request.
-    while not future.done():
-        yield gen.moment
-
-    resp = future.result()
-
     assert resp == 'sbb'
 
 
