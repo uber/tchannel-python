@@ -24,7 +24,7 @@ Changes by Version
   despite closing the channel.
 - Explicit destinations for ``ThriftArgScheme`` may now be specified on a
   per-request basis by using the ``hostport`` keyword argument.
-
+- Only listen on IPv4, until official IPv6 support arrives.
 
 
 0.17.11 (2015-10-19)
