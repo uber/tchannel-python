@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.18.1 (unreleased)
+0.19.0 (unreleased)
 -------------------
 
 - Nothing changed yet.
