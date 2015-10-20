@@ -31,26 +31,34 @@ from . import THRIFT
 class ThriftArgScheme(object):
     """Handler registration and serialization for Thrift.
 
-    To register a Thrift handler:
+    Use :py:func:`tchannel.thrift.load` to parse your Thrift IDL and compile
+    it into a module dynamically.
 
     .. code:: python
 
-        @tchannel.thrift(GeneratedThriftModule)
-        def method(request):
-            print request.body.some_arg
+        from tchannel import thrift
 
-    When calling a remote service, generated Thrift types need to be wrapped
-    with :py:func:`thrift_request_builder` to provide TChannel compatibility:
+        keyvalue = thrift.load('keyvalue.thrift', service='keyvalue')
+
+    To register a Thrift handler, use the ``register()`` decorator, providing
+    a reference to the compiled service as an argument. The name of the
+    service method should match the name of the decorated function.
 
     .. code:: python
 
-        thrift_service = thrift_request_builder(
-            service='service-identifier',
-            thrift_module=GeneratedThriftModule,
-        )
+        tchannel = TChannel(...)
+
+        @tchannel.thrift.register(keyvalue.KeyValue)
+        def setValue(request):
+            data[request.body.key] = request.body.value
+
+    Use methods on the compiled service to generate requests to remote
+    services and execute them via ``TChannel.thrift()``.
+
+    .. code:: python
 
         response = yield tchannel.thrift(
-            thrift_service.method(some_arg='foo'),
+            keyvalue.KeyValue.setValue(key='foo', value='bar')
         )
     """
 
@@ -69,7 +77,34 @@ class ThriftArgScheme(object):
         retry_limit=None,
         shard_key=None,
         trace=None,
+        hostport=None,
     ):
+        """Make a Thrift TChannel request.
+
+        Returns a ``Response`` containing the return value of the Thrift
+        call (if any). If the remote server responded with a Thrift exception,
+        that exception is raised.
+
+        :param string request:
+            Request obtained by calling a method on service objects generated
+            by :py:func:`tchannel.thrift.load`.
+        :param dict headers:
+            Dictionary of header key-value pairs.
+        :param float timeout:
+            How long to wait (in seconds) before raising a ``TimeoutError`` -
+            this defaults to ``tchannel.glossary.DEFAULT_TIMEOUT``.
+        :param string hostport:
+            A 'host:port' value to use when making a request directly to a
+            TChannel service, bypassing Hyperbahn. This value takes precedence
+            over the ``hostport`` specified to
+            :py:func:`tchannel.thrift.load`.
+        :param string retry_on:
+            What events to retry on - valid values can be found in
+            ``tchannel.retry``.
+        :param string retry_limit:
+            How many times to retry before
+        :rtype: Response
+        """
         if not headers:
             headers = {}
 
@@ -96,7 +131,7 @@ class ThriftArgScheme(object):
             timeout=timeout,
             retry_on=retry_on,
             retry_limit=retry_limit,
-            hostport=request.hostport,
+            hostport=hostport or request.hostport,
             shard_key=shard_key,
             trace=trace,
         )

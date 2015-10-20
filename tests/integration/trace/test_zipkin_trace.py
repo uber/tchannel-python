@@ -28,8 +28,8 @@ import tornado.gen
 from tchannel import TChannel, Response
 from tchannel.zipkin.annotation import Endpoint
 from tchannel.zipkin.annotation import client_send
-from tchannel.zipkin.thrift import TCollector
-from tchannel.zipkin.thrift.ttypes import Response as TResponse
+from tchannel.zipkin.tcollector import TCollector
+from tchannel.zipkin.tcollector import Response as TResponse
 from tchannel.zipkin.trace import Trace
 from tchannel.zipkin.tracers import TChannelZipkinTracer
 from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
@@ -41,22 +41,9 @@ except:
     from StringIO import StringIO
 
 
-def submit(request):
-    span = request.body.span
-    r = TResponse()
-
-    r.ok = request.transport.shard_key == base64.b64encode(
-        span.traceId
-    )
-    return r
-
-
-@pytest.fixture
 def register(tchannel):
-    @tornado.gen.coroutine
-    def handler2(request):
-        return "from handler2"
 
+    @tchannel.raw.register('endpoint1')
     @tornado.gen.coroutine
     def handler1(request):
         hostport = request.headers
@@ -69,9 +56,17 @@ def register(tchannel):
 
         raise tornado.gen.Return(Response(res.body, "from handler1"))
 
-    tchannel.register(endpoint="endpoint1", scheme="raw", handler=handler1)
-    tchannel.register(endpoint="endpoint2", scheme="raw", handler=handler2)
-    tchannel.register(endpoint=TCollector, scheme="thrift", handler=submit)
+    @tchannel.raw.register('endpoint2')
+    @tornado.gen.coroutine
+    def handler2(request):
+        return "from handler2"
+
+    @tchannel.thrift.register(TCollector)
+    def submit(request):
+        span = request.body.span
+        ok = request.transport.shard_key == base64.b64encode(span.traceId)
+        return TResponse(ok=ok)
+
 
 trace_buf = StringIO()
 
@@ -133,7 +128,9 @@ def test_zipkin_trace(trace_server):
 def test_tcollector_submit(trace_server):
     tchannel = TChannel(name='test', known_peers=[trace_server.hostport])
 
-    trace = Trace(endpoint=Endpoint("1.0.0.1", 1111, "tcollector"))
+    trace = Trace(
+        name='endpoint', endpoint=Endpoint('1.0.0.1', 1111, 'tcollector')
+    )
     anns = [client_send()]
 
     results = yield TChannelZipkinTracer(tchannel).record([(trace, anns)])

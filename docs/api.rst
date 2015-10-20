@@ -9,6 +9,9 @@ TChannel
     :special-members: __init__
     :members:
 
+.. autoclass:: tchannel.singleton.TChannel
+    :members:
+
 .. autoclass:: tchannel.Request
     :members:
 
@@ -27,8 +30,6 @@ Thrift
 
 .. autoclass:: tchannel.schemes.ThriftArgScheme
     :members: __call__, register
-
-.. autofunction:: tchannel.thrift_request_builder
 
 .. autofunction:: tchannel.thrift.load
 
@@ -67,6 +68,10 @@ Synchronous Client
 ------------------
 
 .. autoclass:: tchannel.sync.TChannel
+    :inherited-members:
+    :members:
+
+.. autoclass:: tchannel.sync.singleton.TChannel
     :inherited-members:
     :members:
 

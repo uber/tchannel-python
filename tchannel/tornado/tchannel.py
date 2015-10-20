@@ -23,6 +23,7 @@ from __future__ import absolute_import
 import inspect
 import logging
 import os
+import socket
 import sys
 from functools import partial
 
@@ -33,6 +34,7 @@ import tornado.tcpserver
 from tornado.netutil import bind_sockets
 
 from . import hyperbahn
+from ..deprecate import deprecate
 from ..enum import enum
 from ..errors import AlreadyListeningError
 from ..event import EventEmitter
@@ -65,7 +67,8 @@ class TChannel(object):
     FALLBACK = RequestDispatcher.FALLBACK
 
     def __init__(self, name, hostport=None, process_name=None,
-                 known_peers=None, trace=False, dispatcher=None):
+                 known_peers=None, trace=False, dispatcher=None,
+                 _from_new_api=False):
         """Build or re-use a TChannel.
 
         :param name:
@@ -90,6 +93,7 @@ class TChannel(object):
             Flag to turn on/off zipkin trace. It can be a bool variable or
             a function that return true or false.
         """
+
         self._state = State.ready
 
         if not dispatcher:
@@ -127,6 +131,14 @@ class TChannel(object):
 
         # server created from calling listen()
         self._server = None
+
+        # warn if customers are still using this old and soon to be deleted api
+        if _from_new_api is False:
+            deprecate(
+                "tchannel.tornado.TChannel is deprecated and will be removed" +
+                " in a a future version - please switch usage to " +
+                "tchannel.TChannel object. Thank you."
+            )
 
     @property
     def trace(self):
@@ -176,14 +188,15 @@ class TChannel(object):
     def closed(self):
         return self._state == State.closed
 
-    @tornado.gen.coroutine
     def close(self):
         if self._state in [State.closed, State.closing]:
-            raise tornado.gen.Return(None)
+            return
 
         self._state = State.closing
         try:
-            yield self.peers.clear()
+            self.peers.clear()
+            if self._server:
+                self._server.stop()
         finally:
             self._state = State.closed
 
@@ -256,7 +269,13 @@ class TChannel(object):
         assert self._handler, "Call .host with a RequestHandler first"
         server = TChannelServer(self)
 
-        sockets = bind_sockets(self._port)
+        sockets = bind_sockets(
+            self._port,
+            # ipv6 causes random address already in use (socket.error w errno
+            # == 98) when getaddrinfo() returns multiple values
+            # @see https://github.com/uber/tchannel-python/issues/256
+            family=socket.AF_INET,
+        )
         assert sockets, "No sockets bound for port %d" % self._port
 
         # If port was 0, the OS probably assigned something better.

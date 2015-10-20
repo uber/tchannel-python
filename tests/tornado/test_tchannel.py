@@ -21,6 +21,7 @@
 from __future__ import absolute_import
 
 import pytest
+import socket
 
 from tchannel.errors import AlreadyListeningError
 from tchannel.tornado import TChannel
@@ -70,3 +71,24 @@ def test_should_error_if_call_listen_twice(tchannel):
 
     with pytest.raises(AlreadyListeningError):
         tchannel.listen()
+
+
+def test_close_stops_listening():
+    server = TChannel(name='server')
+    server.listen()
+
+    host, port = server.hostport.rsplit(':', 1)
+    port = int(port)
+
+    # Can connect
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((host, port))
+    sock.close()
+
+    server.close()
+
+    # Can't connect
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    with pytest.raises(socket.error):
+        sock.connect((host, port))

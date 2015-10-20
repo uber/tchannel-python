@@ -18,20 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-exception NotFoundError {
-    1: string key,
-}
+from __future__ import absolute_import, unicode_literals, print_function
 
-service KeyValue {
 
-    string getValue(
-        1: string key,
-    ) throws (
-        1: NotFoundError notFound,
-    )
+CLIENT_SEND = "cs"
 
-    void setValue(
-        1: string key,
-        2: string value,
-    )
-}
+CLIENT_RECV = "cr"
+
+SERVER_SEND = "ss"
+
+SERVER_RECV = "sr"

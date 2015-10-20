@@ -21,14 +21,13 @@
 from __future__ import absolute_import
 
 from tornado import gen, ioloop
-from tchannel import TChannel, Response
-from tchannel.testing.data.generated.ThriftTest import ThriftTest
-
+from tchannel import TChannel, Response, thrift
 
 tchannel = TChannel('thrift-server', hostport='localhost:54497')
+service = thrift.load('tests/data/idls/ThriftTest.thrift')
 
 
-@tchannel.thrift.register(ThriftTest)
+@tchannel.thrift.register(service.ThriftTest)
 @gen.coroutine
 def testString(request):
 

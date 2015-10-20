@@ -97,28 +97,6 @@ def test_maybe_stream(s, expected):
 
 
 @pytest.mark.gen_test
-def test_peer_group_clear_multiple():
-    # Multiple concurrent reset attempts should not conflict with each other.
-
-    peer_group = tpeer.PeerGroup(mock.MagicMock())
-    for i in xrange(10):
-        peer_group.get('localhost:404%d' % i)
-
-    # A peer that will intentionally take a while to close.
-    dirty_peer = mock.MagicMock()
-    dirty_peer.close.side_effect = lambda: gen.sleep(0.1)
-    peer_group.add(dirty_peer)
-
-    yield [peer_group.clear() for i in xrange(10)]
-
-    # Dirty peer must have been closed only once.
-    dirty_peer.close.assert_called_once_with()
-
-    for i in xrange(10):
-        assert not peer_group.lookup('localhost:404%d' % i)
-
-
-@pytest.mark.gen_test
 def test_peer_connection_failure():
     # Test connecting a peer when the first connection attempt fails.
 

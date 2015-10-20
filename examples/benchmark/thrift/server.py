@@ -19,32 +19,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
-from __future__ import absolute_import
-
 from tornado import ioloop
-from tchannel import TChannel
-from service import KeyValue
+from tchannel import TChannel, thrift
 
-
-app = TChannel('thrift-benchmark', hostport='localhost:12345')
-
+tchannel = TChannel('keyvalue-server', hostport='localhost:12345')
+service = thrift.load('examples/guide/keyvalue/service.thrift')
 
 values = {'hello': 'world'}
 
 
-@app.thrift.register(KeyValue)
+@tchannel.thrift.register(service.KeyValue)
 def getValue(request):
     key = request.body.key
     value = values.get(key)
 
     if value is None:
-        raise KeyValue.NotFoundError(key)
+        raise service.NotFoundError(key)
 
     return value
 
 
-@app.thrift.register(KeyValue)
+@tchannel.thrift.register(service.KeyValue)
 def setValue(request):
     key = request.body.key
     value = request.body.value
@@ -52,12 +47,9 @@ def setValue(request):
 
 
 def run():
-    app.listen()
+    tchannel.listen()
 
 
 if __name__ == '__main__':
     run()
-    try:
-        ioloop.IOLoop.current().start()
-    except KeyboardInterrupt:
-        pass
+    ioloop.IOLoop.current().start()

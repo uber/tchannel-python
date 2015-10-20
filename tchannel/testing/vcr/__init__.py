@@ -37,6 +37,11 @@ The simplest way to use this is with the :py:func:`use_cassette` function.
 Configuration
 -------------
 
+.. py:data:: tchannel.testing.vcr.DEFAULT_MATCHERS
+
+    A tuple containing the default list of matchers used by
+    :py:func:`tchannel.testing.vcr.use_cassette`.
+
 Record Modes
 ~~~~~~~~~~~~
 
@@ -48,6 +53,7 @@ from __future__ import absolute_import
 
 from .config import use_cassette
 from .record_modes import RecordMode
+from .cassette import DEFAULT_MATCHERS
 
 
-__all__ = ['use_cassette', 'RecordMode', 'proxy']
+__all__ = ['use_cassette', 'RecordMode', 'DEFAULT_MATCHERS']

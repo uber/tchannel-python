@@ -28,6 +28,8 @@ import sys
 import tornado.gen
 import tornado.iostream
 
+import tornado.queues as queues
+
 from .. import errors
 from .. import frame
 from .. import glossary
@@ -43,13 +45,6 @@ from ..messages.types import Types
 from .message_factory import build_raw_error_message
 from .message_factory import MessageFactory
 from .util import chain
-
-try:
-    import tornado.queues as queues  # included in 4.2
-    QueueEmpty = queues.QueueEmpty
-except ImportError:
-    import toro as queues
-    from Queue import Empty as QueueEmpty
 
 log = logging.getLogger('tchannel')
 
@@ -142,7 +137,7 @@ class TornadoConnection(object):
             while True:
                 message = self._messages.get_nowait()
                 log.warn("Unconsumed message %s", message)
-        except QueueEmpty:
+        except queues.QueueEmpty:
             pass
 
     def await(self):
@@ -330,7 +325,8 @@ class TornadoConnection(object):
         return self.connection.write(body)
 
     def close(self):
-        self.connection.close()
+        if not self.connection.closed():
+            self.connection.close()
 
     @tornado.gen.coroutine
     def initiate_handshake(self, headers):

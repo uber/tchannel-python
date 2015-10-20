@@ -237,3 +237,24 @@ def test_use_cassette_as_decorator_with_inject(tmpdir, mock_server, call):
 
     yield f()
     yield f()
+
+
+@pytest.mark.gen_test
+def test_use_cassette_with_matchers(tmpdir, mock_server, call, get_body):
+    path = tmpdir.join('data.yaml')
+    mock_server.expect_call('hello').and_write('world').once()
+
+    with vcr.use_cassette(str(path), matchers=['body']) as cass:
+        response = yield call('hello', 'world', service='hello_service')
+        assert 'world' == (yield get_body(response))
+
+    assert cass.play_count == 0
+    assert path.check(file=True)
+
+    with vcr.use_cassette(str(path), matchers=['body']) as cass:
+        response = yield call(
+            'not-hello', 'world', service='not_hello_service'
+        )
+        assert 'world' == (yield get_body(response))
+
+    assert cass.play_count == 1

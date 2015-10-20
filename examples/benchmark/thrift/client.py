@@ -20,28 +20,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import os
 import sys
 import threading
 
 from tornado import gen, ioloop
-from tchannel import TChannel
-from tchannel import thrift_request_builder
-from service import KeyValue
-
+from tchannel import TChannel, thrift
 
 tchannel = TChannel('thrift-benchmark-client')
-
-kv = thrift_request_builder(
+service = thrift.load(
+    path='examples/guide/keyvalue/service.thrift',
     service='thrift-benchmark',
-    thrift_module=KeyValue,
-    hostport='localhost:12345'
+    hostport='localhost:12345',
 )
 
 local = threading.local()
 local.requests = 0
-
-data = os.urandom(4096)
 
 
 def report_work():
@@ -52,11 +45,13 @@ def report_work():
 
 @gen.coroutine
 def do_work():
+
+    data = "a" * 4096
+
     while True:
         yield tchannel.thrift(
-            request=kv.setValue("key", data),
+            request=service.KeyValue.setValue("key", data),
         )
-
         local.requests += 1
 
 

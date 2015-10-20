@@ -28,9 +28,9 @@ import inspect
 import pytest
 
 from tchannel import thrift_request_builder
-from tchannel.testing.data.generated.ThriftTest import ThriftTest
 from tchannel.thrift.module import ThriftRequest
 from tchannel.thrift.module import ThriftRequestMaker
+from tests.data.generated.ThriftTest import ThriftTest
 
 
 @pytest.mark.call
