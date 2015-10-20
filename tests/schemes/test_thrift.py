@@ -31,19 +31,11 @@ from tchannel import (
     Request,
     Response,
     thrift,
-    thrift_request_builder,
     schemes,
 )
 from tchannel.response import TransportHeaders
 from tchannel.errors import OneWayNotSupportedError
 from tchannel.errors import UnexpectedError
-from tchannel.errors import ValueExpectedError
-
-from tests.data.generated.ThriftTest import (
-    SecondService as _SecondService,
-    ThriftTest as _ThriftTest,
-    ttypes as _ttypes,
-)
 
 from tchannel.tornado.connection import TornadoConnection
 from tchannel.messages.call_request import CallRequestMessage
@@ -62,98 +54,56 @@ def server(io_loop):  # need io_loop fixture for listen() to work
     return server
 
 
-@pytest.fixture(params=[False, True], ids=['server_thrift', 'server_thriftrw'])
-def use_thriftrw_server(request):
-    return request.param
-
-
-@pytest.fixture(params=[False, True], ids=['client_thrift', 'client_thriftrw'])
-def use_thriftrw_client(request):
-    return request.param
-
-
 @pytest.fixture
-def ThriftTest(use_thriftrw_server):
+def ThriftTest():
     """Used by servers to register endpoints for ThriftTest."""
-
-    if use_thriftrw_server:
-        return thrift.load(
-            'tests/data/idls/ThriftTest.thrift',
-        ).ThriftTest
-    else:
-        return _ThriftTest
+    return thrift.load(
+        'tests/data/idls/ThriftTest.thrift',
+    ).ThriftTest
 
 
 @pytest.fixture
-def SecondService(use_thriftrw_server):
+def SecondService():
     """Used by servers to register endpoints for SecondService."""
-
-    if use_thriftrw_server:
-        return thrift.load(
-            'tests/data/idls/ThriftTest.thrift',
-        ).SecondService
-    else:
-        return _SecondService
+    return thrift.load(
+        'tests/data/idls/ThriftTest.thrift',
+    ).SecondService
 
 
 @pytest.fixture
-def server_ttypes(use_thriftrw_server):
+def server_ttypes():
     """Provides access to generated types for the server."""
-
-    if use_thriftrw_server:
-        return thrift.load(
-            path='tests/data/idls/ThriftTest.thrift',
-        )
-    else:
-        return _ttypes
+    return thrift.load(
+        path='tests/data/idls/ThriftTest.thrift',
+    )
 
 
 @pytest.fixture
-def client_ttypes(use_thriftrw_client):
+def client_ttypes():
     """Provides access to generated types for the server."""
-
-    if use_thriftrw_client:
-        return thrift.load(
-            path='tests/data/idls/ThriftTest.thrift',
-        )
-    else:
-        return _ttypes
+    return thrift.load(
+        path='tests/data/idls/ThriftTest.thrift',
+    )
 
 
 @pytest.fixture
-def service(server, use_thriftrw_client):
+def service(server):
     """Used by clients to build requests to ThriftTest."""
-
-    if use_thriftrw_client:
-        return thrift.load(
-            path='tests/data/idls/ThriftTest.thrift',
-            service='server',
-            hostport=server.hostport,
-        ).ThriftTest
-    else:
-        return thrift_request_builder(
-            service='server',
-            thrift_module=_ThriftTest,
-            hostport=server.hostport,
-        )
+    return thrift.load(
+        path='tests/data/idls/ThriftTest.thrift',
+        service='server',
+        hostport=server.hostport,
+    ).ThriftTest
 
 
 @pytest.fixture
-def second_service(server, use_thriftrw_client):
+def second_service(server):
     """Used by clients to build requests to SecondService."""
-
-    if use_thriftrw_client:
-        return thrift.load(
-            path='tests/data/idls/ThriftTest.thrift',
-            service='server',
-            hostport=server.hostport,
-        ).SecondService
-    else:
-        return thrift_request_builder(
-            service='server',
-            thrift_module=_SecondService,
-            hostport=server.hostport,
-        )
+    return thrift.load(
+        path='tests/data/idls/ThriftTest.thrift',
+        service='server',
+        hostport=server.hostport,
+    ).SecondService
 
 
 @pytest.mark.gen_test
@@ -924,11 +874,6 @@ def test_second_service_second_test_string(
     @server.thrift.register(SecondService)
     @gen.coroutine
     def secondtestString(request):
-        service = thrift_request_builder(
-            service='server',
-            thrift_module=_ThriftTest,
-            hostport=server.hostport,
-        )
         resp = yield tchannel.thrift(
             service.testString(request.body.thing),
         )
@@ -1008,7 +953,7 @@ def test_call_unexpected_error_should_result_in_unexpected_error(
 @pytest.mark.gen_test
 @pytest.mark.call
 def test_value_expected_but_none_returned_should_error(
-    server, service, ThriftTest, use_thriftrw_server, use_thriftrw_client
+    server, service, ThriftTest
 ):
 
     # Given this test server:
@@ -1021,31 +966,15 @@ def test_value_expected_but_none_returned_should_error(
 
     tchannel = TChannel(name='client')
 
-    if use_thriftrw_server:
-        # With thirftrw the client only sees an unexpected error because
-        # thriftrw always disallows None results for functions that return
-        # values.
-        exc = UnexpectedError
-    else:
-        # If server is using thrift, it will be able to return an invalid
-        # response. thriftrw will fail with a TypeError on invalid values. For
-        # thrift, we'll check manually and raise ValueExpectedError.
-        if use_thriftrw_client:
-            exc = TypeError
-        else:
-            exc = ValueExpectedError
+    # With thirftrw the client only sees an unexpected error because
+    # thriftrw always disallows None results for functions that return
+    # values.
+    exc = UnexpectedError
 
-    with pytest.raises(exc) as exc_info:
+    with pytest.raises(exc):
         yield tchannel.thrift(
             service.testString('no return!?')
         )
-
-    if not use_thriftrw_server:
-        if use_thriftrw_client:
-            assert 'did not receive any values' in str(exc_info)
-        else:
-            assert 'Expected a value to be returned' in str(exc_info)
-            assert 'ThriftTest::testString' in str(exc_info)
 
 
 @pytest.mark.gen_test
