@@ -25,7 +25,6 @@ from doubles import InstanceDouble, allow, expect
 
 from contextlib2 import contextmanager
 
-# from tchannel.thrift import client_for
 from tchannel.errors import TChannelError
 from tchannel import TChannel
 from tchannel.tornado.stream import InMemStream
