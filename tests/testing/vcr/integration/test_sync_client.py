@@ -25,6 +25,18 @@ import pytest
 from tchannel.errors import UnexpectedError
 from tchannel.sync import TChannel
 from tchannel.testing import vcr
+from tchannel import thrift
+
+
+@pytest.fixture
+def thrift_service(mock_server):
+    # TODO dont dup between async and sync
+    service = thrift.load(
+        path='tests/data/idls/ThriftTest2.thrift',
+        service='myservice',
+        hostport=mock_server.hostport,
+    )
+    return service
 
 
 @pytest.mark.gen_test
