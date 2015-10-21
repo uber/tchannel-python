@@ -59,18 +59,16 @@ def call(mock_server):
 
 @pytest.fixture
 def thrift_service(mock_server):
-
     service = thrift.load(
         path='tests/data/idls/ThriftTest2.thrift',
         service='myservice',
         hostport=mock_server.hostport,
     )
-
     return service
 
 
 @pytest.fixture
-def tchannel_():
+def tchannel():
     return TChannel('vcr-tests')
 
 
