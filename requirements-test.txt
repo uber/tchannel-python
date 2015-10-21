@@ -14,6 +14,18 @@ psutil
 # Test all the pythons
 tox
 
+#
+# futures is installed implicitly through threadloop,
+# but tox has an issue where it doesn't pick that up,
+# causing tests to fail. This can be reproduced locally
+# by removing futures from this file and running:
+#
+#     tox -e py27 tests
+#
+# @see https://travis-ci.org/uber/tchannel-python/jobs/86710564
+#
+futures
+
 # Syntax checker
 flake8==2.2.5
 
