@@ -120,11 +120,6 @@ class MockServer(object):
             scheme = 'thrift'
 
         expectation = Expectation()
-
-        def handle_expected_endpoint(request):
-            response = Response()
-            return expectation.execute(request, response)
-
         if scheme == 'thrift':
 
             @self.tchannel.thrift.register(endpoint, **kwargs)
@@ -133,6 +128,11 @@ class MockServer(object):
                 return expectation.execute(request, response)
 
         else:
+
+            def handle_expected_endpoint(request):
+                response = Response()
+                return expectation.execute(request, response)
+
             self.tchannel.register(
                 scheme=scheme,
                 endpoint=endpoint,
