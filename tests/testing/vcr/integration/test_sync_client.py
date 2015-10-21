@@ -24,7 +24,6 @@ import pytest
 
 from tchannel.errors import UnexpectedError
 from tchannel.sync import TChannel
-from tchannel.thrift import thrift_request_builder
 from tchannel.testing import vcr
 
 
