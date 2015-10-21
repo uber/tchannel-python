@@ -421,7 +421,6 @@ class MessageFactory(object):
 
 
 def _find_incomplete_stream(reqres):
-    # find the incomplete stream
     num = 0
     for i, arg in enumerate(reqres.argstreams):
         if arg.state != StreamState.completed:
