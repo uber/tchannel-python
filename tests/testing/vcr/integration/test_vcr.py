@@ -70,7 +70,7 @@ def thrift_service(mock_server):
 
 
 @pytest.fixture
-def tchannel():
+def tchannel_():
     return TChannel('vcr-tests')
 
 
@@ -139,24 +139,25 @@ def test_protocol_exception(tmpdir, mock_server, call):
 
 @pytest.mark.gen_test
 def test_record_thrift_exception(
-    tmpdir, mock_server, thrift_service, thrift_client
+    tmpdir, mock_server, thrift_service, tchannel
 ):
     path = tmpdir.join('data.yaml')
 
-    mock_server.expect_call(thrift_service, method='getItem').and_raise(
+    mock_server.expect_call(
+        thrift_service.Service, method='getItem').and_raise(
         thrift_service.ItemDoesNotExist('foo')
     ).once()
 
     with vcr.use_cassette(str(path)) as cass:
         with pytest.raises(thrift_service.ItemDoesNotExist):
-            yield thrift_client.getItem('foo')
+            yield tchannel.thrift(thrift_service.Service.getItem('foo'))
 
     assert cass.play_count == 0
     assert path.check(file=True)
 
     with vcr.use_cassette(str(path)) as cass:
         with pytest.raises(thrift_service.ItemDoesNotExist):
-            yield thrift_client.getItem('foo')
+            yield tchannel.thrift(thrift_service.Service.getItem('foo'))
 
     assert cass.play_count == 1
 
