@@ -23,6 +23,7 @@ from tchannel.messages import CallRequestMessage, CallResponseMessage
 from tchannel.messages.common import StreamState, FlagsType
 from tchannel.tornado import Request, Response
 from tchannel.tornado.message_factory import MessageFactory
+from tchannel.tornado.message_factory import _find_incomplete_stream
 from tchannel.tornado.response import StatusCode
 from tchannel.zipkin.trace import Trace
 
@@ -93,3 +94,14 @@ def test_build_response():
     assert req.flags == message.flags
     assert req.headers == message.headers
     assert req.id == message.id
+
+
+def test_find_incomplete_stream():
+    request = Request()
+    assert 0 == _find_incomplete_stream(request)
+
+    request.argstreams[0].close()
+    assert 1 == _find_incomplete_stream(request)
+
+    request.argstreams[1].close()
+    assert 2 == _find_incomplete_stream(request)

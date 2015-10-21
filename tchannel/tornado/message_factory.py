@@ -266,12 +266,7 @@ class MessageFactory(object):
             if message.flags == common.FlagsType.fragment:
                 self.message_buffer[message.id] = context
 
-            # find the incompleted stream
-            num = 0
-            for i, arg in enumerate(context.argstreams):
-                if arg.state != StreamState.completed:
-                    num = i
-                    break
+            num = _find_incomplete_stream(context)
 
             self.close_argstream(context, num)
             return context
@@ -286,12 +281,7 @@ class MessageFactory(object):
                     message.id,
                 )
 
-            # find the incompleted stream
-            dst = 0
-            for i, arg in enumerate(context.argstreams):
-                if arg.state != StreamState.completed:
-                    dst = i
-                    break
+            dst = _find_incomplete_stream(context)
 
             try:
                 self.verify_message(message)
@@ -428,3 +418,13 @@ class MessageFactory(object):
         reqres.argstreams[dst].set_exception(protocol_error)
 
         self.message_buffer.pop(protocol_error.id, None)
+
+
+def _find_incomplete_stream(reqres):
+    # find the incomplete stream
+    num = 0
+    for i, arg in enumerate(reqres.argstreams):
+        if arg.state != StreamState.completed:
+            num = i
+            break
+    return num
