@@ -20,6 +20,5 @@
 
 from __future__ import absolute_import
 
-from .module import thrift_request_builder  # noqa
 from .server import register  # noqa
 from .rw import load  # noqa

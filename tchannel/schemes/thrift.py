@@ -147,18 +147,9 @@ class ThriftArgScheme(object):
     def register(self, thrift_module, **kwargs):
         # dat circular import
         from tchannel.thrift import rw as thriftrw
-
-        if isinstance(thrift_module, thriftrw.Service):
-            # Dirty hack to support thriftrw and old API
-            return thriftrw.register(
-                # TODO drop deprecated tchannel
-                self._tchannel._dep_tchannel._handler,
-                thrift_module,
-                **kwargs
-            )
-        else:
-            return self._tchannel.register(
-                scheme=self.NAME,
-                endpoint=thrift_module,
-                **kwargs
-            )
+        return thriftrw.register(
+            # TODO drop deprecated tchannel
+            self._tchannel._dep_tchannel._handler,
+            thrift_module,
+            **kwargs
+        )
