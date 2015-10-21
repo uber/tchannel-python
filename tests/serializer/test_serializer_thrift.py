@@ -20,10 +20,6 @@
 
 import pytest
 from tchannel.serializer.thrift import ThriftSerializer
-from tests.data.generated.ThriftTest.ThriftTest import (
-    testStruct_result,
-    Xtruct,
-)
 
 
 @pytest.mark.parametrize('v1', [
@@ -34,12 +30,4 @@ def test_header(v1):
     serializer = ThriftSerializer(None)
     assert v1 == serializer.deserialize_header(
         serializer.serialize_header(v1)
-    )
-
-
-def test_body():
-    result = testStruct_result(Xtruct("s", 0, 1, 2))
-    serializer = ThriftSerializer(testStruct_result)
-    assert result == serializer.deserialize_body(
-        serializer.serialize_body(result)
     )
