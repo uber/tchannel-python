@@ -30,7 +30,6 @@ from tornado.util import raise_exc_info
 
 from tchannel.status import OK, FAILED
 from tchannel.errors import OneWayNotSupportedError
-from tchannel.errors import ValueExpectedError
 from tchannel.response import Response, response_from_mixed
 from tchannel.serializer.thrift import ThriftSerializer
 
@@ -366,5 +365,3 @@ def build_handler(function, handler):
     handle.__name__ = function.spec.name
 
     return handle
-
-
