@@ -22,7 +22,17 @@ from __future__ import absolute_import
 
 import pytest
 
-from tchannel.tornado import TChannel
+from tchannel import TChannel
+from tchannel import thrift
+
+
+@pytest.fixture
+def thrift_service():
+    # TODO replace global thrift_service fixture that uses thrift --gen.
+    return thrift.load(
+        path='tests/data/idls/ThriftTest2.thrift',
+        service='myservice',
+    )
 
 
 @pytest.mark.gen_test
@@ -31,16 +41,16 @@ def test_false_result(thrift_service):
 
     app = TChannel(name='app')
 
-    @app.register(thrift_service)
-    def healthy(request, response):
+    @app.thrift.register(thrift_service.Service)
+    def healthy(request):
         return False
 
     app.listen()
 
     client = TChannel(name='client')
-    response = yield client.request(
-        hostport=app.hostport, arg_scheme='thrift'
-    ).send('Service::healthy', '\x00\x00', '\x00')
+    response = yield client.thrift(
+        thrift_service.Service.healthy(),
+        hostport=app.hostport,
+    )
 
-    body = yield response.get_body()
-    assert body == '\x02\x00\x00\x00\x00'
+    assert response.body is False
