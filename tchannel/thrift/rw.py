@@ -34,6 +34,8 @@ from tchannel.errors import ValueExpectedError
 from tchannel.response import Response, response_from_mixed
 from tchannel.serializer.thrift import ThriftSerializer
 
+from .request import ThriftRequest
+
 
 def load(path, service=None, hostport=None, module_name=None):
     """Loads the Thrift file at the specified path.
@@ -366,47 +368,3 @@ def build_handler(function, handler):
     return handle
 
 
-class ThriftRequest(object):
-
-    __slots__ = (
-        'service', 'endpoint', 'result_type', 'call_args', 'hostport',
-        '_serializer',
-    )
-
-    # TODO - implement __repr__
-
-    def __init__(self, module, service, endpoint, result_type, call_args,
-                 hostport=None, serializer=None):
-        self.service = service
-        self.endpoint = endpoint
-        self.result_type = result_type
-        self.call_args = call_args
-        self.hostport = hostport
-
-        self._serializer = ThriftSerializer(module, result_type)
-
-    def get_serializer(self):
-        return self._serializer
-
-    def read_body(self, body):
-        response_spec = self.result_type.type_spec
-
-        for exc_spec in response_spec.exception_specs:
-            exc = getattr(body, exc_spec.name)
-            if exc is not None:
-                raise exc
-
-        # success - non-void
-        if response_spec.return_spec is not None:
-            if body.success is None:
-                raise ValueExpectedError(
-                    'Expected a value to be returned for %s, '
-                    'but recieved None - only void procedures can '
-                    'return None.' % self.endpoint
-                )
-
-            return body.success
-
-        # success - void
-        else:
-            return None
