@@ -29,7 +29,7 @@ from tchannel import thrift
 
 
 @pytest.fixture
-def thrift_service(mock_server):
+def thrift_module(mock_server):
     # TODO dont dup between async and sync
     service = thrift.load(
         path='tests/data/idls/ThriftTest2.thrift',
@@ -165,13 +165,13 @@ def test_record_success_new_channels(tmpdir, mock_server):
 
 
 @pytest.mark.gen_test
-def test_record_success_thrift(tmpdir, thrift_service, mock_server):
+def test_record_success_thrift(tmpdir, thrift_module, mock_server):
     path = tmpdir.join('data.yaml')
-    expected_item = thrift_service.Item(
-        'foo', thrift_service.Value(stringValue='bar')
+    expected_item = thrift_module.Item(
+        'foo', thrift_module.Value(stringValue='bar')
     )
     mock_server.expect_call(
-        thrift_service.Service, method='getItem'
+        thrift_module.Service, method='getItem'
     ).and_result(
         expected_item
     ).once()
@@ -180,7 +180,7 @@ def test_record_success_thrift(tmpdir, thrift_service, mock_server):
 
     with vcr.use_cassette(str(path)) as cass:
         response = tchannel.thrift(
-            thrift_service.Service.getItem('foo')
+            thrift_module.Service.getItem('foo')
         ).result(1)
         item = response.body
         assert item == expected_item
@@ -190,7 +190,7 @@ def test_record_success_thrift(tmpdir, thrift_service, mock_server):
 
     with vcr.use_cassette(str(path)) as cass:
         response = tchannel.thrift(
-            thrift_service.Service.getItem('foo')
+            thrift_module.Service.getItem('foo')
         ).result(1)
         item = response.body
         assert item == expected_item
@@ -220,30 +220,30 @@ def test_protocol_exception(tmpdir, mock_server):
 
 
 @pytest.mark.gen_test
-def test_record_thrift_exception(tmpdir, mock_server, thrift_service):
+def test_record_thrift_exception(tmpdir, mock_server, thrift_module):
     path = tmpdir.join('data.yaml')
 
     mock_server.expect_call(
-        thrift_service.Service, method='getItem'
+        thrift_module.Service, method='getItem'
     ).and_raise(
-        thrift_service.ItemDoesNotExist('foo')
+        thrift_module.ItemDoesNotExist('foo')
     ).once()
 
     tchannel = TChannel('test')
 
     with vcr.use_cassette(str(path)) as cass:
-        with pytest.raises(thrift_service.ItemDoesNotExist):
+        with pytest.raises(thrift_module.ItemDoesNotExist):
             tchannel.thrift(
-                thrift_service.Service.getItem('foo')
+                thrift_module.Service.getItem('foo')
             ).result(1)
 
     assert cass.play_count == 0
     assert path.check(file=True)
 
     with vcr.use_cassette(str(path)) as cass:
-        with pytest.raises(thrift_service.ItemDoesNotExist):
+        with pytest.raises(thrift_module.ItemDoesNotExist):
             tchannel.thrift(
-                thrift_service.Service.getItem('foo')
+                thrift_module.Service.getItem('foo')
             ).result(1)
 
     assert cass.play_count == 1

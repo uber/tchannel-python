@@ -23,25 +23,15 @@ from __future__ import absolute_import
 import pytest
 
 from tchannel import TChannel
-from tchannel import thrift
-
-
-@pytest.fixture
-def thrift_service():
-    # TODO replace global thrift_service fixture that uses thrift --gen.
-    return thrift.load(
-        path='tests/data/idls/ThriftTest2.thrift',
-        service='myservice',
-    )
 
 
 @pytest.mark.gen_test
-def test_false_result(thrift_service):
+def test_false_result(thrift_module):
     # Verify that we aren't treating False as None.
 
     app = TChannel(name='app')
 
-    @app.thrift.register(thrift_service.Service)
+    @app.thrift.register(thrift_module.Service)
     def healthy(request):
         return False
 
@@ -49,7 +39,7 @@ def test_false_result(thrift_service):
 
     client = TChannel(name='client')
     response = yield client.thrift(
-        thrift_service.Service.healthy(),
+        thrift_module.Service.healthy(),
         hostport=app.hostport,
     )
 
