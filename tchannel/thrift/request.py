@@ -20,6 +20,7 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 
+from tchannel.errors import ValueExpectedError
 from tchannel.serializer.thrift import ThriftSerializer
 
 
