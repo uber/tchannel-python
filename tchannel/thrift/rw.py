@@ -32,9 +32,7 @@ from tchannel.status import OK, FAILED
 from tchannel.errors import OneWayNotSupportedError
 from tchannel.errors import ValueExpectedError
 from tchannel.response import Response, response_from_mixed
-from tchannel.serializer.thrift import ThriftRWSerializer
-
-from .request import ThriftRequest
+from tchannel.serializer.thrift import ThriftSerializer
 
 
 def load(path, service=None, hostport=None, module_name=None):
@@ -269,7 +267,7 @@ class Function(object):
         module = self.service._module
         call_args = self._request_cls(*args, **kwargs)
 
-        return ThriftRWRequest(
+        return ThriftRequest(
             module=module,
             service=module.service,
             endpoint=self.endpoint,
@@ -312,8 +310,8 @@ def register(dispatcher, service, handler=None, method=None):
         dispatcher.register(
             function.endpoint,
             handler,
-            ThriftRWSerializer(service._module, function._request_cls),
-            ThriftRWSerializer(service._module, function._response_cls),
+            ThriftSerializer(service._module, function._request_cls),
+            ThriftSerializer(service._module, function._response_cls),
         )
         return handler
 
@@ -373,13 +371,27 @@ def build_handler(function, handler):
     return handle
 
 
-class ThriftRWRequest(ThriftRequest):
+class ThriftRequest(object):
 
-    def __init__(self, module, **kwargs):
-        kwargs['serializer'] = ThriftRWSerializer(
-            module, kwargs['result_type']
-        )
-        super(ThriftRWRequest, self).__init__(**kwargs)
+    __slots__ = (
+        'service', 'endpoint', 'result_type', 'call_args', 'hostport',
+        '_serializer',
+    )
+
+    # TODO - implement __repr__
+
+    def __init__(self, module, service, endpoint, result_type, call_args,
+                 hostport=None, serializer=None):
+        self.service = service
+        self.endpoint = endpoint
+        self.result_type = result_type
+        self.call_args = call_args
+        self.hostport = hostport
+
+        self._serializer = ThriftSerializer(module, result_type)
+
+    def get_serializer(self):
+        return self._serializer
 
     def read_body(self, body):
         response_spec = self.result_type.type_spec
