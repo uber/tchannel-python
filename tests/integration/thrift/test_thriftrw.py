@@ -22,16 +22,12 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import pytest
 
-from ...util import get_thrift_file
-
 from tchannel import TChannel
-from tchannel import thrift
 
 
 @pytest.fixture
-def keyvalue(tmpdir, request):
-    thrift_file = get_thrift_file(tmpdir)
-    return thrift.load(request.node.name, str(thrift_file))
+def keyvalue(thrift_module):
+    return thrift_module
 
 
 @pytest.fixture

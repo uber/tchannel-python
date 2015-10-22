@@ -22,8 +22,9 @@ from __future__ import absolute_import
 
 import pytest
 
+from tchannel import thrift
+
 from .mock_server import MockServer
-from .util import get_thrift_service_module
 
 
 class _MockConnection(object):
@@ -51,7 +52,8 @@ def mock_server():
         yield server
 
 
-@pytest.yield_fixture
-def thrift_service(tmpdir):
-    with get_thrift_service_module(tmpdir, True) as m:
-        yield m
+@pytest.fixture
+def thrift_module(request):
+    return thrift.load(
+        'tests/data/idls//ThriftTest2.thrift', request.node.name
+    )
