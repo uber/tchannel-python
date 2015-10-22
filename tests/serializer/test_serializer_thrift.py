@@ -27,7 +27,7 @@ from tchannel.serializer.thrift import ThriftSerializer
     ({'a': 'd'}),
 ])
 def test_header(v1):
-    serializer = ThriftSerializer(None)
+    serializer = ThriftSerializer(None, None)
     assert v1 == serializer.deserialize_header(
         serializer.serialize_header(v1)
     )
