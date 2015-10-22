@@ -141,6 +141,9 @@ class ThriftArgScheme(object):
         )
         body = serializer.deserialize_body(body=response.body)
 
+        # TODO read_body and get_serializer were added so that we could fork
+        # behavior on whether Apache Thrift was being used or thriftrw. That's
+        # no longer required. Move that behavior back here.
         response.body = request.read_body(body)
         raise gen.Return(response)
 
