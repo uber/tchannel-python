@@ -323,28 +323,6 @@ class TChannel(object):
         self._handler.register(endpoint, f, req_serializer, resp_serializer)
         return f
 
-    def _register_thrift(self, service_module, handler, **kwargs):
-        """Register a Thrift endpoint on this TChannel.
-
-        :param service_module:
-            Reference to the Thrift-generated module for the service being
-            registered.
-        :param handler:
-            Handler for the endpoint
-        :param method:
-            Name of the Thrift method being registered. If omitted, ``f``'s
-            name is assumed to be the method name.
-        :param service:
-            Name of the Thrift service. By default this is determined
-            automatically from the module name.
-        """
-        import tchannel.thrift as thrift
-        # Imported inside the function so that we don't have a hard dependency
-        # on the Thrift library. This function is usable only if the Thrift
-        # library is installed.
-        thrift.register(self._handler, service_module, handler, **kwargs)
-        return handler
-
     def register(self, endpoint, scheme=None, handler=None, **kwargs):
         """Register a handler with this TChannel.
 
@@ -386,6 +364,10 @@ class TChannel(object):
             register it as the handler.
         """
         assert endpoint is not None, "endpoint is required"
+        assert scheme != "thrift" and not inspect.ismodule(endpoint), (
+            # Only the new TChannel supports thriftrw.
+            "Thrift is not supported by the deprecated TChannel."
+        )
 
         if endpoint is TChannel.FALLBACK:
             decorator = partial(self._handler.register, TChannel.FALLBACK)
@@ -395,18 +377,12 @@ class TChannel(object):
                 return decorator
 
         if not scheme:
-            # scheme defaults to raw, unless the endpoint is a service module.
-            if inspect.ismodule(endpoint):
-                scheme = "thrift"
-            else:
-                scheme = "raw"
+            scheme = "raw"
         scheme = scheme.lower()
-        if scheme == 'thrift':
-            decorator = partial(self._register_thrift, endpoint, **kwargs)
-        else:
-            decorator = partial(
-                self._register_simple, endpoint, scheme, **kwargs
-            )
+
+        decorator = partial(
+            self._register_simple, endpoint, scheme, **kwargs
+        )
 
         if handler is not None:
             return decorator(handler)

@@ -30,9 +30,8 @@ from tornado.util import raise_exc_info
 
 from tchannel.status import OK, FAILED
 from tchannel.errors import OneWayNotSupportedError
-from tchannel.errors import ValueExpectedError
 from tchannel.response import Response, response_from_mixed
-from tchannel.serializer.thrift import ThriftRWSerializer
+from tchannel.serializer.thrift import ThriftSerializer
 
 from .request import ThriftRequest
 
@@ -264,7 +263,7 @@ class Function(object):
         module = self.service._module
         call_args = self._request_cls(*args, **kwargs)
 
-        return ThriftRWRequest(
+        return ThriftRequest(
             module=module,
             service=module.service,
             endpoint=self.endpoint,
@@ -307,8 +306,8 @@ def register(dispatcher, service, handler=None, method=None):
         dispatcher.register(
             function.endpoint,
             handler,
-            ThriftRWSerializer(service._module, function._request_cls),
-            ThriftRWSerializer(service._module, function._response_cls),
+            ThriftSerializer(service._module, function._request_cls),
+            ThriftSerializer(service._module, function._response_cls),
         )
         return handler
 
@@ -366,35 +365,3 @@ def build_handler(function, handler):
     handle.__name__ = function.spec.name
 
     return handle
-
-
-class ThriftRWRequest(ThriftRequest):
-
-    def __init__(self, module, **kwargs):
-        kwargs['serializer'] = ThriftRWSerializer(
-            module, kwargs['result_type']
-        )
-        super(ThriftRWRequest, self).__init__(**kwargs)
-
-    def read_body(self, body):
-        response_spec = self.result_type.type_spec
-
-        for exc_spec in response_spec.exception_specs:
-            exc = getattr(body, exc_spec.name)
-            if exc is not None:
-                raise exc
-
-        # success - non-void
-        if response_spec.return_spec is not None:
-            if body.success is None:
-                raise ValueExpectedError(
-                    'Expected a value to be returned for %s, '
-                    'but recieved None - only void procedures can '
-                    'return None.' % self.endpoint
-                )
-
-            return body.success
-
-        # success - void
-        else:
-            return None

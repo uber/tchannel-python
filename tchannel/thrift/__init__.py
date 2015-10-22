@@ -20,5 +20,4 @@
 
 from __future__ import absolute_import
 
-from .server import register  # noqa
 from .rw import load  # noqa

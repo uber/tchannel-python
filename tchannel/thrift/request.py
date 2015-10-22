@@ -18,9 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from __future__ import (
-    absolute_import, division, print_function, unicode_literals
-)
+from __future__ import absolute_import, print_function, unicode_literals
 
 from tchannel.errors import ValueExpectedError
 from tchannel.serializer.thrift import ThriftSerializer
@@ -35,42 +33,32 @@ class ThriftRequest(object):
 
     # TODO - implement __repr__
 
-    def __init__(self, service, endpoint, result_type,
-                 call_args, hostport=None, serializer=None):
+    # TODO we don't use a specialized ThriftResponse anywhere. Maybe we can
+    # get rid of this too and just use plain Request objects.
 
+    def __init__(self, module, service, endpoint, result_type, call_args,
+                 hostport=None, serializer=None):
         self.service = service
         self.endpoint = endpoint
         self.result_type = result_type
         self.call_args = call_args
         self.hostport = hostport
 
-        if not serializer:
-            serializer = ThriftSerializer(self.result_type)
-        self._serializer = serializer
+        self._serializer = ThriftSerializer(module, result_type)
 
     def get_serializer(self):
         return self._serializer
 
     def read_body(self, body):
-        """Handles the response body for this request.
+        response_spec = self.result_type.type_spec
 
-        If the response body includes a result, returns the result unwrapped
-        from the response union. If the response contains an exception, raises
-        that exception.
-        """
-        result_spec = self.result_type.thrift_spec
-
-        # raise application exception, if present
-        for exc_spec in result_spec[1:]:
-            exc = getattr(body, exc_spec[2])
+        for exc_spec in response_spec.exception_specs:
+            exc = getattr(body, exc_spec.name)
             if exc is not None:
                 raise exc
 
         # success - non-void
-        if len(result_spec) >= 1 and result_spec[0] is not None:
-
-            # value expected, but got none
-            # TODO - server side should use this same logic
+        if response_spec.return_spec is not None:
             if body.success is None:
                 raise ValueExpectedError(
                     'Expected a value to be returned for %s, '
