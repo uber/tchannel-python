@@ -72,7 +72,3 @@ docs:
 .PHONY: docsopen
 docsopen: docs
 	open docs/_build/html/index.html
-
-.PHONY: vcr-thrift
-vcr-thrift:
-	make -C ./tchannel/testing/vcr all
