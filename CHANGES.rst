@@ -8,6 +8,7 @@ Changes by Version
   ``tchannel.sync.thrift.client_for`` as planned in 0.18.
 - **BREAKING** - removed ``tchannel.thrift_request_builder`` as
   planned in 0.18.
+- Reduced Zipkin submission failures to warnings.
 
 
 0.20.0 (2015-11-10)
