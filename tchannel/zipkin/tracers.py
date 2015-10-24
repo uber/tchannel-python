@@ -142,10 +142,7 @@ class TChannelZipkinTracer(object):
 
         def submit_callback(f):
             if f.exception():
-                log.error(
-                    'Fail to submit zipkin trace',
-                    exc_info=f.exc_info()
-                )
+                log.warn('Failed to submit a zipkin trace :/')
 
         fus = []
         for (trace, annotations) in traces:
