@@ -188,3 +188,21 @@ def test_peer_connection_failure_exhausted_peers():
 
     with pytest.raises(NoAvailablePeerError):
         yield client.raw('server', 'hello', 'foo')
+
+
+@pytest.mark.gen_test
+def test_peer_incoming_connections_are_preferred(request):
+    incoming = mock.MagicMock()
+    outgoing = mock.MagicMock()
+
+    peer = tpeer.Peer(mock.MagicMock(), 'localhost:4040')
+    with mock.patch(
+        'tchannel.tornado.connection.StreamConnection.outgoing'
+    ) as mock_outgoing:
+        mock_outgoing.return_value = gen.maybe_future(outgoing)
+        peer.connect()
+
+    assert (yield peer.connect()) is outgoing
+
+    peer.register_incoming(incoming)
+    assert (yield peer.connect()) is incoming
