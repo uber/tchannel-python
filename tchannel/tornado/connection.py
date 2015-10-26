@@ -237,6 +237,8 @@ class TornadoConnection(object):
                         error = TChannelError.from_code(
                             message.code,
                             description=message.description,
+                            id=message.id,
+                            tracing=message.tracing,
                         )
                         future.set_exception(error)
                     else:
