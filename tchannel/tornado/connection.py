@@ -344,7 +344,7 @@ class TornadoConnection(object):
         ))
         init_res = yield self._recv()
         if init_res.message_type != Types.INIT_RES:
-            raise errors.InvalidMessageError(
+            raise errors.FatalProtocolError(
                 "Expected handshake response, got %s" % repr(init_res)
             )
         self._extract_handshake_headers(init_res)
@@ -365,7 +365,7 @@ class TornadoConnection(object):
         """
         init_req = yield self._recv()
         if init_req.message_type != Types.INIT_REQ:
-            raise errors.InvalidMessageError(
+            raise errors.FatalProtocolError(
                 "You need to shake my hand first. Got %s" % repr(init_req)
             )
         self._extract_handshake_headers(init_req)
@@ -381,12 +381,12 @@ class TornadoConnection(object):
 
     def _extract_handshake_headers(self, message):
         if not message.host_port:
-            raise errors.InvalidMessageError(
+            raise errors.FatalProtocolError(
                 'Missing required header: host_port'
             )
 
         if not message.process_name:
-            raise errors.InvalidMessageError(
+            raise errors.FatalProtocolError(
                 'Missing required header: process_name'
             )
 
@@ -434,10 +434,15 @@ class TornadoConnection(object):
 
         connection = cls(stream, tchannel)
         log.debug("Performing handshake with %s", hostport)
-        yield connection.initiate_handshake(headers={
-            'host_port': serve_hostport,
-            'process_name': process_name,
-        })
+
+        try:
+            yield connection.initiate_handshake(headers={
+                'host_port': serve_hostport,
+                'process_name': process_name,
+            })
+        except errors.FatalProtocolError:
+            stream.close()
+            raise
 
         if handler:
             connection.serve(handler)

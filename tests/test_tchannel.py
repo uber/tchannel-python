@@ -23,6 +23,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import socket
 import subprocess
 import textwrap
 from mock import MagicMock, patch, ANY
@@ -32,8 +33,14 @@ import os
 import psutil
 import pytest
 from tornado import gen
+from tornado import iostream
+from tornado import tcpserver
+from tornado import testing
 
 from tchannel import TChannel, Request, Response, schemes, errors
+from tchannel import messages
+from tchannel import io
+from tchannel import frame
 from tchannel.errors import AlreadyListeningError, TimeoutError
 from tchannel.event import EventHook
 from tchannel.response import TransportHeaders
@@ -376,3 +383,75 @@ def test_listen_duplicate_ports():
     port = int(server.hostport.rsplit(":")[1])
     server.listen(port)
     server.listen()
+
+
+def payload(message):
+    payload = messages.RW[message.message_type].write(
+        message,
+        io.BytesIO(),
+    ).getvalue()
+
+    f = frame.Frame(
+        header=frame.FrameHeader(
+            message_type=message.message_type,
+            message_id=1,
+        ),
+        payload=payload,
+    )
+
+    return bytes(frame.frame_rw.write(f, io.BytesIO()).getvalue())
+
+
+@pytest.mark.parametrize('response', [
+    payload(messages.InitRequestMessage()),
+    payload(messages.InitResponseMessage(headers={'process_name': 'foo'})),
+    payload(messages.InitResponseMessage(headers={'host_port': '123'})),
+])
+@pytest.mark.gen_test
+def test_client_doesnt_get_valid_handshake_response(response):
+
+    class BadServer(tcpserver.TCPServer):
+        @gen.coroutine
+        def handle_stream(self, stream, address):
+            yield stream.write(bytes(response))
+
+    (socket, port) = testing.bind_unused_port()
+
+    server = BadServer()
+    server.add_socket(socket)
+    server.start()
+
+    tchannel = TChannel(name='client')
+
+    with pytest.raises(errors.FatalProtocolError):
+        yield tchannel.call(
+            scheme=schemes.RAW,
+            service='server',
+            arg1='endpoint',
+            hostport='localhost:%d' % port,
+        )
+
+
+@pytest.mark.parametrize('req', [
+    payload(messages.InitResponseMessage()),
+    payload(messages.InitResponseMessage(headers={'process_name': 'foo'})),
+    payload(messages.InitResponseMessage(headers={'host_port': '123'})),
+])
+@pytest.mark.gen_test
+def test_server_doesnt_get_valid_handshake_request(req):
+    server = TChannel(name='server')
+    server.listen()
+
+    host, port = server.hostport.split(":")
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    bad_client = iostream.IOStream(sock)
+
+    yield bad_client.connect((host, int(port)))
+
+    # yield bad_client.write(payload(messages.InitResponseMessage()))
+    yield bad_client.write(req)
+
+    response = yield bad_client.read_until_close()
+    assert not response
