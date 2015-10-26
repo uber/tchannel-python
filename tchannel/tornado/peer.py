@@ -24,8 +24,8 @@ from __future__ import (
 
 import logging
 from collections import deque
-from itertools import chain
 from random import random
+from itertools import takewhile, dropwhile
 from tornado import gen
 
 from ..schemes import DEFAULT as DEFAULT_SCHEME
@@ -41,6 +41,7 @@ from ..errors import NetworkError
 from ..zipkin.annotation import Endpoint
 from ..zipkin.trace import Trace
 from .connection import StreamConnection
+from .connection import INCOMING, OUTGOING
 from .request import Request
 from .stream import InMemStream
 from .stream import read_full
@@ -59,8 +60,7 @@ class Peer(object):
         'host',
         'port',
 
-        '_out_conns',
-        '_in_conns',
+        '_connections',
         '_connecting',
     )
 
@@ -89,8 +89,10 @@ class Peer(object):
         self.host, port = hostport.rsplit(':', 1)
         self.port = int(port)
 
-        self._out_conns = deque()
-        self._in_conns = deque()
+        #: Collection of all connections for this Peer. Incoming connections
+        #: are added to the left side of the deque and outgoing connections to
+        #: the right side.
+        self._connections = deque()
 
         # This contains a future to the TornadoConnection if we're already in
         # the process of making an outgoing connection to the peer. This
@@ -108,17 +110,11 @@ class Peer(object):
             A future containing a connection to this host.
         """
         # Prefer recently created outgoing connections over everything else.
-        conns = (
-            conn for conn in chain(self._out_conns, self._in_conns)
-            if not conn.closed
-        )
-        try:
-            conn = next(conns)
-        except StopIteration:
-            pass
-        else:
-            # Wrap the connection in a Future
-            return gen.maybe_future(conn)
+        if self._connections:
+            # Last value is an outgoing connection
+            future = gen.Future()
+            future.set_result(self._connections[-1])
+            return future
 
         if self._connecting:
             # If we're in the process of connecting to the peer, just wait
@@ -137,19 +133,25 @@ class Peer(object):
             if not conn_future.exception():
                 # We don't actually need to handle the exception. That's on
                 # the caller.
-
                 connection = conn_future.result()
-                self._out_conns.appendleft(connection)
+                self._connections.append(connection)
+                self._set_on_close_cb(connection)
             self._connecting = None
 
         conn_future.add_done_callback(on_connect)
         return conn_future
 
+    def _set_on_close_cb(self, conn):
+
+        def on_close():
+            self._connections.remove(conn)
+
+        conn.set_close_callback(on_close)
+
     def register_incoming(self, conn):
         assert conn, "conn is required"
-        self._in_conns.append(conn)
-
-        # TODO on-close cleanup
+        self._connections.appendleft(conn)
+        self._set_on_close_cb(conn)
 
     @property
     def hostport(self):
@@ -158,20 +160,28 @@ class Peer(object):
 
     @property
     def connections(self):
-        """Returns a list of all connections for this peer.
+        """Returns an iterator over all connections for this peer.
 
         Incoming connections are listed first."""
-        return list(chain(self._in_conns, self._out_conns))
+        return list(self._connections)
 
     @property
     def outgoing_connections(self):
         """Returns a list of all outgoing connections for this peer."""
-        return list(self._out_conns)
+
+        # Outgoing connections are on the right
+        return list(
+            dropwhile(lambda c: c.direction != OUTGOING, self._connections)
+        )
 
     @property
     def incoming_connections(self):
         """Returns a list of all incoming connections for this peer."""
-        return list(self._in_conns)
+
+        # Incoming connections are on the left.
+        return list(
+            takewhile(lambda c: c.direction == INCOMING, self._connections)
+        )
 
     @property
     def is_ephemeral(self):
@@ -181,14 +191,11 @@ class Peer(object):
     @property
     def connected(self):
         """Return True if this Peer is connected."""
-        for conn in self.connections:
-            if not conn.closed:
-                return True
-        return False
+
+        return len(self._connections) > 0
 
     def close(self):
-        # TODO: Debounce like PeerGroup?
-        for connection in self.connections:
+        for connection in self._connections:
             connection.close()
 
 
@@ -538,6 +545,14 @@ class PeerGroup(object):
     """
 
     peer_class = Peer
+
+    __slots__ = (
+        'tchannel',
+        '_score_threshold',
+        '_peers',
+        '_resetting',
+        '_reset_condition',
+    )
 
     def __init__(self, tchannel, score_threshold=None):
         """Initializes a new PeerGroup.
