@@ -52,6 +52,9 @@ class FakeConnection(object):
     def result(self):
         return self
 
+    def set_close_callback(self, cb):
+        pass
+
 
 class Peer(_Peer):
     connection_class = FakeConnection
