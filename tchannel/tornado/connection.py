@@ -27,8 +27,10 @@ import sys
 
 import tornado.gen
 import tornado.iostream
-
 import tornado.queues as queues
+
+from tornado import stack_context
+
 
 from .. import errors
 from .. import frame
@@ -47,6 +49,13 @@ from .message_factory import MessageFactory
 from .util import chain
 
 log = logging.getLogger('tchannel')
+
+
+#: Sentinel object representing that the connection is outgoing.
+OUTGOING = object()
+
+#: Sentinel object representing that the connection is incoming.
+INCOMING = object()
 
 
 class TornadoConnection(object):
@@ -73,11 +82,12 @@ class TornadoConnection(object):
     CALL_REQ_TYPES = frozenset([Types.CALL_REQ, Types.CALL_REQ_CONTINUE])
     CALL_RES_TYPES = frozenset([Types.CALL_RES, Types.CALL_RES_CONTINUE])
 
-    def __init__(self, connection, tchannel=None):
+    def __init__(self, connection, tchannel=None, direction=None):
         assert connection, "connection is required"
 
         self.closed = False
         self.connection = connection
+        self.direction = direction or INCOMING
 
         sockname = connection.socket.getsockname()
         if len(sockname) == 2:
@@ -115,8 +125,12 @@ class TornadoConnection(object):
         self._loop_running = False
 
         self.tchannel = tchannel
+        self._close_cb = None
 
         connection.set_close_callback(self._on_close)
+
+    def set_close_callback(self, cb):
+        self._close_cb = stack_context.wrap(cb)
 
     def next_message_id(self):
         self._id_sequence = (self._id_sequence + 1) % glossary.MAX_MESSAGE_ID
@@ -432,7 +446,7 @@ class TornadoConnection(object):
                 "Couldn't connect to %s" % hostport, e
             )
 
-        connection = cls(stream, tchannel)
+        connection = cls(stream, tchannel, direction=OUTGOING)
         log.debug("Performing handshake with %s", hostport)
         yield connection.initiate_handshake(headers={
             'host_port': serve_hostport,
