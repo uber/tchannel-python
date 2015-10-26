@@ -130,6 +130,15 @@ class TornadoConnection(object):
         connection.set_close_callback(self._on_close)
 
     def set_close_callback(self, cb):
+        """Specify a function to be called when this connection is closed.
+
+        :param cb:
+            A callable that takes no arguments. This callable will be called
+            when this connection is closed.
+        """
+        assert self._close_cb is None, (
+            'A close_callback has already been set for this connection.'
+        )
         self._close_cb = stack_context.wrap(cb)
 
     def next_message_id(self):
@@ -343,6 +352,8 @@ class TornadoConnection(object):
     def close(self):
         if not self.connection.closed():
             self.connection.close()
+            if self._close_cb:
+                self._close_cb()
 
     @tornado.gen.coroutine
     def initiate_handshake(self, headers):
@@ -487,6 +498,8 @@ class TornadoConnection(object):
 
         :param error:
             TChannel Error. :py:class`tchannel.errors.TChannelError`.
+        :returns:
+            A future that resolves when the write finishes.
         """
 
         error_message = build_raw_error_message(error)
