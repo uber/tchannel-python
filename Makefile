@@ -72,11 +72,3 @@ docs:
 .PHONY: docsopen
 docsopen: docs
 	open docs/_build/html/index.html
-
-.PHONY: vcr-thrift
-vcr-thrift:
-	make -C ./tchannel/testing/vcr all
-
-.PHONY: gen_thrift
-gen_thrift:
-    thrift --gen py:new_style,slots,dynamic -out tests/data/generated tests/data/idls/ThriftTest.thrift

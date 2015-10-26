@@ -22,99 +22,54 @@ from __future__ import absolute_import
 
 import pytest
 from tornado import gen
-from functools import partial
 
+from tchannel import TChannel
 from tchannel.errors import UnexpectedError
-from tchannel.thrift import client_for
 from tchannel.testing import vcr
-
-
-@pytest.fixture(params=[True, False], ids=('old', 'new'))
-def use_old_api(request):
-    return request.param
+from tchannel import thrift
 
 
 @pytest.fixture
-def get_body(use_old_api):
-    if use_old_api:
-        return (lambda r: r.get_body())
-    else:
-        @gen.coroutine
-        def new_get_body(r):
-            return r.body
-        return new_get_body
+def get_body():
+    @gen.coroutine
+    def new_get_body(r):
+        return r.body
+    return new_get_body
 
 
 @pytest.fixture
-def call(mock_server, use_old_api):
-    if use_old_api:
-        from tchannel.tornado import TChannel
+def call(mock_server):
+    from tchannel import TChannel
 
-        channel = TChannel('test-client')
+    channel = TChannel('test-client')
 
-        def old_f(endpoint, body, headers=None, service=None, scheme=None):
-            return channel.request(
-                hostport=mock_server.hostport,
-                service=service,
-                arg_scheme=scheme,
-            ).send(endpoint, headers or '', body)
-
-        return old_f
-    else:
-        from tchannel import TChannel
-
-        channel = TChannel('test-client')
-
-        def new_f(endpoint, body, headers=None, service=None, scheme=None):
-            scheme = scheme or 'raw'
-            return channel.call(
-                hostport=mock_server.hostport,
-                scheme=scheme,
-                service=service,
-                arg1=endpoint,
-                arg2=headers or '',
-                arg3=body,
-            )
-
-        return new_f
-
-
-@pytest.fixture
-def thrift_client(thrift_service, mock_server, use_old_api):
-    if use_old_api:
-        from tchannel.tornado import TChannel
-
-        return client_for('myservice', thrift_service)(
-            tchannel=TChannel('thrift-client'),
+    def new_f(endpoint, body, headers=None, service=None, scheme=None):
+        scheme = scheme or 'raw'
+        return channel.call(
             hostport=mock_server.hostport,
-        )
-    else:
-        from tchannel import TChannel
-        from tchannel.thrift import thrift_request_builder
-
-        myservice = thrift_request_builder(
-            'myservice', thrift_service, hostport=mock_server.hostport
-        )
-        return mk_fake_client(
-            TChannel('thrift-client'),
-            myservice
+            scheme=scheme,
+            service=service,
+            arg1=endpoint,
+            arg2=headers or '',
+            arg3=body,
         )
 
+    return new_f
 
-def mk_fake_client(channel, builder):
 
-    class Client(object):
+@pytest.fixture
+def thrift_module(mock_server):
+    service = thrift.load(
+        path='tests/data/idls/ThriftTest2.thrift',
+        service='myservice',
+        hostport=mock_server.hostport,
+    )
+    return service
 
-        @gen.coroutine
-        def _call(self, name, *args, **kwargs):
-            req = getattr(builder, name)(*args, **kwargs)
-            res = yield channel.thrift(req)
-            raise gen.Return(res.body)
 
-        def __getattr__(self, name):
-            return partial(self._call, name)
-
-    return Client()
+@pytest.fixture
+def tchannel():
+    return TChannel('vcr-tests')
 
 
 @pytest.mark.gen_test
@@ -139,26 +94,28 @@ def test_record_success(tmpdir, mock_server, call, get_body):
 
 @pytest.mark.gen_test
 def test_record_success_thrift(
-    tmpdir, mock_server, thrift_service, thrift_client
+    tmpdir, mock_server, thrift_module, tchannel
 ):
     path = tmpdir.join('data.yaml')
-    expected_item = thrift_service.Item(
-        'foo', thrift_service.Value(stringValue='bar')
+    expected_item = thrift_module.Item(
+        'foo', thrift_module.Value(stringValue='bar')
     )
-    mock_server.expect_call(thrift_service, method='getItem').and_result(
+    mock_server.expect_call(
+        thrift_module.Service, method='getItem'
+    ).and_result(
         expected_item
     ).once()
 
     with vcr.use_cassette(str(path)) as cass:
-        item = yield thrift_client.getItem('foo')
-        assert item == expected_item
+        item = yield tchannel.thrift(thrift_module.Service.getItem('foo'))
+        assert item.body == expected_item
 
     assert cass.play_count == 0
     assert path.check(file=True)
 
     with vcr.use_cassette(str(path)) as cass:
-        item = yield thrift_client.getItem('foo')
-        assert item == expected_item
+        item = yield tchannel.thrift(thrift_module.Service.getItem('foo'))
+        assert item.body == expected_item
 
     assert cass.play_count == 1
 
@@ -180,24 +137,25 @@ def test_protocol_exception(tmpdir, mock_server, call):
 
 @pytest.mark.gen_test
 def test_record_thrift_exception(
-    tmpdir, mock_server, thrift_service, thrift_client
+    tmpdir, mock_server, thrift_module, tchannel
 ):
     path = tmpdir.join('data.yaml')
 
-    mock_server.expect_call(thrift_service, method='getItem').and_raise(
-        thrift_service.ItemDoesNotExist('foo')
+    mock_server.expect_call(
+        thrift_module.Service, method='getItem').and_raise(
+        thrift_module.ItemDoesNotExist('foo')
     ).once()
 
     with vcr.use_cassette(str(path)) as cass:
-        with pytest.raises(thrift_service.ItemDoesNotExist):
-            yield thrift_client.getItem('foo')
+        with pytest.raises(thrift_module.ItemDoesNotExist):
+            yield tchannel.thrift(thrift_module.Service.getItem('foo'))
 
     assert cass.play_count == 0
     assert path.check(file=True)
 
     with vcr.use_cassette(str(path)) as cass:
-        with pytest.raises(thrift_service.ItemDoesNotExist):
-            yield thrift_client.getItem('foo')
+        with pytest.raises(thrift_module.ItemDoesNotExist):
+            yield tchannel.thrift(thrift_module.Service.getItem('foo'))
 
     assert cass.play_count == 1
 

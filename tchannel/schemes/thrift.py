@@ -141,24 +141,18 @@ class ThriftArgScheme(object):
         )
         body = serializer.deserialize_body(body=response.body)
 
+        # TODO read_body and get_serializer were added so that we could fork
+        # behavior on whether Apache Thrift was being used or thriftrw. That's
+        # no longer required. Move that behavior back here.
         response.body = request.read_body(body)
         raise gen.Return(response)
 
     def register(self, thrift_module, **kwargs):
         # dat circular import
         from tchannel.thrift import rw as thriftrw
-
-        if isinstance(thrift_module, thriftrw.Service):
-            # Dirty hack to support thriftrw and old API
-            return thriftrw.register(
-                # TODO drop deprecated tchannel
-                self._tchannel._dep_tchannel._handler,
-                thrift_module,
-                **kwargs
-            )
-        else:
-            return self._tchannel.register(
-                scheme=self.NAME,
-                endpoint=thrift_module,
-                **kwargs
-            )
+        return thriftrw.register(
+            # TODO drop deprecated tchannel
+            self._tchannel._dep_tchannel._handler,
+            thrift_module,
+            **kwargs
+        )

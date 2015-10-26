@@ -25,4 +25,3 @@ from __future__ import (
 from .response import Response  # noqa
 from .request import Request  # noqa
 from .tchannel import TChannel  # noqa
-from .thrift import thrift_request_builder  # noqa
