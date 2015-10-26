@@ -4,6 +4,7 @@ Changes by Version
 0.19.0 (unreleased)
 -------------------
 
+- Reduced Zipkin submission failures to warnings.
 - **BREAKING** - removed ``tchannel.thrift.client_for`` and
   ``tchannel.sync.thrift.client_for`` as planned in 0.18.
 - **BREAKING** - removed ``tchannel.thrift_request_builder`` as
