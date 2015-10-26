@@ -109,11 +109,11 @@ class Peer(object):
         :return:
             A future containing a connection to this host.
         """
-        # Prefer recently created outgoing connections over everything else.
+        # Prefer incoming connections over outgoing connections.
         if self._connections:
-            # Last value is an outgoing connection
+            # First value is an incoming connection
             future = gen.Future()
-            future.set_result(self._connections[-1])
+            future.set_result(self._connections[0])
             return future
 
         if self._connecting:
