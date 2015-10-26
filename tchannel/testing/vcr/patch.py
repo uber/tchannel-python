@@ -59,15 +59,12 @@ class PatchedClientOperation(object):
         arg_scheme=None,
         retry=None,
         parent_tracing=None,
-        score_threshold=None,
     ):
         self.vcr_hostport = vcr_hostport
         self.hostport = hostport or ''
         self.service = service or ''
         self.arg_scheme = arg_scheme or schemes.DEFAULT
         self.original_tchannel = original_tchannel
-
-        # TODO what to do with retry, parent_tracing and score_threshold
 
     @gen.coroutine
     def send(self, arg1, arg2, arg3,

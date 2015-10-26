@@ -20,12 +20,11 @@
 
 from __future__ import absolute_import
 
+import mock
 import pytest
 from tchannel.event import EventHook
-from tchannel.tornado.peer import PeerState
 import tornado
 import tornado.gen
-from mock import patch
 
 from tchannel import retry
 from tchannel.errors import BusyError
@@ -40,7 +39,7 @@ from tchannel.tornado.stream import InMemStream
 @tornado.gen.coroutine
 def handler_error(request, response):
     yield tornado.gen.sleep(0.01)
-    response.connection.send_error(BusyError("retry", request.id))
+    yield response.connection.send_error(BusyError("retry", request.id))
     # stop normal response streams
     response.set_exception(TChannelError("stop stream"))
 
@@ -57,35 +56,27 @@ def server(endpoint):
     return tchannel_server
 
 
-class FakeState(PeerState):
-    def score(self):
-        return 100
-
-
+@tornado.gen.coroutine
 def chain(number_of_peers, endpoint):
     tchannel = TChannel(name='test')
     for i in range(number_of_peers):
-        p = tchannel.peers.get(server(endpoint).hostport)
-        # Gaurantee error servers have score in order to pick first.
-        p.state = FakeState()
-
-    return tchannel
+        # Connect to these peers so that they are treated as higher priority
+        # than other peers.
+        yield tchannel.peers.get(server(endpoint).hostport).connect()
+    raise tornado.gen.Return(tchannel)
 
 
 @pytest.mark.gen_test
 def test_retry_timeout():
     endpoint = b'tchannelretrytest'
-    tchannel = chain(3, endpoint)
-    with (
-        patch(
-            'tchannel.tornado.Request.should_retry_on_error',
-            autospec=True)
+    tchannel = yield chain(3, endpoint)
+    with mock.patch(
+        'tchannel.tornado.Request.should_retry_on_error',
+        autospec=True,
     ) as mock_should_retry_on_error:
         mock_should_retry_on_error.return_value = True
         with pytest.raises(TimeoutError):
-            yield tchannel.request(
-                score_threshold=0,
-            ).send(
+            yield tchannel.request().send(
                 endpoint,
                 "test",
                 "test",
@@ -100,19 +91,15 @@ def test_retry_timeout():
 @pytest.mark.gen_test
 def test_retry_on_error_fail():
     endpoint = b'tchannelretrytest'
-    tchannel = chain(3, endpoint)
+    tchannel = yield chain(3, endpoint)
 
-    with (
-        patch(
-            'tchannel.tornado.Request.should_retry_on_error',
-            autospec=True
-        )
+    with mock.patch(
+        'tchannel.tornado.Request.should_retry_on_error',
+        autospec=True,
     ) as mock_should_retry_on_error:
         mock_should_retry_on_error.return_value = True
         with pytest.raises(BusyError) as e:
-            yield tchannel.request(
-                score_threshold=0
-            ).send(
+            yield tchannel.request().send(
                 endpoint,
                 "test",
                 "test",
@@ -143,9 +130,12 @@ class MyTestHook(EventHook):
 
 
 @pytest.mark.gen_test
-def test_retry_on_error_success():
+@mock.patch('tchannel.tornado.Request.should_retry_on_error')
+def test_retry_on_error_success(mock_should_retry_on_error):
+    mock_should_retry_on_error.return_value = True
+
     endpoint = b'tchannelretrytest'
-    tchannel = chain(2, endpoint)
+    tchannel = yield chain(2, endpoint)
     hook = MyTestHook()
     tchannel.hooks.register(hook)
 
@@ -154,29 +144,21 @@ def test_retry_on_error_success():
     tchannel_success.listen()
     tchannel.peers.get(tchannel_success.hostport)
 
-    with (
-        patch(
-            'tchannel.tornado.Request.should_retry_on_error',
-            autospec=True)
-    ) as mock_should_retry_on_error:
-        mock_should_retry_on_error.return_value = True
-        response = yield tchannel.request(
-            score_threshold=0
-        ).send(
-            endpoint,
-            "test",
-            "test",
-            headers={
-                're': retry.CONNECTION_ERROR_AND_TIMEOUT,
-            },
-            ttl=1,
-            retry_limit=2,
-        )
+    response = yield tchannel.request().send(
+        endpoint,
+        "test",
+        "test",
+        headers={
+            're': retry.CONNECTION_ERROR_AND_TIMEOUT,
+        },
+        ttl=1,
+        retry_limit=2,
+    )
 
-        header = yield response.get_header()
-        body = yield response.get_body()
-        assert body == "success"
-        assert header == ""
+    header = yield response.get_header()
+    body = yield response.get_body()
+    assert body == "success"
+    assert header == ""
 
     assert hook.received_response == 1
     assert hook.received_error == 2
