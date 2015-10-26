@@ -60,7 +60,7 @@ clean:
 
 .PHONY: lint
 lint:
-	@$(flake8) $(project) tests examples
+	@$(flake8) $(project) tests examples setup.py
 
 .PHONY: test-lint
 test-lint: test lint
