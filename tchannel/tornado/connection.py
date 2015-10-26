@@ -497,6 +497,7 @@ class TornadoConnection(object):
                 error,
             )
         )
+        return write_future
 
     def ping(self):
         return self._write(messages.PingRequestMessage())
