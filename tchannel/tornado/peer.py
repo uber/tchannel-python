@@ -50,176 +50,6 @@ from .timeout import timeout
 log = logging.getLogger('tchannel')
 
 
-class PeerGroup(object):
-    """A PeerGroup represents a collection of Peers.
-
-    Requests routed through a PeerGroup can be sent to either a specific peer
-    or a peer chosen at random.
-    """
-
-    def __init__(self, tchannel, score_threshold=None):
-        """Initializes a new PeerGroup.
-
-        :param tchannel:
-            TChannel used for communication by this PeerGroup
-        :param score_threshold:
-            A value in the ``[0, 1]`` range. If specifiede, this requires that
-            chosen peers havea score higher than this value when performing
-            requests.
-        """
-        self.tchannel = tchannel
-
-        self._score_threshold = score_threshold
-
-        # Dictionary from hostport to Peer.
-        self._peers = {}
-
-        # Notified when a reset is performed. This allows multiple coroutines
-        # to block on the same reset.
-        self._resetting = False
-
-        # We'll create a Condition here later. We want to avoid it right now
-        # because it has a side-effect of scheduling some dummy work on the
-        # ioloop, which prevents us from forking (if you're into that).
-        self._reset_condition = None
-
-    def __str__(self):
-        return "<PeerGroup peers=%s>" % str(self._peers)
-
-    def clear(self):
-        """Reset this PeerGroup.
-
-        This closes all connections to all known peers and forgets about
-        these peers.
-
-        :returns:
-            A Future that resolves with a value of None when the operation
-            has finished
-        """
-        try:
-            for peer in self._peers.values():
-                peer.close()
-        finally:
-            self._peers = {}
-            self._resetting = False
-
-    def get(self, hostport):
-        """Get a Peer for the given destination.
-
-        A new Peer is added and returned if one does not already exist for the
-        given host-port. Otherwise, the existing Peer is returned.
-        """
-        assert hostport, "hostport is required"
-        if hostport not in self._peers:
-            self._peers[hostport] = Peer(self.tchannel, hostport)
-        return self._peers[hostport]
-
-    def lookup(self, hostport):
-        """Look up a Peer for the given host and port.
-
-        Returns None if a Peer for the given host-port does not exist.
-        """
-        assert hostport, "hostport is required"
-        return self._peers.get(hostport, None)
-
-    def remove(self, hostport):
-        """Delete the Peer for the given host port.
-
-        Does nothing if a matching Peer does not exist.
-
-        :returns: The removed Peer
-        """
-        assert hostport, "hostport is required"
-        return self._peers.pop(hostport, None)
-
-    def add(self, peer):
-        """Add an existing Peer to this group.
-
-        A peer for the given host-port must not already exist in the group.
-        """
-        assert peer, "peer is required"
-
-        if isinstance(peer, basestring):
-            # Assume strings are host-ports
-            peer = Peer(self.tchannel, peer)
-
-        assert peer.hostport not in self._peers, (
-            "%s already has a peer" % peer.hostport
-        )
-
-        self._peers[peer.hostport] = peer
-
-    @property
-    def hosts(self):
-        """Get all host-ports managed by this PeerGroup."""
-        return self._peers.keys()
-
-    @property
-    def peers(self):
-        """Get all Peers managed by this PeerGroup."""
-        return self._peers.values()
-
-    def request(self, service, hostport=None, **kwargs):
-        """Initiate a new request through this PeerGroup.
-
-        :param hostport:
-            If specified, requests will be sent to the specific host.
-            Otherwise, a known peer will be picked at random.
-        :param service:
-            Name of the service being called. Defaults to an empty string.
-        :param service_threshold:
-            If ``hostport`` was not specified, this specifies the score
-            threshold at or below which peers will be ignored.
-        """
-        return PeerClientOperation(
-            peer_group=self,
-            service=service,
-            hostport=hostport,
-            **kwargs)
-
-    def choose(self, hostport=None, score_threshold=None, blacklist=None):
-        """Choose a Peer that matches the given criteria.
-
-        The Peer with the highest score will be chosen.
-
-        :param hostport:
-            Specifies that the returned Peer must be for the given host-port.
-            Without this, all peers managed by this PeerGroup are
-            candidates. If this is present, ``score_threshold`` is ignored.
-        :param score_threshold:
-            If specified, Peers with a score equal to or below this will be
-            ignored. Defaults to the value specified when the PeerGroup was
-            initialized.
-        :param blacklist:
-            Peers on the blacklist won't be chosen.
-        :returns:
-            A Peer that matches all the requested criteria or None if no such
-            Peer was found.
-        """
-
-        blacklist = blacklist or set()
-        if hostport:
-            return self.get(hostport)
-
-        score_threshold = score_threshold or self._score_threshold or 0
-        chosen_peer = None
-        chosen_score = 0
-        hosts = self._peers.viewkeys() - blacklist
-
-        for host in hosts:
-            peer = self.get(host)
-            score = peer.state.score()
-
-            if score <= score_threshold:
-                continue
-
-            if score > chosen_score:
-                chosen_peer = peer
-                chosen_score = score
-
-        return chosen_peer
-
-
 class Peer(object):
     """A Peer manages connections to or from a specific host-port."""
 
@@ -698,3 +528,175 @@ class PeerClientOperation(object):
         request.set_exception(error)
         # remove from pending request list
         connection.remove_outstanding_request(request)
+
+
+class PeerGroup(object):
+    """A PeerGroup represents a collection of Peers.
+
+    Requests routed through a PeerGroup can be sent to either a specific peer
+    or a peer chosen at random.
+    """
+
+    peer_class = Peer
+
+    def __init__(self, tchannel, score_threshold=None):
+        """Initializes a new PeerGroup.
+
+        :param tchannel:
+            TChannel used for communication by this PeerGroup
+        :param score_threshold:
+            A value in the ``[0, 1]`` range. If specifiede, this requires that
+            chosen peers havea score higher than this value when performing
+            requests.
+        """
+        self.tchannel = tchannel
+
+        self._score_threshold = score_threshold
+
+        # Dictionary from hostport to Peer.
+        self._peers = {}
+
+        # Notified when a reset is performed. This allows multiple coroutines
+        # to block on the same reset.
+        self._resetting = False
+
+        # We'll create a Condition here later. We want to avoid it right now
+        # because it has a side-effect of scheduling some dummy work on the
+        # ioloop, which prevents us from forking (if you're into that).
+        self._reset_condition = None
+
+    def __str__(self):
+        return "<PeerGroup peers=%s>" % str(self._peers)
+
+    def clear(self):
+        """Reset this PeerGroup.
+
+        This closes all connections to all known peers and forgets about
+        these peers.
+
+        :returns:
+            A Future that resolves with a value of None when the operation
+            has finished
+        """
+        try:
+            for peer in self._peers.values():
+                peer.close()
+        finally:
+            self._peers = {}
+            self._resetting = False
+
+    def get(self, hostport):
+        """Get a Peer for the given destination.
+
+        A new Peer is added and returned if one does not already exist for the
+        given host-port. Otherwise, the existing Peer is returned.
+        """
+        assert hostport, "hostport is required"
+        if hostport not in self._peers:
+            self._peers[hostport] = self.peer_class(self.tchannel, hostport)
+        return self._peers[hostport]
+
+    def lookup(self, hostport):
+        """Look up a Peer for the given host and port.
+
+        Returns None if a Peer for the given host-port does not exist.
+        """
+        assert hostport, "hostport is required"
+        return self._peers.get(hostport, None)
+
+    def remove(self, hostport):
+        """Delete the Peer for the given host port.
+
+        Does nothing if a matching Peer does not exist.
+
+        :returns: The removed Peer
+        """
+        assert hostport, "hostport is required"
+        return self._peers.pop(hostport, None)
+
+    def add(self, peer):
+        """Add an existing Peer to this group.
+
+        A peer for the given host-port must not already exist in the group.
+        """
+        assert peer, "peer is required"
+
+        if isinstance(peer, basestring):
+            # Assume strings are host-ports
+            peer = self.peer_class(self.tchannel, peer)
+
+        assert peer.hostport not in self._peers, (
+            "%s already has a peer" % peer.hostport
+        )
+
+        self._peers[peer.hostport] = peer
+
+    @property
+    def hosts(self):
+        """Get all host-ports managed by this PeerGroup."""
+        return self._peers.keys()
+
+    @property
+    def peers(self):
+        """Get all Peers managed by this PeerGroup."""
+        return self._peers.values()
+
+    def request(self, service, hostport=None, **kwargs):
+        """Initiate a new request through this PeerGroup.
+
+        :param hostport:
+            If specified, requests will be sent to the specific host.
+            Otherwise, a known peer will be picked at random.
+        :param service:
+            Name of the service being called. Defaults to an empty string.
+        :param service_threshold:
+            If ``hostport`` was not specified, this specifies the score
+            threshold at or below which peers will be ignored.
+        """
+        return PeerClientOperation(
+            peer_group=self,
+            service=service,
+            hostport=hostport,
+            **kwargs)
+
+    def choose(self, hostport=None, score_threshold=None, blacklist=None):
+        """Choose a Peer that matches the given criteria.
+
+        The Peer with the highest score will be chosen.
+
+        :param hostport:
+            Specifies that the returned Peer must be for the given host-port.
+            Without this, all peers managed by this PeerGroup are
+            candidates. If this is present, ``score_threshold`` is ignored.
+        :param score_threshold:
+            If specified, Peers with a score equal to or below this will be
+            ignored. Defaults to the value specified when the PeerGroup was
+            initialized.
+        :param blacklist:
+            Peers on the blacklist won't be chosen.
+        :returns:
+            A Peer that matches all the requested criteria or None if no such
+            Peer was found.
+        """
+
+        blacklist = blacklist or set()
+        if hostport:
+            return self.get(hostport)
+
+        score_threshold = score_threshold or self._score_threshold or 0
+        chosen_peer = None
+        chosen_score = 0
+        hosts = self._peers.viewkeys() - blacklist
+
+        for host in hosts:
+            peer = self.get(host)
+            score = peer.state.score()
+
+            if score <= score_threshold:
+                continue
+
+            if score > chosen_score:
+                chosen_peer = peer
+                chosen_score = score
+
+        return chosen_peer
