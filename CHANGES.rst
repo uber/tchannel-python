@@ -4,7 +4,7 @@ Changes by Version
 0.18.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Reduced Zipkin submission failures to warnings.
 
 
 0.18.0 (2015-10-20)
