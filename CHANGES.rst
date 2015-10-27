@@ -10,6 +10,10 @@ Changes by Version
 - **BREAKING** - Removed ``tchannel.thrift_request_builder`` as
   planned in 0.18.
 - Reduced Zipkin submission failures to warnings.
+- Improved performance of peer selection logic.
+- Fixed a bug which caused the message ID and tracing for incoming error frames
+  to be ignored.
+- Prefer using incoming connections on peers instead of outgoing connections.
 
 
 0.18.0 (2015-10-20)
