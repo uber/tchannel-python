@@ -20,11 +20,14 @@
 
 from __future__ import absolute_import
 
+import mock
 import pytest
 import tornado.ioloop
 import tornado.testing
 
 from tchannel.messages import Types
+from tchannel import TChannel
+from tchannel.tornado.connection import StreamConnection
 
 
 def dummy_headers():
@@ -61,3 +64,19 @@ class ConnectionTestCase(tornado.testing.AsyncTestCase):
 
         pong = yield self.client.await()
         assert pong.message_type == Types.PING_RES
+
+
+@pytest.mark.gen_test
+def test_close_callback_is_called():
+    server = TChannel('server')
+    server.listen()
+
+    close_cb = mock.Mock()
+
+    conn = yield StreamConnection.outgoing(
+        server.hostport, tchannel=mock.MagicMock()
+    )
+    conn.set_close_callback(close_cb)
+
+    conn.close()
+    close_cb.assert_called_once_with()

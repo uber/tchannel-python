@@ -45,6 +45,7 @@ from ..schemes import JSON
 from ..serializer.json import JsonSerializer
 from ..serializer.raw import RawSerializer
 from .connection import StreamConnection
+from .connection import INCOMING
 from .dispatch import RequestDispatcher
 from .peer import PeerGroup
 
@@ -401,7 +402,11 @@ class TChannelServer(tornado.tcpserver.TCPServer):
     def handle_stream(self, stream, address):
         log.debug("New incoming connection from %s:%d" % address)
 
-        conn = StreamConnection(connection=stream, tchannel=self.tchannel)
+        conn = StreamConnection(
+            connection=stream,
+            tchannel=self.tchannel,
+            direction=INCOMING,
+        )
 
         yield conn.expect_handshake(headers={
             'host_port': self.tchannel.hostport,
