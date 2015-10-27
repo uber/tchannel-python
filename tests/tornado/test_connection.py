@@ -22,7 +22,6 @@ from __future__ import absolute_import
 
 import mock
 import pytest
-import socket
 import tornado.ioloop
 import tornado.testing
 
