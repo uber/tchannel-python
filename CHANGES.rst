@@ -4,7 +4,10 @@ Changes by Version
 0.18.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Improved performance of peer selection logic.
+- Fixed a bug which caused the message ID and tracing for incoming error frames
+  to be ignored.
+- Prefer using incoming connections on peers instead of outgoing connections.
 
 
 0.18.0 (2015-10-20)
