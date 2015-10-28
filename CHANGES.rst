@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.18.1 (unreleased)
+0.18.1 (2015-10-28)
 -------------------
 
 - Improved performance of peer selection logic.
