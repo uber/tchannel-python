@@ -36,7 +36,7 @@ if [[ ! -x "$LICENSE_EXEC" ]]; then
 	popd &>/dev/null
 fi
 
-for d in tchannel tests examples; do
+for d in tchannel tests benchmarks examples; do
 	pushd "$ROOT/$d" &>/dev/null
 	ensure_license
 	popd &>/dev/null
