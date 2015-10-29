@@ -4,7 +4,7 @@ Changes by Version
 0.18.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Reduced Hyperbahn advertisement failures to warnings.
 
 
 0.18.1 (2015-10-28)
