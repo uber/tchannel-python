@@ -40,3 +40,6 @@ TCHANNEL_LANGUAGE_VERSION = (
 
 # version format x.y.z
 TCHANNEL_VERSION = __version__
+
+# Max size of arg1.
+MAX_SIZE_OF_ARG1 = 16 * 1024
