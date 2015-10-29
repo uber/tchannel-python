@@ -4,7 +4,7 @@ Changes by Version
 0.18.3 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Reduced Hyperbahn advertisement per-request timeout to 2 seconds.
 
 
 0.18.2 (2015-10-28)
