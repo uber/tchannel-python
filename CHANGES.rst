@@ -4,7 +4,8 @@ Changes by Version
 0.18.3 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed a bug where ``InvalidMessageError`` was being raised instead of
+  ``FatalProtocolError``.
 
 
 0.18.2 (2015-10-28)

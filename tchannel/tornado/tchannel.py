@@ -37,6 +37,7 @@ from . import hyperbahn
 from ..deprecate import deprecate
 from ..enum import enum
 from ..errors import AlreadyListeningError
+from ..errors import FatalProtocolError
 from ..event import EventEmitter
 from ..event import EventRegistrar
 from ..net import local_ip
@@ -432,10 +433,13 @@ class TChannelServer(tornado.tcpserver.TCPServer):
             direction=INCOMING,
         )
 
-        yield conn.expect_handshake(headers={
-            'host_port': self.tchannel.hostport,
-            'process_name': self.tchannel.process_name,
-        })
+        try:
+            yield conn.expect_handshake(headers={
+                'host_port': self.tchannel.hostport,
+                'process_name': self.tchannel.process_name,
+            })
+        except FatalProtocolError:
+            raise tornado.gen.Return(stream.close())
 
         log.debug(
             "Successfully completed handshake with %s:%s (%s)",
