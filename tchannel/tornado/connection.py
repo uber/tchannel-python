@@ -454,7 +454,7 @@ class TornadoConnection(object):
         try:
             yield stream.connect((host, int(port)))
         except socket.error as e:
-            log.exception("Couldn't connect to %s", hostport)
+            log.warn("Couldn't connect to %s", hostport)
             raise NetworkError(
                 "Couldn't connect to %s" % hostport, e
             )
