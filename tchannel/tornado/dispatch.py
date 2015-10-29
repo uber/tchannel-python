@@ -190,7 +190,7 @@ class RequestDispatcher(object):
                 # stack context.
                 # The right way to do it is:
                 # with request_context(..):
-                # future = f()
+                #     future = f()
                 # yield future
 
                 with request_context(request.tracing):

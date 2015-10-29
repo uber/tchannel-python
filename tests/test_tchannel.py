@@ -31,12 +31,17 @@ import json
 import os
 import psutil
 import pytest
+
 from tornado import gen
 
 from tchannel import TChannel, Request, Response, schemes, errors
-from tchannel.errors import AlreadyListeningError, TimeoutError
+from tchannel.errors import AlreadyListeningError
+from tchannel.errors import BadRequestError
+from tchannel.errors import TimeoutError
 from tchannel.event import EventHook
+from tchannel.glossary import MAX_SIZE_OF_ARG1
 from tchannel.response import TransportHeaders
+
 
 # TODO - need integration tests for timeout and retries, use testing.vcr
 
@@ -376,3 +381,20 @@ def test_listen_duplicate_ports():
     port = int(server.hostport.rsplit(":")[1])
     server.listen(port)
     server.listen()
+
+
+@pytest.mark.gen_test
+def test_arg1_limit():
+    tchannel = TChannel(name='client')
+    with pytest.raises(BadRequestError) as e:
+        yield tchannel.call(
+            scheme=schemes.RAW,
+            service='server',
+            arg1='a'*MAX_SIZE_OF_ARG1+'a',
+        )
+        assert (
+            e.message == 'arg1 size is %d which exceeds the max size 16KB.' %
+                         (MAX_SIZE_OF_ARG1 + 1)
+        )
+
+
