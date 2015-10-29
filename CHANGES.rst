@@ -5,6 +5,7 @@ Changes by Version
 -------------------
 
 - Reduced Hyperbahn advertisement per-request timeout to 2 seconds.
+- Removed an unncessary exception log for connection failures.
 
 
 0.18.2 (2015-10-28)
