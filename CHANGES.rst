@@ -12,6 +12,28 @@ Changes by Version
 - Reduced Zipkin submission failures to warnings.
 
 
+0.18.3 (unreleased)
+-------------------
+
+- Reduced Hyperbahn advertisement per-request timeout to 2 seconds.
+- Removed an unncessary exception log for connection failures.
+
+
+0.18.2 (2015-10-28)
+-------------------
+
+- Reduced Hyperbahn advertisement failures to warnings.
+
+
+0.18.1 (2015-10-28)
+-------------------
+
+- Improved performance of peer selection logic.
+- Fixed a bug which caused the message ID and tracing for incoming error frames
+  to be ignored.
+- Prefer using incoming connections on peers instead of outgoing connections.
+
+
 0.18.0 (2015-10-20)
 -------------------
 

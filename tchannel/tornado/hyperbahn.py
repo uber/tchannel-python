@@ -65,14 +65,15 @@ def _advertise(tchannel, service):
             }),
             headers={'as': 'json'},
             retry_limit=0,
+            ttl=2.0,
         )
     except Exception as e:  # Big scope to keep it alive.
-        log.error('Failed to register with Hyperbahn: %s', e)
+        log.warn('Failed to register with Hyperbahn: %s', e)
     else:
         if response.code != StatusCode.ok:
-            log.error('Failed to register with Hyperbahn: %s', response)
+            log.warn('Failed to register with Hyperbahn: %s', response)
         else:
-            log.info('Successfully register with Hyperbahn')
+            log.info('Successfully registered with Hyperbahn')
 
     raise tornado.gen.Return(response)
 

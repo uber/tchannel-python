@@ -27,8 +27,10 @@ import sys
 
 import tornado.gen
 import tornado.iostream
-
 import tornado.queues as queues
+
+from tornado import stack_context
+
 
 from .. import errors
 from .. import frame
@@ -47,6 +49,13 @@ from .message_factory import MessageFactory
 from .util import chain
 
 log = logging.getLogger('tchannel')
+
+
+#: Sentinel object representing that the connection is outgoing.
+OUTGOING = object()
+
+#: Sentinel object representing that the connection is incoming.
+INCOMING = object()
 
 
 class TornadoConnection(object):
@@ -73,11 +82,12 @@ class TornadoConnection(object):
     CALL_REQ_TYPES = frozenset([Types.CALL_REQ, Types.CALL_REQ_CONTINUE])
     CALL_RES_TYPES = frozenset([Types.CALL_RES, Types.CALL_RES_CONTINUE])
 
-    def __init__(self, connection, tchannel=None):
+    def __init__(self, connection, tchannel=None, direction=None):
         assert connection, "connection is required"
 
         self.closed = False
         self.connection = connection
+        self.direction = direction or INCOMING
 
         sockname = connection.socket.getsockname()
         if len(sockname) == 2:
@@ -115,8 +125,21 @@ class TornadoConnection(object):
         self._loop_running = False
 
         self.tchannel = tchannel
+        self._close_cb = None
 
         connection.set_close_callback(self._on_close)
+
+    def set_close_callback(self, cb):
+        """Specify a function to be called when this connection is closed.
+
+        :param cb:
+            A callable that takes no arguments. This callable will be called
+            when this connection is closed.
+        """
+        assert self._close_cb is None, (
+            'A close_callback has already been set for this connection.'
+        )
+        self._close_cb = stack_context.wrap(cb)
 
     def next_message_id(self):
         self._id_sequence = (self._id_sequence + 1) % glossary.MAX_MESSAGE_ID
@@ -223,6 +246,8 @@ class TornadoConnection(object):
                         error = TChannelError.from_code(
                             message.code,
                             description=message.description,
+                            id=message.id,
+                            tracing=message.tracing,
                         )
                         future.set_exception(error)
                     else:
@@ -327,6 +352,8 @@ class TornadoConnection(object):
     def close(self):
         if not self.connection.closed():
             self.connection.close()
+            if self._close_cb:
+                self._close_cb()
 
     @tornado.gen.coroutine
     def initiate_handshake(self, headers):
@@ -427,12 +454,12 @@ class TornadoConnection(object):
         try:
             yield stream.connect((host, int(port)))
         except socket.error as e:
-            log.exception("Couldn't connect to %s", hostport)
+            log.warn("Couldn't connect to %s", hostport)
             raise NetworkError(
                 "Couldn't connect to %s" % hostport, e
             )
 
-        connection = cls(stream, tchannel)
+        connection = cls(stream, tchannel, direction=OUTGOING)
         log.debug("Performing handshake with %s", hostport)
         yield connection.initiate_handshake(headers={
             'host_port': serve_hostport,
@@ -471,6 +498,8 @@ class TornadoConnection(object):
 
         :param error:
             TChannel Error. :py:class`tchannel.errors.TChannelError`.
+        :returns:
+            A future that resolves when the write finishes.
         """
 
         error_message = build_raw_error_message(error)
@@ -481,6 +510,7 @@ class TornadoConnection(object):
                 error,
             )
         )
+        return write_future
 
     def ping(self):
         return self._write(messages.PingRequestMessage())
