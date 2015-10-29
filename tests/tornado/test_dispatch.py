@@ -42,7 +42,7 @@ def req():
         headers={'as': 'raw'},
     )
     endpoint_future = tornado.concurrent.Future()
-    endpoint_future.set_result(None)
+    endpoint_future.set_result('foo')
     request.argstreams[0].read.return_value = endpoint_future
     return request
 
