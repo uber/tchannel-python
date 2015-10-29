@@ -42,7 +42,6 @@ from .response import Response as DeprecatedResponse
 
 log = logging.getLogger('tchannel')
 
-
 Handler = namedtuple('Handler', 'endpoint req_serializer resp_serializer')
 
 
@@ -124,12 +123,9 @@ class RequestDispatcher(object):
         # NOTE: after here, the correct way to access value of arg_1 is through
         # request.endpoint. The original argstream[0] is no longer valid. If
         # user still tries read from it, it will return empty.
-        chunk = yield request.argstreams[0].read()
-        response = None
-        while chunk:
-            request.endpoint += chunk
-            chunk = yield request.argstreams[0].read()
 
+        # we have defined the endpoint will fit into the arg1
+        request.endpoint = yield request.argstreams[0].read()
         log.debug('Received a call to %s.', request.endpoint)
 
         tchannel = connection.tchannel
@@ -194,7 +190,7 @@ class RequestDispatcher(object):
                 # stack context.
                 # The right way to do it is:
                 # with request_context(..):
-                #    future = f()
+                # future = f()
                 # yield future
 
                 with request_context(request.tracing):
