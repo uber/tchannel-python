@@ -35,6 +35,7 @@ from tchannel.request import TransportHeaders
 from tchannel.response import response_from_mixed
 from ..context import request_context
 from ..errors import BadRequestError
+from ..errors import FatalProtocolError
 from ..errors import UnexpectedError
 from ..errors import TChannelError
 from ..event import EventType
@@ -70,50 +71,50 @@ class RequestDispatcher(object):
         self.register(self.FALLBACK, self.not_found)
         self._handler_returns_response = _handler_returns_response
 
-    _HANDLER_NAMES = {
-        Types.CALL_REQ: 'pre_call',
-        Types.CALL_REQ_CONTINUE: 'pre_call'
-    }
+        self._HANDLERS = {
+            Types.CALL_REQ: self.handle_call_req,
+            Types.CALL_REQ_CONTINUE: self.handle_call_req_cont,
+        }
 
     def handle(self, message, connection):
         # TODO assert that the handshake was already completed
         assert message, "message must not be None"
 
-        if message.message_type not in self._HANDLER_NAMES:
-            # TODO handle this more gracefully
-            raise NotImplementedError("Unexpected message: %s" % str(message))
+        if message.message_type not in self._HANDLERS:
+            raise FatalProtocolError("Unexpected message: %s" % str(message))
 
-        handler_name = "handle_" + self._HANDLER_NAMES[message.message_type]
-        return getattr(self, handler_name)(message, connection)
+        return self._HANDLERS[message.message_type](message, connection)
 
-    def handle_pre_call(self, message, connection):
-        """Handle incoming request message including CallRequestMessage and
-        CallRequestContinueMessage
+    def handle_call_req(self, message, connection):
+        """Handle incoming request message including CallRequestMessage.
 
         This method will build the User friendly request object based on the
         incoming messages.
 
-        It passes all the messages into the message_factory to build the init
-        request object. Only when it get a CallRequestMessage and a completed
-        arg_1=argstream[0], the message_factory will return a request object.
-        Then it will trigger the async call_handle call.
-
-        :param message: CallRequestMessage or CallRequestContinueMessage
+        :param message: CallRequestMessage
         :param connection: tornado connection
         """
-        req = None
         try:
             req = connection.request_message_factory.build(message)
-            # message_factory will create Request only when it receives
-            # CallRequestMessage. It will return None, if it receives
-            # CallRequestContinueMessage.
-            if req:
-                self.handle_call(req, connection)
-
+            self.handle_call(req, connection)
         except TChannelError as e:
-            log.warn('Received a bad request.', exc_info=True)
-            if req:
-                e.tracing = req.tracing
+            log.warn('Received a bad call request message.', exc_info=True)
+            e.tracing = req.tracing
+            connection.send_error(e)
+
+    def handle_call_req_cont(self, message, connection):
+        """Handle incoming request message including CallRequestContinueMessage.
+
+        This method will add args from call continue message into corresponding
+        request object.
+
+        :param message: CallRequestContinueMessage
+        :param connection: tornado connection
+        """
+        try:
+            connection.request_message_factory.build(message)
+        except TChannelError as e:
+            log.warn('Received a bad call request cont message.', exc_info=True)
             connection.send_error(e)
 
     @tornado.gen.coroutine
