@@ -396,5 +396,3 @@ def test_arg1_limit():
             e.message == 'arg1 size is %d which exceeds the max size 16KB.' %
                          (MAX_SIZE_OF_ARG1 + 1)
         )
-
-

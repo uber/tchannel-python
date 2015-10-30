@@ -22,6 +22,8 @@ from __future__ import absolute_import
 
 import logging
 from collections import namedtuple
+from tchannel.glossary import MAX_SIZE_OF_ARG1
+from tchannel.tornado.stream import read_full
 
 import tornado
 import tornado.gen
@@ -125,7 +127,16 @@ class RequestDispatcher(object):
         # user still tries read from it, it will return empty.
 
         # we have defined the endpoint will fit into the arg1
-        request.endpoint = yield request.argstreams[0].read()
+        request.endpoint = yield read_full(request.argstreams[0])
+        if len(request.endpoint) > MAX_SIZE_OF_ARG1:
+            connection.send_error(
+                BadRequestError(
+                    'arg1 size is %d which exceeds the max size 16KB.' %
+                    len(request.endpoint)
+                )
+            )
+            raise gen.Return(None)
+
         log.debug('Received a call to %s.', request.endpoint)
 
         tchannel = connection.tchannel
@@ -168,7 +179,6 @@ class RequestDispatcher(object):
         )
 
         connection.post_response(response)
-
         try:
             # New impl - the handler takes a request and returns a response
             if self._handler_returns_response:
