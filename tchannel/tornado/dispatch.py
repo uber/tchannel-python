@@ -128,11 +128,12 @@ class RequestDispatcher(object):
 
         # we have defined the endpoint will fit into the arg1
         request.endpoint = yield read_full(request.argstreams[0])
-        if len(request.endpoint) > MAX_SIZE_OF_ARG1:
+        arg1_size = len(request.endpoint)
+        if arg1_size > MAX_SIZE_OF_ARG1:
             connection.send_error(
                 BadRequestError(
                     'arg1 size is %d which exceeds the max size 16KB.' %
-                    len(request.endpoint)
+                    arg1_size
                 )
             )
             raise gen.Return(None)

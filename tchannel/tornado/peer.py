@@ -331,11 +331,11 @@ class PeerClientOperation(object):
         # hack to get endpoint from arg_1 for trace name
         arg1.close()
         endpoint = yield read_full(arg1)
-
-        if len(endpoint) > MAX_SIZE_OF_ARG1:
+        arg1_size = len(endpoint)
+        if arg1_size > MAX_SIZE_OF_ARG1:
             raise BadRequestError(
                 'arg1 size is %d which exceeds the max size 16KB.' %
-                len(endpoint)
+                arg1_size
             )
 
         # find a peer connection

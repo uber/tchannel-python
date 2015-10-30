@@ -390,7 +390,7 @@ def test_arg1_limit():
         yield tchannel.call(
             scheme=schemes.RAW,
             service='server',
-            arg1='a'*MAX_SIZE_OF_ARG1+'a',
+            arg1='a' * MAX_SIZE_OF_ARG1 + 'a',
         )
         assert (
             e.message == 'arg1 size is %d which exceeds the max size 16KB.' %
