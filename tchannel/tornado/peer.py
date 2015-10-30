@@ -336,8 +336,8 @@ class PeerClientOperation(object):
         arg1_size = len(endpoint)
         if arg1_size > MAX_SIZE_OF_ARG1:
             raise BadRequestError(
-                'arg1 size is %d which exceeds the max size 16KB.' %
-                arg1_size
+                'arg1 is %d bytes long. It must be at most 16kb in length.'
+                % arg1_size
             )
 
         # find a peer connection
