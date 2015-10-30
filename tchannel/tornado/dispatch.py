@@ -132,8 +132,8 @@ class RequestDispatcher(object):
         if arg1_size > MAX_SIZE_OF_ARG1:
             connection.send_error(
                 BadRequestError(
-                    'arg1 size is %d which exceeds the max size 16KB.' %
-                    arg1_size
+                    'arg1 is %d bytes long. It must be at most 16kb in length.'
+                    % arg1_size
                 )
             )
             raise gen.Return(None)
