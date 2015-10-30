@@ -10,6 +10,7 @@ Changes by Version
 - **BREAKING** - Removed ``tchannel.thrift_request_builder`` as
   planned in 0.18.
 - Reduced Zipkin submission failures to warnings.
+- Limit the size of arg1 to 16KB.
 
 
 0.18.3 (unreleased)
