@@ -338,7 +338,6 @@ class PeerClientOperation(object):
                 len(endpoint)
             )
 
-
         # find a peer connection
         # If we can't find available peer at the first time, we throw
         # NoAvailablePeerError. Later during retry, if we can't find available
