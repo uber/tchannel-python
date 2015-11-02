@@ -18,197 +18,64 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals, print_function
 
-import mock
 import pytest
-from thrift.Thrift import TType
 
-from tchannel.serializer.thrift import ThriftSerializer
-from tchannel.thrift.server import build_handler
-from tchannel.thrift.server import deprecated_build_handler
-from tchannel.tornado.request import Request
-from tchannel.tornado.response import Response
-from tchannel.tornado.stream import InMemStream
+from tchannel import thrift
+from tchannel.thrift.rw import build_handler
+from tchannel.request import Request, TransportHeaders
+from tchannel.response import Response
 
 
-class FakeException(Exception):
-
-    thrift_spec = (
-        None,
-        (1, TType.STRING, 'message', None, None),
-    )
-
-    def __init__(self, message=None):
-        self.message = message
-
-    def write(self, proto):
-        proto.writeStructBegin('FakeException')
-
-        if self.message is not None:
-            proto.writeFieldBegin('message', TType.STRING, 1)
-            proto.writeString(self.message)
-            proto.writeFieldEnd()
-
-        proto.writeFieldStop()
-        proto.writeStructEnd()
+@pytest.fixture
+def module():
+    return thrift.load('tests/data/idls/ThriftTest2.thrift', 'some_service')
 
 
-class FakeResult(object):
+@pytest.mark.gen_test
+def test_build_handler(module):
 
-    thrift_spec = (
-        (0, TType.STRING, 'success', None, None),
-        (
-            1, TType.STRUCT, 'someException',
-            (FakeException, FakeException.thrift_spec),
-            None,
+    item = module.Item('foo', module.Value(stringValue='bar'))
+
+    def call(request):
+        assert request.transport.scheme == 'thrift'
+        assert request.transport.caller_name == 'test_caller'
+        assert request.body.key == 'key'
+
+        return Response(body=item, headers={'foo': 'bar'})
+
+    request = Request(
+        body=module.Service.getItem('key').call_args,
+        transport=TransportHeaders(
+            scheme='thrift',
+            caller_name='test_caller',
         ),
+        endpoint='Service::getItem',
     )
 
-    def __init__(self, success=None, someException=None):
-        self.success = success
-        self.someException = someException
+    handler = build_handler(module.Service.getItem, call)
+    response = yield handler(request)
 
-    def read(self, proto):
-        pass  # don't care
-
-    def write(self, proto):
-        proto.writeStructBegin('FakeResult')
-
-        if self.success is not None:
-            proto.writeFieldBegin('success', TType.STRING, 0)
-            proto.writeString(self.success)
-            proto.writeFieldEnd()
-
-        if self.someException is not None:
-            proto.writeFieldBegin('someException', TType.STRUCT, 1)
-            self.someException.write(proto)
-            proto.writeFieldEnd()
-
-        proto.writeFieldStop()
-        proto.writeStructEnd()
+    assert response.body.success == item
+    assert response.headers == {'foo': 'bar'}
+    assert response.status == 0
 
 
 @pytest.mark.gen_test
-def test_deprecated_build_handler():
+def test_build_handler_application_exception(module):
 
-    def call(treq, tres):
-        assert treq.transport.headers == {
-            'as': 'thrift', 'cn': 'test_caller'
-        }
+    def call(request):
+        raise module.ItemDoesNotExist('foo')
 
-        tres.write_header('foo', 'baar')
-        return "world"
-
-    response_header = InMemStream()
-    response_body = InMemStream()
-
-    req = Request(
-        argstreams=[
-            InMemStream('hello'),
-            InMemStream('\00\00'),  # no headers
-            InMemStream('\00'),  # empty struct
-        ],
-        serializer=ThriftSerializer(FakeResult),
-        headers={'cn': 'test_caller', 'as': 'thrift'},
-    )
-    req.close_argstreams()
-
-    res = Response(
-        argstreams=[
-            InMemStream(),
-            response_header,
-            response_body,
-        ],
-        serializer=ThriftSerializer(FakeResult),
+    request = Request(
+        body=module.Service.getItem('key').call_args,
+        endpoint='Service::getItem',
     )
 
-    handler = deprecated_build_handler(FakeResult, call)
-    yield handler(req, res)
+    handler = build_handler(module.Service.getItem, call)
+    response = yield handler(request)
 
-    serialized_headers = yield response_header.read()
-    assert serialized_headers == bytearray(
-        [
-            0x00, 0x01,  # num headers = 1
-            0x00, 0x03,  # strlen('foo') = 3
-        ] + list('foo') + [
-            0x00, 0x04,  # strlen('baar') = 4
-        ] + list('baar')
-    )
-
-    serialized_body = yield response_body.read()
-    assert serialized_body == bytearray([
-        0x0b,                    # field type = TType.STRING
-        0x00, 0x00,              # field ID = 0
-        0x00, 0x00, 0x00, 0x05,  # string length = 5
-    ] + list("world") + [
-        0x00,                    # end struct
-    ])
-
-    assert 0 == res.status_code
-
-
-@pytest.mark.gen_test
-def test_deprecated_build_handler_exception():
-    def call(treq, tres):
-        raise FakeException('fail')
-
-    response_body = mock.Mock(spec=InMemStream)
-
-    req = Request(
-        argstreams=[
-            InMemStream('hello'),
-            InMemStream('\00\00'),  # no headers
-            InMemStream('\00'),  # empty struct
-        ],
-        serializer=ThriftSerializer(FakeResult),
-    )
-    req.close_argstreams()
-
-    res = Response(
-        argstreams=[
-            InMemStream(),
-            InMemStream(),
-            response_body,
-        ],
-        serializer=ThriftSerializer(FakeResult),
-    )
-
-    handler = deprecated_build_handler(FakeResult, call)
-    yield handler(req, res)
-
-    response_body.write.assert_called_once_with(
-        bytearray([
-            0x0c,                    # field type = TType.STRUCT
-            0x00, 0x01,              # field ID = 1
-
-            0x0b,                    # field type = TType.STRING
-            0x00, 0x01,              # field ID = 1
-            0x00, 0x00, 0x00, 0x04,  # string length = 5
-        ] + list("fail") + [
-            0x00,                    # end exception struct
-            0x00,                    # end response struct
-        ])
-    )
-    assert 1 == res.status_code
-
-
-@pytest.mark.gen_test
-def test_build_handler_application_exception():
-    def call(req):
-        raise FakeException('fail')
-
-    req = Request(
-        argstreams=[
-            InMemStream('hello'),
-            InMemStream('\00\00'),  # no headers
-            InMemStream('\00'),  # empty struct
-        ],
-        serializer=ThriftSerializer(FakeResult),
-    )
-    req.close_argstreams()
-
-    handler = build_handler(FakeResult, call)
-    res = yield handler(req)
-
-    assert res.status == 1
+    assert response.body.success is None
+    assert response.body.doesNotExist == module.ItemDoesNotExist('foo')
+    assert response.status == 1

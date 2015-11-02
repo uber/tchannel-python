@@ -22,86 +22,25 @@ from __future__ import absolute_import
 
 import pytest
 
-from tchannel import errors
-from tchannel.thrift import client_for as thrift_client_for
-from tchannel.tornado import TChannel
-
-
-def mk_client(thrift_service, port, trace=False):
-    tchannel = TChannel(name='test')
-    hostport = "localhost:%d" % port
-
-    return thrift_client_for(
-        "service",
-        thrift_service
-    )(tchannel, hostport, trace)
+from tchannel import TChannel
 
 
 @pytest.mark.gen_test
-def test_call(mock_server, thrift_service):
-    mock_server.expect_call(
-        thrift_service,
-        'thrift',
-        method='putItem',
-    ).and_result(None)
-
-    client = mk_client(thrift_service, mock_server.port)
-    yield client.putItem(
-        thrift_service.Item(
-            key="foo",
-            value=thrift_service.Value(stringValue='bar')
-        ),
-        True
-    )
-
-
-@pytest.mark.gen_test
-def test_unexpected_error(mock_server, thrift_service):
-    mock_server.expect_call(
-        thrift_service,
-        'thrift',
-        method='getItem',
-    ).and_raise(ValueError("I was not defined in the IDL"))
-
-    client = mk_client(thrift_service, mock_server.port, trace=False)
-
-    with pytest.raises(errors.UnexpectedError):
-        yield client.getItem("foo")
-
-
-@pytest.mark.gen_test
-def test_thrift_exception(mock_server, thrift_service):
-    mock_server.expect_call(
-        thrift_service,
-        'thrift',
-        method='getItem',
-    ).and_raise(thrift_service.ItemDoesNotExist("stahp"))
-    client = mk_client(thrift_service, mock_server.port, trace=False)
-
-    with (
-        pytest.raises(thrift_service.ItemDoesNotExist)
-    ) as excinfo:
-        yield client.getItem("foo")
-
-    assert 'stahp' in str(excinfo.value)
-
-
-@pytest.mark.gen_test
-def test_false_result(thrift_service):
+def test_false_result(thrift_module):
     # Verify that we aren't treating False as None.
 
     app = TChannel(name='app')
 
-    @app.register(thrift_service)
-    def healthy(request, response):
+    @app.thrift.register(thrift_module.Service)
+    def healthy(request):
         return False
 
     app.listen()
 
     client = TChannel(name='client')
-    response = yield client.request(
-        hostport=app.hostport, arg_scheme='thrift'
-    ).send('Service::healthy', '\x00\x00', '\x00')
+    response = yield client.thrift(
+        thrift_module.Service.healthy(),
+        hostport=app.hostport,
+    )
 
-    body = yield response.get_body()
-    assert body == '\x02\x00\x00\x00\x00'
+    assert response.body is False

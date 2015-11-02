@@ -22,28 +22,33 @@ from __future__ import absolute_import
 
 import mock
 import pytest
-import tornado.concurrent
 
+from tchannel.errors import BadRequestError
+from tchannel.glossary import MAX_SIZE_OF_ARG1
 from tchannel.event import EventType
 from tchannel.messages.error import ErrorCode
 from tchannel.tornado.dispatch import RequestDispatcher
+from tchannel.tornado import Request
+from tchannel.tornado.stream import InMemStream
 
 
 @pytest.fixture
 def dispatcher():
-    return RequestDispatcher()
+    return RequestDispatcher(_handler_returns_response=True)
 
 
 @pytest.fixture
 def req():
     # FIXME: This is crazy for a unit test!!
-    request = mock.MagicMock(
-        endpoint='foo',
-        headers={'as': 'raw'},
+    request = Request(
+        argstreams=[
+            InMemStream('foo'),
+            InMemStream(),
+            InMemStream(),
+        ],
+        headers={'as': 'raw'}
     )
-    endpoint_future = tornado.concurrent.Future()
-    endpoint_future.set_result(None)
-    request.argstreams[0].read.return_value = endpoint_future
+    request.close_argstreams()
     return request
 
 
@@ -54,8 +59,8 @@ def connection():
 
 @pytest.mark.gen_test
 def test_handle_call(dispatcher, req, connection):
-    def handler(req, response):
-        response.write_body('bar')
+    def handler(req):
+        return 'bar'
 
     dispatcher.register('foo', handler)
 
@@ -73,8 +78,9 @@ def test_default_fallback_behavior(dispatcher, req, connection):
 
 @pytest.mark.gen_test
 def test_custom_fallback_behavior(dispatcher, req, connection):
-    def handler(req, response):
-        response.write_body('bar')
+
+    def handler(req):
+        return 'bar'
 
     dispatcher.register(dispatcher.FALLBACK, handler)
     response = yield dispatcher.handle_call(req, connection)
@@ -85,7 +91,7 @@ def test_custom_fallback_behavior(dispatcher, req, connection):
 @pytest.mark.gen_test
 def test_uncaught_exceptions_fire_event_hook(dispatcher, req, connection):
 
-    def handler(req, response):
+    def handler(req):
         raise Exception()
 
     dispatcher.register('foo', handler)
@@ -97,3 +103,21 @@ def test_uncaught_exceptions_fire_event_hook(dispatcher, req, connection):
         req,
         mock.ANY,
     )
+
+
+@pytest.mark.gen_test
+def test_server_arg1_limit(dispatcher, connection):
+        request = Request(
+            argstreams=[
+                InMemStream('a'*MAX_SIZE_OF_ARG1 + 'a'),
+                InMemStream(),
+                InMemStream(),
+            ],
+        )
+        request.close_argstreams()
+        yield dispatcher.handle_call(request, connection)
+        connection.send_error.assert_call_once_with(
+            BadRequestError(
+                'arg1 size is 16385 which exceeds the max size 16KB.'
+            )
+        )

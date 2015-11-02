@@ -33,11 +33,13 @@ from ..retry import (
     DEFAULT as DEFAULT_RETRY, DEFAULT_RETRY_LIMIT
 )
 from tchannel.event import EventType
-from tchannel.glossary import DEFAULT_TIMEOUT
 from ..context import get_current_context
+from ..errors import BadRequestError
 from ..errors import NoAvailablePeerError
 from ..errors import TChannelError
 from ..errors import NetworkError
+from ..glossary import DEFAULT_TIMEOUT
+from ..glossary import MAX_SIZE_OF_ARG1
 from ..zipkin.annotation import Endpoint
 from ..zipkin.trace import Trace
 from .connection import StreamConnection
@@ -318,12 +320,6 @@ class PeerClientOperation(object):
             Future that contains the response from the peer.
         """
 
-        # find a peer connection
-        # If we can't find available peer at the first time, we throw
-        # NoAvailablePeerError. Later during retry, if we can't find available
-        # peer, we throw exceptions from retry not NoAvailablePeerError.
-        peer, connection = yield self._get_peer_connection()
-
         arg1, arg2, arg3 = (
             maybe_stream(arg1), maybe_stream(arg2), maybe_stream(arg3)
         )
@@ -335,6 +331,18 @@ class PeerClientOperation(object):
         # hack to get endpoint from arg_1 for trace name
         arg1.close()
         endpoint = yield read_full(arg1)
+        arg1_size = len(endpoint)
+        if arg1_size > MAX_SIZE_OF_ARG1:
+            raise BadRequestError(
+                'arg1 is %d bytes long. It must be at most 16kb in length.'
+                % arg1_size
+            )
+
+        # find a peer connection
+        # If we can't find available peer at the first time, we throw
+        # NoAvailablePeerError. Later during retry, if we can't find available
+        # peer, we throw exceptions from retry not NoAvailablePeerError.
+        peer, connection = yield self._get_peer_connection()
 
         # TODO after adding stackcontext, get ride of this.
         if self.parent_tracing:

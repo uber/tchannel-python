@@ -22,7 +22,6 @@ setup(
     install_requires=[
         # stdlib backports, no constraints needed
         'contextlib2',
-        'futures',
 
         # external deps
         'crcmod>=1,<2',
