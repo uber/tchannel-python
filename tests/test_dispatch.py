@@ -17,6 +17,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
+from __future__ import absolute_import
+
+import mock
+
+from tchannel.messages.call_request_continue import CallRequestContinueMessage
+from tchannel.messages.call_request import CallRequestMessage
 from tchannel.serializer.raw import RawSerializer
 from tchannel.tornado.dispatch import RequestDispatcher
 
@@ -37,3 +44,23 @@ def test_dispatch():
 
     endpoint = dispatcher.handlers.get("/hello")[0]
     assert endpoint == dummy_endpoint
+
+
+def test_dispatch_call_req():
+    with mock.patch.object(
+        RequestDispatcher, "handle_call_req"
+    ) as mock_call_req:
+        dispatcher = RequestDispatcher()
+        callReq = CallRequestMessage()
+        dispatcher.handle(callReq, None)
+        mock_call_req.assert_called_with(callReq, None)
+
+
+def test_dispatch_call_req_cont():
+    with mock.patch.object(
+        RequestDispatcher, "handle_call_req_cont"
+    ) as mock_call_req_cont:
+        dispatcher = RequestDispatcher()
+        callReqCont = CallRequestContinueMessage()
+        dispatcher.handle(callReqCont, None)
+        mock_call_req_cont.assert_called_with(callReqCont, None)
