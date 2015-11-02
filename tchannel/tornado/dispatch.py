@@ -86,7 +86,7 @@ class RequestDispatcher(object):
         return self._HANDLERS[message.message_type](message, connection)
 
     def handle_call_req(self, message, connection):
-        """Handle incoming request message including CallRequestMessage.
+        """Handle incoming CallRequestMessage.
 
         This method will build the User friendly request object based on the
         incoming messages.
@@ -94,19 +94,21 @@ class RequestDispatcher(object):
         :param message: CallRequestMessage
         :param connection: tornado connection
         """
+        req = None
         try:
             req = connection.request_message_factory.build(message)
             self.handle_call(req, connection)
         except TChannelError as e:
             log.warn('Received a bad call request message.', exc_info=True)
-            e.tracing = req.tracing
+            e.id = message.id
+            e.tracing = req.tracing if req else e.tracing
             connection.send_error(e)
 
     def handle_call_req_cont(self, message, connection):
-        """Handle incoming request message including CallRequestContinueMessage.
+        """Handle incoming CallRequestContinueMessage.
 
-        This method will add args from call continue message into corresponding
-        request object.
+        This method will append args from call continue message into
+        corresponding request object.
 
         :param message: CallRequestContinueMessage
         :param connection: tornado connection
@@ -114,7 +116,8 @@ class RequestDispatcher(object):
         try:
             connection.request_message_factory.build(message)
         except TChannelError as e:
-            log.warn('Received a bad call request cont message.', exc_info=True)
+            log.warn('Received a bad call req cont message.', exc_info=True)
+            e.id = message.id
             connection.send_error(e)
 
     @tornado.gen.coroutine
