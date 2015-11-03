@@ -71,11 +71,6 @@ class RequestDispatcher(object):
         self.register(self.FALLBACK, self.not_found)
         self._handler_returns_response = _handler_returns_response
 
-        self._HANDLERS = {
-            Types.CALL_REQ: self.handle_call_req,
-            Types.CALL_REQ_CONTINUE: self.handle_call_req_cont,
-        }
-
     def handle(self, message, connection):
         # TODO assert that the handshake was already completed
         assert message, "message must not be None"
@@ -83,7 +78,7 @@ class RequestDispatcher(object):
         if message.message_type not in self._HANDLERS:
             raise FatalProtocolError("Unexpected message: %s" % str(message))
 
-        return self._HANDLERS[message.message_type](message, connection)
+        return self._HANDLERS[message.message_type](self, message, connection)
 
     def handle_call_req(self, message, connection):
         """Handle incoming CallRequestMessage.
@@ -119,6 +114,11 @@ class RequestDispatcher(object):
             log.warn('Received a bad call req cont message.', exc_info=True)
             e.id = message.id
             connection.send_error(e)
+
+    _HANDLERS = {
+        Types.CALL_REQ: handle_call_req,
+        Types.CALL_REQ_CONTINUE: handle_call_req_cont,
+    }
 
     @tornado.gen.coroutine
     def handle_call(self, request, connection):
