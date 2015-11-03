@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
-
 import mock
 
 from tchannel.messages.call_request_continue import CallRequestContinueMessage
@@ -47,20 +46,32 @@ def test_dispatch():
 
 
 def test_dispatch_call_req():
-    with mock.patch.object(
-        RequestDispatcher, "handle_call_req"
+    with mock.patch(
+        "tchannel.tornado.dispatch.RequestDispatcher.handle_call_req",
+        autospec=True,
     ) as mock_call_req:
-        dispatcher = RequestDispatcher()
-        callReq = CallRequestMessage()
-        dispatcher.handle(callReq, None)
-        mock_call_req.assert_called_with(callReq, None)
+        with mock.patch.dict(
+            RequestDispatcher._HANDLERS,
+            {CallRequestMessage.message_type: mock_call_req},
+            clear=True,
+        ):
+            dispatcher = RequestDispatcher()
+            callReq = CallRequestMessage()
+            dispatcher.handle(callReq, None)
+            mock_call_req.assert_called_with(mock.ANY, callReq, None)
 
 
 def test_dispatch_call_req_cont():
-    with mock.patch.object(
-        RequestDispatcher, "handle_call_req_cont"
+    with mock.patch(
+        "tchannel.tornado.dispatch.RequestDispatcher.handle_call_req_cont",
+        autospec=True,
     ) as mock_call_req_cont:
-        dispatcher = RequestDispatcher()
-        callReqCont = CallRequestContinueMessage()
-        dispatcher.handle(callReqCont, None)
-        mock_call_req_cont.assert_called_with(callReqCont, None)
+        with mock.patch.dict(
+            RequestDispatcher._HANDLERS,
+            {CallRequestContinueMessage.message_type: mock_call_req_cont},
+            clear=True,
+        ):
+            dispatcher = RequestDispatcher()
+            callReqCont = CallRequestContinueMessage()
+            dispatcher.handle(callReqCont, None)
+            mock_call_req_cont.assert_called_with(mock.ANY, callReqCont, None)
