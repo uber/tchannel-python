@@ -96,7 +96,8 @@ class RequestDispatcher(object):
         except TChannelError as e:
             log.warn('Received a bad call request message.', exc_info=True)
             e.id = message.id
-            e.tracing = req.tracing if req else e.tracing
+            if req:
+                e.tracing = req.tracing
             connection.send_error(e)
 
     def handle_call_req_cont(self, message, connection):
