@@ -26,6 +26,7 @@ from tchannel import tcurl
 from tchannel import TChannel
 from tchannel.errors import NetworkError
 from tchannel.errors import BadRequestError
+from tchannel.event import EventHook
 from tchannel.tornado.connection import StreamConnection
 from tests.util import big_arg
 
@@ -125,6 +126,15 @@ def test_connection_close(mock_server):
 
     # close the server and close the connection.
     mock_server.tchannel._dep_tchannel.close()
+
+    class TestHook(EventHook):
+        def before_send_request(self, request):
+            # close the connection
+            peer = tchannel._dep_tchannel.peers.get(mock_server.hostport)
+            peer.close()
+            peer.connections[0].closed = True
+
+    tchannel.hooks.register(TestHook())
 
     with pytest.raises(NetworkError):
         yield tchannel.raw(
