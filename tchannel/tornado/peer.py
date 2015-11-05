@@ -27,17 +27,18 @@ import random
 from collections import deque
 from itertools import takewhile, dropwhile
 from tornado import gen
+from tornado.iostream import StreamClosedError
 
 from ..schemes import DEFAULT as DEFAULT_SCHEME
 from ..retry import (
     DEFAULT as DEFAULT_RETRY, DEFAULT_RETRY_LIMIT
 )
-from tchannel.event import EventType
-from tchannel.glossary import DEFAULT_TIMEOUT
 from ..context import get_current_context
 from ..errors import NoAvailablePeerError
 from ..errors import TChannelError
 from ..errors import NetworkError
+from ..event import EventType
+from ..glossary import DEFAULT_TIMEOUT
 from ..zipkin.annotation import Endpoint
 from ..zipkin.trace import Trace
 from .connection import StreamConnection
@@ -401,6 +402,17 @@ class PeerClientOperation(object):
         with timeout(response_future, req.ttl):
             try:
                 response = yield response_future
+            except StreamClosedError as error:
+                error = NetworkError(
+                    id=req.id,
+                    description=error.message,
+                    tracing=req.tracing,
+                )
+                # event: after_receive_error
+                self.tchannel.event_emitter.fire(
+                    EventType.after_receive_error, req, error,
+                )
+                raise
             except TChannelError as error:
                 # event: after_receive_error
                 self.tchannel.event_emitter.fire(
@@ -421,7 +433,6 @@ class PeerClientOperation(object):
             try:
                 response = yield self._send(connection, request)
                 raise gen.Return(response)
-            # Why are we retying on all errors????
             except TChannelError as error:
                 blacklist.add(peer.hostport)
                 (peer, connection) = yield self._prepare_for_retry(
