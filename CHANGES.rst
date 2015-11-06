@@ -11,6 +11,7 @@ Changes by Version
   planned in 0.18.
 - Reduced Zipkin submission failures to warnings.
 - Limit the size of arg1 to 16KB.
+- Support thriftrw 1.0.
 
 
 0.18.3 (unreleased)
