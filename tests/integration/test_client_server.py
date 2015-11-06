@@ -23,10 +23,9 @@ from __future__ import absolute_import
 import pytest
 
 from tchannel import tcurl
+from tchannel import TChannel
 from tchannel.errors import NetworkError
 from tchannel.errors import BadRequestError
-from tchannel import TChannel
-from tchannel.event import EventHook
 from tchannel.tornado.connection import StreamConnection
 from tests.util import big_arg
 
@@ -116,14 +115,16 @@ def test_endpoint_not_found(mock_server):
 def test_connection_close(mock_server):
     tchannel = TChannel(name='test')
 
-    class TestHook(EventHook):
-        def before_send_request(self, request):
-            # close the connection
-            peer = tchannel._dep_tchannel.peers.get(mock_server.hostport)
-            peer.close()
-            peer.connections[0].closed = True
+    # use a bad call to finish the hand shake and build the connection.
+    with pytest.raises(BadRequestError):
+        yield tchannel.raw(
+            service='test-service',
+            hostport=mock_server.hostport,
+            endpoint='testg',
+        )
 
-    tchannel.hooks.register(TestHook())
+    # close the server and close the connection.
+    mock_server.tchannel._dep_tchannel.close()
 
     with pytest.raises(NetworkError):
         yield tchannel.raw(
