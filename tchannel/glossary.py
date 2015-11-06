@@ -18,8 +18,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import pkg_resources
+from __future__ import absolute_import
+
 import sys
+from . import __version__
 
 # Largest message ID supported by the system.
 # Message ID 0xffffffff is reserved
@@ -34,4 +36,4 @@ TCHANNEL_LANGUAGE = 'python'
 TCHANNEL_LANGUAGE_VERSION = '.'.join(map(str, sys.version_info[0:3]))
 
 # version format x.y.z
-TCHANNEL_VERSION = pkg_resources.require('tchannel')[0].version
+TCHANNEL_VERSION = __version__
