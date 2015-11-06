@@ -179,7 +179,7 @@ class TChannelThriftModule(types.ModuleType):
 
         self._module = module
 
-        for service_cls in self._module.services:
+        for service_cls in self._module.__services__:
             name = service_cls.service_spec.name
             setattr(self, name, Service(service_cls, self))
 
