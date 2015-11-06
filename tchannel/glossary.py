@@ -33,7 +33,7 @@ DEFAULT_TIMEOUT = 30  # seconds
 
 TCHANNEL_LANGUAGE = 'python'
 
-# version format x.y.z
+# python environment, eg 'CPython-2.7.10'
 TCHANNEL_LANGUAGE_VERSION = (
     platform.python_implementation() + '-' + platform.python_version()
 )
