@@ -386,6 +386,8 @@ class TornadoConnection(object):
         # completed.
         self._loop()
 
+        raise tornado.gen.Return(init_res)
+
     @tornado.gen.coroutine
     def expect_handshake(self, headers):
         """Expect a handshake from the remote host.
@@ -411,6 +413,8 @@ class TornadoConnection(object):
         # The receive loop is started only after the handshake has been
         # completed.
         self._loop()
+
+        raise tornado.gen.Return(init_req)
 
     def _extract_handshake_headers(self, message):
         if not message.host_port:
