@@ -109,3 +109,26 @@ def test_endpoint_not_found(mock_server):
             endpoint='fooo',
             hostport=mock_server.hostport,
         )
+
+
+@pytest.mark.gen_test
+def test_connection_close(mock_server):
+    tchannel = TChannel(name='test')
+
+    # use a bad call to finish the hand shake and build the connection.
+    with pytest.raises(BadRequestError):
+        yield tchannel.raw(
+            service='test-service',
+            hostport=mock_server.hostport,
+            endpoint='testg',
+        )
+
+    # close the server and close the connection.
+    mock_server.tchannel._dep_tchannel.close()
+
+    with pytest.raises(NetworkError):
+        yield tchannel.raw(
+            service='test-service',
+            hostport=mock_server.hostport,
+            endpoint='testg',
+        )
