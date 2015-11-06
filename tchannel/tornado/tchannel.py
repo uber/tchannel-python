@@ -39,6 +39,11 @@ from ..enum import enum
 from ..errors import AlreadyListeningError
 from ..event import EventEmitter
 from ..event import EventRegistrar
+from ..glossary import (
+    TCHANNEL_LANGUAGE,
+    TCHANNEL_LANGUAGE_VERSION,
+    TCHANNEL_VERSION,
+)
 from ..net import local_ip
 from ..schemes import DEFAULT_NAMES
 from ..schemes import JSON
@@ -435,6 +440,9 @@ class TChannelServer(tornado.tcpserver.TCPServer):
         yield conn.expect_handshake(headers={
             'host_port': self.tchannel.hostport,
             'process_name': self.tchannel.process_name,
+            'tchannel_language': TCHANNEL_LANGUAGE,
+            'tchannel_language_version': TCHANNEL_LANGUAGE_VERSION,
+            'tchannel_version': TCHANNEL_VERSION,
         })
 
         log.debug(
