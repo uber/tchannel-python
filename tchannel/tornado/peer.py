@@ -27,6 +27,7 @@ import random
 from collections import deque
 from itertools import takewhile, dropwhile
 from tornado import gen
+from tornado.iostream import StreamClosedError
 
 from ..schemes import DEFAULT as DEFAULT_SCHEME
 from ..retry import (
@@ -401,6 +402,17 @@ class PeerClientOperation(object):
         with timeout(response_future, req.ttl):
             try:
                 response = yield response_future
+            except StreamClosedError as error:
+                network_error = NetworkError(
+                    id=req.id,
+                    description=error.message,
+                    tracing=req.tracing,
+                )
+                # event: after_receive_error
+                self.tchannel.event_emitter.fire(
+                    EventType.after_receive_error, req, error,
+                )
+                raise network_error
             except TChannelError as error:
                 # event: after_receive_error
                 self.tchannel.event_emitter.fire(
