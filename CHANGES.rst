@@ -1,10 +1,11 @@
 Changes by Version
 ==================
 
-0.18.4 (unreleased)
+0.19.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Add tchannel version & language information into init message header when
+  initialize connections between TChannel instances.
 
 
 0.18.3 (2015-11-03)
