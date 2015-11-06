@@ -412,7 +412,7 @@ class PeerClientOperation(object):
             try:
                 response = yield response_future
             except StreamClosedError as error:
-                error = NetworkError(
+                network_error = NetworkError(
                     id=req.id,
                     description=error.message,
                     tracing=req.tracing,
@@ -421,7 +421,7 @@ class PeerClientOperation(object):
                 self.tchannel.event_emitter.fire(
                     EventType.after_receive_error, req, error,
                 )
-                raise
+                raise network_error
             except TChannelError as error:
                 # event: after_receive_error
                 self.tchannel.event_emitter.fire(
