@@ -28,7 +28,7 @@ setup(
         'tornado>=4.2,<5',
 
         # tchannel deps
-        'thriftrw>=0.4,<0.6',
+        'thriftrw>=1,<2',
         'threadloop>=1,<2',
     ],
     extras_require={
