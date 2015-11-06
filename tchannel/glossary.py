@@ -20,7 +20,8 @@
 
 from __future__ import absolute_import
 
-import sys
+import platform
+
 from . import __version__
 
 # Largest message ID supported by the system.
@@ -33,7 +34,9 @@ DEFAULT_TIMEOUT = 30  # seconds
 TCHANNEL_LANGUAGE = 'python'
 
 # version format x.y.z
-TCHANNEL_LANGUAGE_VERSION = '.'.join(map(str, sys.version_info[0:3]))
+TCHANNEL_LANGUAGE_VERSION = (
+    platform.python_implementation() + '-' + platform.python_version()
+)
 
 # version format x.y.z
 TCHANNEL_VERSION = __version__
