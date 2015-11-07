@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.19.0 (unreleased)
+0.20.0 (unreleased)
 -------------------
 
 - **BREAKING** - Removed support for the Apache ``thrift`` library.
@@ -15,7 +15,14 @@ Changes by Version
   connection was previously terminated.
 
 
-0.18.3 (unreleased)
+0.19.0 (2015-11-06)
+-------------------
+
+- Add tchannel version & language information into init message header when
+  initialize connections between TChannel instances.
+
+
+0.18.3 (2015-11-03)
 -------------------
 
 - Reduced Hyperbahn advertisement per-request timeout to 2 seconds.

@@ -38,7 +38,12 @@ class InitRequestMessage(BaseMessage):
         'headers',
     )
 
-    def __init__(self, version=None, headers=None, id=0):
+    def __init__(
+        self,
+        version=None,
+        headers=None,
+        id=0,
+    ):
         super(InitRequestMessage, self).__init__(id)
         self.version = version or PROTOCOL_VERSION
         self.headers = dict(headers) if headers else {}

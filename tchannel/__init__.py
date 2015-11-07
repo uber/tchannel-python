@@ -22,6 +22,9 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals
 )
 
+__version__ = '0.19.1.dev0'
+
+
 from .response import Response  # noqa
 from .request import Request  # noqa
 from .tchannel import TChannel  # noqa
