@@ -31,7 +31,7 @@ import tornado.iostream
 import tornado.queues as queues
 
 from tornado import stack_context
-
+from tornado.iostream import StreamClosedError
 
 from .. import errors
 from .. import frame
@@ -463,7 +463,7 @@ class TornadoConnection(object):
         log.debug("Connecting to %s", hostport)
         try:
             yield stream.connect((host, int(port)))
-        except socket.error as e:
+        except (StreamClosedError, socket.error) as e:
             log.warn("Couldn't connect to %s", hostport)
             raise NetworkError(
                 "Couldn't connect to %s" % hostport, e
