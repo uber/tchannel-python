@@ -25,20 +25,26 @@ import os
 import socket
 import sys
 
+
 import tornado.gen
 import tornado.iostream
 import tornado.queues as queues
 
 from tornado import stack_context
-
+from tornado.iostream import StreamClosedError
 
 from .. import errors
 from .. import frame
-from .. import glossary
 from .. import messages
 from ..errors import NetworkError
 from ..errors import TChannelError
 from ..event import EventType
+from ..glossary import (
+    TCHANNEL_LANGUAGE,
+    TCHANNEL_LANGUAGE_VERSION,
+    TCHANNEL_VERSION,
+    MAX_MESSAGE_ID,
+)
 from ..io import BytesIO
 from ..messages.common import PROTOCOL_VERSION
 from ..messages.common import FlagsType
@@ -142,7 +148,7 @@ class TornadoConnection(object):
         self._close_cb = stack_context.wrap(cb)
 
     def next_message_id(self):
-        self._id_sequence = (self._id_sequence + 1) % glossary.MAX_MESSAGE_ID
+        self._id_sequence = (self._id_sequence + 1) % MAX_MESSAGE_ID
         return self._id_sequence
 
     def _on_close(self):
@@ -380,6 +386,8 @@ class TornadoConnection(object):
         # completed.
         self._loop()
 
+        raise tornado.gen.Return(init_res)
+
     @tornado.gen.coroutine
     def expect_handshake(self, headers):
         """Expect a handshake from the remote host.
@@ -405,6 +413,8 @@ class TornadoConnection(object):
         # The receive loop is started only after the handshake has been
         # completed.
         self._loop()
+
+        raise tornado.gen.Return(init_req)
 
     def _extract_handshake_headers(self, message):
         if not message.host_port:
@@ -453,7 +463,7 @@ class TornadoConnection(object):
         log.debug("Connecting to %s", hostport)
         try:
             yield stream.connect((host, int(port)))
-        except socket.error as e:
+        except (StreamClosedError, socket.error) as e:
             log.warn("Couldn't connect to %s", hostport)
             raise NetworkError(
                 "Couldn't connect to %s" % hostport, e
@@ -464,6 +474,9 @@ class TornadoConnection(object):
         yield connection.initiate_handshake(headers={
             'host_port': serve_hostport,
             'process_name': process_name,
+            'tchannel_language': TCHANNEL_LANGUAGE,
+            'tchannel_language_version': TCHANNEL_LANGUAGE_VERSION,
+            'tchannel_version': TCHANNEL_VERSION,
         })
 
         if handler:

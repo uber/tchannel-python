@@ -21,13 +21,20 @@
 from __future__ import absolute_import
 
 import struct
+import mock
 
 import pytest
 
-from tchannel import messages
+from tchannel import messages, TChannel
 from tchannel.io import BytesIO
+from tchannel.glossary import (
+    TCHANNEL_LANGUAGE,
+    TCHANNEL_LANGUAGE_VERSION,
+    TCHANNEL_VERSION,
+)
 from tchannel.messages import CallRequestMessage
 from tchannel.messages.common import PROTOCOL_VERSION
+from tchannel.tornado.connection import TornadoConnection
 from tchannel.tornado.message_factory import MessageFactory
 from tests.util import big_arg
 
@@ -280,3 +287,24 @@ def test_message_fragment(arg2, arg3, connection):
     body = yield recv_msg.get_body()
     assert header == origin_msg.args[1]
     assert body == origin_msg.args[2]
+
+
+def verify_init_header(message):
+    # will be called twice for both init_req and init_res
+    headers = message.headers
+    assert headers['tchannel_language'] == TCHANNEL_LANGUAGE
+    assert headers['tchannel_language_version'] == TCHANNEL_LANGUAGE_VERSION
+    assert headers['tchannel_version'] == TCHANNEL_VERSION
+
+
+@pytest.mark.gen_test
+def test_init_req_header():
+    with mock.patch.object(
+        TornadoConnection,
+        '_extract_handshake_headers',
+        side_effect=verify_init_header,
+    ) as mock_extract:
+        mock_extract.return_value = None
+        server = TChannel('test_server')
+        server.listen()
+        yield TornadoConnection.outgoing(server.hostport)
