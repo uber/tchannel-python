@@ -11,6 +11,8 @@ Changes by Version
   planned in 0.18.
 - Reduced Zipkin submission failures to warnings.
 - Limit the size of arg1 to 16KB.
+- Fix bug which prevented requests from being retried if the candidate
+  connection was previously terminated.
 
 
 0.18.3 (unreleased)

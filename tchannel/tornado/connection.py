@@ -30,6 +30,7 @@ import tornado.iostream
 import tornado.queues as queues
 
 from tornado import stack_context
+from tornado.iostream import StreamClosedError
 
 
 from .. import errors
@@ -163,6 +164,9 @@ class TornadoConnection(object):
         except queues.QueueEmpty:
             pass
 
+        if self._close_cb:
+            self._close_cb()
+
     def await(self):
         """Get the next call to this TChannel."""
         if self._loop_running:
@@ -208,10 +212,7 @@ class TornadoConnection(object):
             return read_body_future
 
         def on_error(future):
-            exception = future.exception()
-
-            if isinstance(exception, tornado.iostream.StreamClosedError):
-                self.close()
+            log.info("Failed to read data: %s", future.exception())
 
         size_width = frame.frame_rw.size_rw.width()
         read_bytes_future = self.connection.read_bytes(size_width)
@@ -290,7 +291,6 @@ class TornadoConnection(object):
         :returns:
             A Future containing the response for the message
         """
-        assert not self.closed
         assert self._loop_running, "Perform a handshake first."
         assert message.message_type in self.CALL_REQ_TYPES, (
             "Message '%s' can't use send" % repr(message)
@@ -314,8 +314,6 @@ class TornadoConnection(object):
         :param message:
             Message to write.
         """
-        assert not self.closed
-
         message.id = message.id or self.next_message_id()
 
         if message.message_type in self.CALL_REQ_TYPES:
@@ -350,10 +348,8 @@ class TornadoConnection(object):
         return self.connection.write(body)
 
     def close(self):
-        if not self.connection.closed():
+        if not self.closed:
             self.connection.close()
-            if self._close_cb:
-                self._close_cb()
 
     @tornado.gen.coroutine
     def initiate_handshake(self, headers):
@@ -453,7 +449,7 @@ class TornadoConnection(object):
         log.debug("Connecting to %s", hostport)
         try:
             yield stream.connect((host, int(port)))
-        except socket.error as e:
+        except (StreamClosedError, socket.error) as e:
             log.warn("Couldn't connect to %s", hostport)
             raise NetworkError(
                 "Couldn't connect to %s" % hostport, e
@@ -623,7 +619,6 @@ class StreamConnection(TornadoConnection):
         :returns:
             A Future containing the response for the request
         """
-        assert not self.closed
         assert self._loop_running, "Perform a handshake first."
 
         assert request.id not in self._outstanding, (

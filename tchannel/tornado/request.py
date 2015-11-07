@@ -24,6 +24,7 @@ from collections import namedtuple
 
 import tornado
 import tornado.gen
+from tornado.iostream import StreamClosedError
 
 from tchannel import retry
 
@@ -176,6 +177,9 @@ class Request(object):
 
         if retry_flag == retry.NEVER:
             return False
+
+        if isinstance(error, StreamClosedError):
+            return True
 
         if error.code in [ErrorCode.bad_request, ErrorCode.cancelled,
                           ErrorCode.unhealthy]:
