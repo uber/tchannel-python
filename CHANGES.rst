@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.19.0 (unreleased)
+0.19.0 (2015-11-06)
 -------------------
 
 - Add tchannel version & language information into init message header when
