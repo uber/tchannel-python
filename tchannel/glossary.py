@@ -31,6 +31,9 @@ MAX_MESSAGE_ID = 0xfffffffe
 # CallRequestMessage uses it as the default TTL value for the message.
 DEFAULT_TIMEOUT = 30  # seconds
 
+# Max size of arg1.
+MAX_SIZE_OF_ARG1 = 16 * 1024
+
 TCHANNEL_LANGUAGE = 'python'
 
 # python environment, eg 'CPython-2.7.10'

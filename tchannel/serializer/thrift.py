@@ -39,7 +39,10 @@ class ThriftSerializer(object):
         rw.len_prefixed_string(rw.number(2)),
     )
 
-    def __init__(self, deserialize_type):
+    __slots__ = ('module', 'deserialize_type')
+
+    def __init__(self, module, deserialize_type):
+        self.module = module
         self.deserialize_type = deserialize_type
 
     def serialize_header(self, headers):
@@ -55,49 +58,6 @@ class ThriftSerializer(object):
         result = dict(headers)
 
         return result
-
-    def serialize_body(self, call_args):
-
-        # TODO - use fastbinary directly
-        #
-        # fastbinary.encode_binary(
-        #     call_args, (call_args.__class__, call_args.thrift_spec)
-        # )
-        # fastbinary.decode_binary(
-        #    result, TMemoryBuffer(body),(result_type, result_type.thrift_spec)
-        # )
-        #
-        from thrift.protocol import TBinaryProtocol
-        from thrift.transport import TTransport
-        trans = TTransport.TMemoryBuffer()
-        proto = TBinaryProtocol.TBinaryProtocolAccelerated(trans)
-        call_args.write(proto)
-        result = trans.getvalue()
-
-        return result
-
-    def deserialize_body(self, body):
-        from thrift.protocol import TBinaryProtocol
-        from thrift.transport import TTransport
-        trans = TTransport.TMemoryBuffer(body)
-        proto = TBinaryProtocol.TBinaryProtocolAccelerated(trans)
-
-        result = self.deserialize_type()
-        result.read(proto)
-        return result
-
-
-class ThriftRWSerializer(ThriftSerializer):
-
-    def __init__(self, module, deserialize_type):
-        """
-        :param module:
-            thriftrw generated module
-        """
-        # TODO export dumps/loads on classes in thriftrw in addition to
-        # module-level dumps/loads.
-        super(ThriftRWSerializer, self).__init__(deserialize_type)
-        self.module = module
 
     def serialize_body(self, obj):
         return self.module.dumps(obj)

@@ -1,10 +1,19 @@
 Changes by Version
 ==================
 
-0.19.1 (unreleased)
+0.20.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- **BREAKING** - Removed support for the Apache ``thrift`` library.
+- **BREAKING** - Removed ``tchannel.thrift.client_for`` and
+  ``tchannel.sync.thrift.client_for`` as planned in 0.18.
+- **BREAKING** - Removed ``tchannel.thrift_request_builder`` as
+  planned in 0.18.
+- Reduced Zipkin submission failures to warnings.
+- Limit the size of arg1 to 16KB.
+- Fix bug which prevented requests from being retried if the candidate
+  connection was previously terminated.
+- Support thriftrw 1.0.
 
 
 0.19.0 (2015-11-06)
