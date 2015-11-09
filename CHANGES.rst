@@ -5,6 +5,7 @@ Changes by Version
 -------------------
 
 - Support thriftrw 1.0.
+- Drop explicit dependency on the ``futures`` library.
 
 
 0.19.0 (2015-11-06)
