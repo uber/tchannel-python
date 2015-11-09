@@ -6,6 +6,32 @@ Upgrade Guide
 Migrating to a version of TChannel with breaking changes? This guide documents
 what broke and how to safely migrate to newer versions.
 
+From 0.19 to 0.20
+-----------------
+
+- At least ``thriftrw`` 1.0 is now required. If you had an explicit dependency
+  on thriftrw, please update the constraints to lock on the major version.
+
+  Before::
+
+      thriftrw>=0.5,<0.6
+
+  After::
+
+      thriftrw>=1,<2
+
+  If you see an error similar to::
+
+      AttributeError: 'module' object has no attribute '__services__'
+
+  It means that you're on a version of ``thriftrw`` less than 1.0.
+
+
+From 0.18 to 0.19
+-----------------
+
+- No breaking changes.
+
 From 0.17 to 0.18
 -----------------
 
