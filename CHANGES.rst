@@ -4,7 +4,7 @@ Changes by Version
 0.20.0 (unreleased)
 -------------------
 
-- **BREAKING** - At least thriftrw 1.0 is now required.
+- Support thriftrw 1.0.
 - Drop explicit dependency on the ``futures`` library.
 
 
