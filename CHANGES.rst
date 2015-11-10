@@ -1,10 +1,11 @@
 Changes by Version
 ==================
 
-0.19.1 (unreleased)
+0.20.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- **BREAKING** - At least thriftrw 1.0 is now required.
+- Drop explicit dependency on the ``futures`` library.
 
 
 0.19.0 (2015-11-06)
