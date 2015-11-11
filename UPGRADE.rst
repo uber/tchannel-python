@@ -6,6 +6,54 @@ Upgrade Guide
 Migrating to a version of TChannel with breaking changes? This guide documents
 what broke and how to safely migrate to newer versions.
 
+From 0.20 to 0.21
+-----------------
+
+- ``tchannel.thrift.register`` returns the original function as-is instead of
+  the wrapped version. This allows writing unit tests that call the handler
+  function directly.
+
+  Previously, if you used the ``tchannel.thrift.register`` decorator to
+  register a Thrift endpoint and then called that function directly from a
+  test, it would return a ``Response`` object if the call succeeded or
+  failed with an expected exception (defined in the Thrift IDL). For example,
+
+  .. code-block:: python
+
+      # service KeyValue {
+      #   string getValue(1: string key)
+      #      throws (1: ValidationError invalid)
+      # }
+
+      @tchannel.thrift.register(kv.KeyValue)
+      def getValue(request):
+          key = request.body.key
+          if key == 'invalid':
+              raise kv.ValidationError()
+          result = # ...
+          return result
+
+      response = getValue(make_request(key='invalid'))
+      if response.body.invalid:
+          # ...
+      else:
+          result = response.body.success
+
+  With 0.21, we have changed ``tchannel.thrift.register`` to return the
+  unmodified function so that you can call it directly and it will behave
+  as expected.
+
+  .. code-block:: python
+
+      @tchannel.thrift.register(kv.KeyValue)
+      def getValue(request):
+          # ...
+
+      try:
+          result = getValue(make_request(key='invalid'))
+      except kv.ValidationError:
+          # ...
+
 From 0.19 to 0.20
 -----------------
 

@@ -307,10 +307,9 @@ def register(dispatcher, service, handler=None, method=None):
         )
         assert not function.oneway
 
-        handler = build_handler(function, handler)
         dispatcher.register(
             function.endpoint,
-            handler,
+            build_handler(function, handler),
             ThriftSerializer(service._module, function._request_cls),
             ThriftSerializer(service._module, function._response_cls),
         )
