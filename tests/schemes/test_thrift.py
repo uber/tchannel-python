@@ -1045,7 +1045,7 @@ def test_exception_status_code_is_set(server, ThriftTest, server_ttypes):
 # as if they weren't registered at all
 
 
-def make_request(**kwargs):
+def body(**kwargs):
     """Constructs fake Request objects.
 
     The ``_headers`` kwarg may be used to set the header on the Request
@@ -1053,10 +1053,7 @@ def make_request(**kwargs):
     """
     request = mock.Mock()
     for k, v in kwargs.items():
-        if k == '_headers':
-            request.headers = v
-        else:
-            setattr(request.body, k, v)
+        setattr(request, k, v)
     return request
 
 
@@ -1066,7 +1063,7 @@ def test_void_call_directly(server, ThriftTest):
     def testVoid(request):
         pass
 
-    resp = testVoid(make_request())
+    resp = testVoid(Request())
     assert resp is None
 
 
@@ -1077,7 +1074,7 @@ def test_void_with_headers_call_directly(server, ThriftTest):
         assert request.headers == {'req': 'header'}
         return Response(headers={'resp': 'header'})
 
-    resp = testVoid(make_request(_headers={'req': 'header'}))
+    resp = testVoid(Request(headers={'req': 'header'}))
     assert resp.headers == {'resp': 'header'}
     assert resp.body is None
 
@@ -1088,7 +1085,7 @@ def test_non_void_call_directly(server, ThriftTest):
     def testString(request):
         return request.body.thing
 
-    resp = testString(make_request(thing='howdy'))
+    resp = testString(Request(body=body(thing='howdy')))
     assert resp == 'howdy'
 
 
@@ -1109,9 +1106,9 @@ def test_non_void_with_headers_cal_directly(
         )
 
     resp = testStruct(
-        make_request(
-            _headers={'req': 'header'},
-            thing=client_ttypes.Xtruct("req string"),
+        Request(
+            headers={'req': 'header'},
+            body=body(thing=client_ttypes.Xtruct("req string")),
         )
     )
 
