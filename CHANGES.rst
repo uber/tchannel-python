@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.20.1 (unreleased)
+0.20.1 (2015-11-12)
 -------------------
 
 - Fix bug which prevented requests from being retried if the candidate
