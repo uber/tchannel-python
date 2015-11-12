@@ -9,8 +9,10 @@ Changes by Version
   ``tchannel.sync.thrift.client_for`` as planned in 0.18.
 - **BREAKING** - Removed ``tchannel.thrift_request_builder`` as
   planned in 0.18.
-- **BREAKING** - ``tchannel.thrift.register`` returns the wrapped function
-  as-is. This allows calling the function diretly for unit tests.
+- **BREAKING** - Support unit testing endpoints by calling the handler
+  functions directly. This is enabled by changing ``tchannel.thrift.register``
+  to return the registered function unmodified. See Upgrade Guide for more
+  details.
 - Reduced Zipkin submission failures to warnings.
 - Limit the size of arg1 to 16KB.
 - Fix bug which prevented requests from being retried if the candidate
