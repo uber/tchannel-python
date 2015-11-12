@@ -4,7 +4,8 @@ Changes by Version
 0.20.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fix bug which prevented requests from being retried if the candidate
+  connection was previously terminated.
 
 
 0.20.0 (2015-11-10)
