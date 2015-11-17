@@ -1,9 +1,9 @@
 # Testing and coverage
-pytest<2.8.0
+pytest>=2,<3
 pytest-cov
-pytest-timeout<1.0.0
+pytest-timeout
 pytest-tornado
-pytest-benchmark[histogram]==3.0.0rc1
+pytest-benchmark[histogram]>=3,<4
 
 # Property based tests
 hypothesis-pytest==0.12.0
