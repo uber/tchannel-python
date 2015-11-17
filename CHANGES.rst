@@ -19,6 +19,13 @@ Changes by Version
   connection was previously terminated.
 
 
+0.20.1 (2015-11-12)
+-------------------
+
+- Fix bug which prevented requests from being retried if the candidate
+  connection was previously terminated.
+
+
 0.20.0 (2015-11-10)
 -------------------
 
