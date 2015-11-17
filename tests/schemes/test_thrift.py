@@ -23,6 +23,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import mock
 import pytest
 from tornado import gen
 
@@ -1037,3 +1038,80 @@ def test_exception_status_code_is_set(server, ThriftTest, server_ttypes):
     )
 
     assert 1 == res.status_code
+
+
+##############################################################################
+# Calling registered functions directly should be equivalent to calling them
+# as if they weren't registered at all
+
+
+def body(**kwargs):
+    """Constructs fake Request objects.
+
+    The ``_headers`` kwarg may be used to set the header on the Request
+    object.
+    """
+    request = mock.Mock()
+    for k, v in kwargs.items():
+        setattr(request, k, v)
+    return request
+
+
+def test_void_call_directly(server, ThriftTest):
+
+    @server.thrift.register(ThriftTest)
+    def testVoid(request):
+        pass
+
+    resp = testVoid(Request())
+    assert resp is None
+
+
+def test_void_with_headers_call_directly(server, ThriftTest):
+
+    @server.thrift.register(ThriftTest)
+    def testVoid(request):
+        assert request.headers == {'req': 'header'}
+        return Response(headers={'resp': 'header'})
+
+    resp = testVoid(Request(headers={'req': 'header'}))
+    assert resp.headers == {'resp': 'header'}
+    assert resp.body is None
+
+
+def test_non_void_call_directly(server, ThriftTest):
+
+    @server.thrift.register(ThriftTest)
+    def testString(request):
+        return request.body.thing
+
+    resp = testString(Request(body=body(thing='howdy')))
+    assert resp == 'howdy'
+
+
+def test_non_void_with_headers_cal_directly(
+    server, service, ThriftTest, server_ttypes, client_ttypes
+):
+
+    # Given this test server:
+
+    @server.thrift.register(ThriftTest)
+    def testStruct(request):
+        assert request.headers == {'req': 'header'}
+        assert request.body.thing.string_thing == 'req string'
+
+        return Response(
+            server_ttypes.Xtruct(string_thing="resp string"),
+            headers={'resp': 'header'},
+        )
+
+    resp = testStruct(
+        Request(
+            headers={'req': 'header'},
+            body=body(thing=client_ttypes.Xtruct("req string")),
+        )
+    )
+
+    assert isinstance(resp, Response)
+    assert resp.headers == {'resp': 'header'}
+    assert resp.body == client_ttypes.Xtruct("resp string")
