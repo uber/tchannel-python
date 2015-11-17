@@ -1,7 +1,7 @@
 # Testing and coverage
 pytest<2.8.0
 pytest-cov
-pytest-timeout
+pytest-timeout<1.0.0
 pytest-tornado
 pytest-benchmark[histogram]==3.0.0rc1
 
