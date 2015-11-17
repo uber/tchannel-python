@@ -6,7 +6,7 @@ pytest-tornado
 pytest-benchmark[histogram]>=3,<4
 
 # Property based tests
-hypothesis-pytest==0.12.0
+hypothesis>=1,<2
 
 # Integration test utilities
 sh
