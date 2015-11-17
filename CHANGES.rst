@@ -12,6 +12,10 @@ Changes by Version
   endpoint handlers.
 - Add support for zipkin trace sampling.
 - Disable the retry for all zipkin trace submit.
+- **BREAKING** - Support unit testing endpoints by calling the handler
+  functions directly. This is enabled by changing ``tchannel.thrift.register``
+  to return the registered function unmodified. See Upgrade Guide for more
+  details.
 
 
 0.20.2 (2015-11-25)
