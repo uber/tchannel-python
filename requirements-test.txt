@@ -1,12 +1,12 @@
 # Testing and coverage
-pytest<2.8.0
+pytest>=2,<3
 pytest-cov
 pytest-timeout
 pytest-tornado
-pytest-benchmark[histogram]==3.0.0rc1
+pytest-benchmark[histogram]>=3,<4
 
 # Property based tests
-hypothesis-pytest==0.12.0
+hypothesis>=1.14,<2
 
 # Integration test utilities
 sh
