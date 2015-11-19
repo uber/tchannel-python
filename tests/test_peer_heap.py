@@ -35,11 +35,11 @@ def verify(ph, parent):
     child1 = 2*parent + 1
     child2 = 2*parent + 2
     if child2 < ph.size():
-        assert not ph.less(child1, parent)
+        assert ph.less(parent, child1)
         verify(ph, child1)
 
     if child2 < ph.size():
-        assert not ph.less(child2, parent)
+        assert ph.less(parent, child2)
         verify(ph, child2)
 
 
@@ -49,7 +49,7 @@ def test_push(peer_heap):
         peer_heap.push_peer(peer)
         verify(peer_heap, 0)
 
-    assert len(peer_heap) == n
+    assert peer_heap.size() == n
 
 
 def test_pop(peer_heap):
@@ -61,7 +61,7 @@ def test_pop(peer_heap):
     for i in range(n):
         assert i == peer_heap.pop_peer().score
 
-    assert len(peer_heap) == 0
+    assert peer_heap.size() == 0
 
 
 def test_update(peer_heap):
@@ -95,7 +95,7 @@ def test_heap_fuzz(peer_heap):
             p.score = random.randint(0, sys.maxint)
             peer_heap.update_peer(p)
 
-        if len(peer_heap.peers):
+        if peer_heap.size():
             assert smallest(peer_heap.peers) == peer_heap.peek_peer().score
 
         verify(peer_heap, 0)
