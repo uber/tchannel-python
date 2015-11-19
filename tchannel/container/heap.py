@@ -1,4 +1,8 @@
 from __future__ import absolute_import
+from __future__ import division
+
+import math
+import six
 
 
 class HeapOperation(object):
@@ -27,7 +31,7 @@ class HeapOperation(object):
 def init(h):
     # heapify
     n = len(h)
-    for i in range(n/2 - 1, -1):
+    for i in six.moves.range(int(math.floor(n/2)) - 1, -1):
         down(h, i, n)
 
 
@@ -58,29 +62,29 @@ def fix(h, i):
     up(h, i)
 
 
-def up(h, j):
-    while j > 0:
-        i = (j - 1) / 2
-        if i == j or not h.cmp(j, i):
+def up(h, child):
+    while child > 0:
+        parent = int(math.floor((child - 1) / 2))
+        if not h.cmp(child, parent):
             break
 
-        h.swap(i, j)
-        j = i
+        h.swap(parent, child)
+        child = parent
 
 
-def down(h, i, n):
+def down(h, parent, n):
     while True:
-        j1 = 2*i + 1
-        if j1 >= n or j1 < 0:
+        child1 = 2 * parent + 1
+        if child1 >= n or child1 < 0:
             break
 
-        j = j1
-        j2 = j1 + 1
-        if j2 < n and not h.cmp(j1, j2):
-            j = j2
+        min_child = child1
+        child2 = child1 + 1
+        if child2 < n and not h.cmp(child1, child2):
+            min_child = child2
 
-        if not h.cmp(j, i):
+        if not h.cmp(min_child, parent):
             break
 
-        h.swap(i, j)
-        i = j
+        h.swap(parent, min_child)
+        parent = min_child
