@@ -8,8 +8,11 @@ class PeerHeap(HeapOperation):
     def __init__(self):
         self.peers = []
 
-    def cmp(self, i, j):
-        return self.peers[i] < self.peers[j]
+    def size(self):
+        return len(self.peers)
+
+    def less(self, i, j):
+        return self.peers[i].score < self.peers[j].score
 
     def push(self, x):
         x.index = len(self.peers)

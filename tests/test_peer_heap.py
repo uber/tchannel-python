@@ -15,15 +15,10 @@ def peer_heap():
     return PeerHeap()
 
 
-def lt(s, o):
-    return s.score < o.score
-
-
 def mock_peer(score=None):
     peer = mock.MagicMock()
     peer.index = -1
     peer.score = score if score is not None else random.randint(0, sys.maxint)
-    peer.__lt__ = lt
     return peer
 
 
@@ -36,10 +31,23 @@ def mock_peers(n):
     return peers
 
 
+def verify(ph, parent):
+    child1 = 2*parent + 1
+    child2 = 2*parent + 2
+    if child2 < ph.size():
+        assert not ph.less(child1, parent)
+        verify(ph, child1)
+
+    if child2 < ph.size():
+        assert not ph.less(child2, parent)
+        verify(ph, child2)
+
+
 def test_push(peer_heap):
     peers = mock_peers(n)
     for peer in peers:
         peer_heap.push_peer(peer)
+        verify(peer_heap, 0)
 
     assert len(peer_heap) == n
 
@@ -48,6 +56,7 @@ def test_pop(peer_heap):
     peers = mock_peers(n)
     for peer in peers:
         peer_heap.push_peer(peer)
+        verify(peer_heap, 0)
 
     for i in range(n):
         assert i == peer_heap.pop_peer().score
@@ -59,10 +68,12 @@ def test_update(peer_heap):
     peers = mock_peers(n)
     for peer in peers:
         peer_heap.push_peer(peer)
+        verify(peer_heap, 0)
 
     p = peer_heap.peers[n-1]
     p.score = -1
     peer_heap.update_peer(p)
+    verify(peer_heap, 0)
 
     assert peer_heap.peek_peer().score == -1
     assert peer_heap.peek_peer() == p
@@ -86,6 +97,8 @@ def test_heap_fuzz(peer_heap):
 
         if len(peer_heap.peers):
             assert smallest(peer_heap.peers) == peer_heap.peek_peer().score
+
+        verify(peer_heap, 0)
 
 
 def smallest(peers):
