@@ -26,6 +26,7 @@ import logging
 import random
 from collections import deque
 from itertools import takewhile, dropwhile
+import sys
 from tornado import gen
 from tornado.iostream import StreamClosedError
 
@@ -63,6 +64,9 @@ class Peer(object):
         'host',
         'port',
 
+        'score',
+        'index',
+
         '_connections',
         '_connecting',
     )
@@ -95,6 +99,15 @@ class Peer(object):
         # the process of making an outgoing connection to the peer. This
         # helps avoid making multiple outgoing connections.
         self._connecting = None
+
+        # score is used to measure the performance of the peer.
+        # It will be used in the peer heap.
+        self.score = sys.maxint
+        # index records the position of the peer in the peer heap
+        self.index = -1
+
+    def __lt__(self, other):
+        return self.score < other.score
 
     def connect(self):
         """Get a connection to this peer.
@@ -535,11 +548,6 @@ class PeerGroup(object):
         # Notified when a reset is performed. This allows multiple coroutines
         # to block on the same reset.
         self._resetting = False
-
-        # We'll create a Condition here later. We want to avoid it right now
-        # because it has a side-effect of scheduling some dummy work on the
-        # ioloop, which prevents us from forking (if you're into that).
-        self._reset_condition = None
 
     def __str__(self):
         return "<PeerGroup peers=%s>" % str(self._peers)
