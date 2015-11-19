@@ -6,7 +6,12 @@ import six
 
 
 class HeapOperation(object):
-    def cmp(self, i, j):
+    """HeapOperation defines the interface on how to manipulate the heap.
+    Any extension of heap class should implement all the heap operations in
+    order to have complete heap functions.
+    """
+
+    def less(self, i, j):
         """Compare the items in position i and j of the heap.
 
         :param i: the first item's position of the heap list
@@ -27,28 +32,32 @@ class HeapOperation(object):
         """swap items between position i and j of the heap"""
         raise NotImplementedError()
 
+    def size(self):
+        """Return length of the heap."""
+        raise NotImplementedError()
+
 
 def init(h):
     # heapify
-    n = len(h)
+    n = h.size()
     for i in six.moves.range(int(math.floor(n/2)) - 1, -1):
         down(h, i, n)
 
 
 def push(h, x):
     h.push(x)
-    up(h, len(h)-1)
+    up(h, h.size()-1)
 
 
 def pop(h):
-    n = len(h) - 1
+    n = h.size() - 1
     h.swap(0, n)
     down(h, 0, n)
     return h.pop()
 
 
 def remove(h, i):
-    n = len(h) - 1
+    n = h.size() - 1
     if n != i:
         h.swap(i, n)
         down(h, i, n)
@@ -58,14 +67,14 @@ def remove(h, i):
 
 
 def fix(h, i):
-    down(h, i, len(h))
+    down(h, i, h.size())
     up(h, i)
 
 
 def up(h, child):
     while child > 0:
         parent = int(math.floor((child - 1) / 2))
-        if not h.cmp(child, parent):
+        if not h.less(child, parent):
             break
 
         h.swap(parent, child)
@@ -80,10 +89,10 @@ def down(h, parent, n):
 
         min_child = child1
         child2 = child1 + 1
-        if child2 < n and not h.cmp(child1, child2):
+        if child2 < n and not h.less(child1, child2):
             min_child = child2
 
-        if not h.cmp(min_child, parent):
+        if not h.less(min_child, parent):
             break
 
         h.swap(parent, min_child)

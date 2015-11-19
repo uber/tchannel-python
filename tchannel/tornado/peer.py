@@ -106,9 +106,6 @@ class Peer(object):
         # index records the position of the peer in the peer heap
         self.index = -1
 
-    def __lt__(self, other):
-        return self.score < other.score
-
     def connect(self):
         """Get a connection to this peer.
 
