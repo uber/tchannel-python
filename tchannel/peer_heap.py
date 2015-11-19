@@ -25,9 +25,6 @@ class PeerHeap(HeapOperation):
         del self.peers[n - 1]
         return item
 
-    def __len__(self):
-        return len(self.peers)
-
     def swap(self, i, j):
         self.peers[i], self.peers[j] = self.peers[j], self.peers[i]
         self.peers[i].index = i
