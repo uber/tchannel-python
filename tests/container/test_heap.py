@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import random
 import sys
 import pytest
+import six
 from tchannel.container import heap
 
 from tchannel.container.heap import HeapOperation
@@ -40,7 +41,7 @@ def int_heap():
 
 def create_values(n):
     values = []
-    for i in range(n):
+    for i in six.moves.range(n):
         values.append(i)
 
     random.shuffle(values)
@@ -80,16 +81,28 @@ def test_pop(int_heap):
         heap.push(int_heap, value)
         verify(int_heap, 0)
 
-    for i in range(n):
+    for i in six.moves.range(n):
         assert i == heap.pop(int_heap)
 
     assert int_heap.size() == 0
 
 
+def test_remove(int_heap):
+    values = create_values(n)
+    for value in values:
+        heap.push(int_heap, value)
+        verify(int_heap, 0)
+
+    # random remove item from the heap
+    for i in six.moves.range(n - 1, -1, -1):
+        heap.remove(int_heap, random.randint(0, i))
+        verify(int_heap, 0)
+
+
 @pytest.mark.heapfuzz
 @pytest.mark.skipif(True, reason='stress test for the value heap operations')
 def test_heap_fuzz(int_heap):
-    for i in range(random.randint(1, 100000)):
+    for i in six.moves.range(random.randint(1, 100000)):
         ops = random.randint(0, 1)
         if ops == 0:  # push
             heap.push(int_heap, random.randint(0, sys.maxint))
