@@ -11,7 +11,7 @@ class PeerHeap(HeapOperation):
     def size(self):
         return len(self.peers)
 
-    def less(self, i, j):
+    def lt(self, i, j):
         return self.peers[i].score < self.peers[j].score
 
     def push(self, x):

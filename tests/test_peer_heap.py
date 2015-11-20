@@ -35,11 +35,11 @@ def verify(ph, parent):
     child1 = 2*parent + 1
     child2 = 2*parent + 2
     if child2 < ph.size():
-        assert ph.less(parent, child1)
+        assert ph.lt(parent, child1)
         verify(ph, child1)
 
     if child2 < ph.size():
-        assert ph.less(parent, child2)
+        assert ph.lt(parent, child2)
         verify(ph, child2)
 
 
