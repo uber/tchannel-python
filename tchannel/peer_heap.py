@@ -5,6 +5,10 @@ from .container.heap import HeapOperation
 
 
 class PeerHeap(HeapOperation):
+    """PeerHeap maintains a min-heap of peers based on their scores."""
+
+    __slots__ = 'peers'
+
     def __init__(self):
         self.peers = []
 
@@ -19,10 +23,7 @@ class PeerHeap(HeapOperation):
         self.peers.append(x)
 
     def pop(self):
-        n = len(self.peers)
-        item = self.peers[n-1]
-        item.index = -1
-        del self.peers[n - 1]
+        item = self.peers.pop()
         return item
 
     def swap(self, i, j):
@@ -41,7 +42,7 @@ class PeerHeap(HeapOperation):
             return the top peer and remove it from the heap if heap is not
             empty.Otherwise return None.
         """
-        if len(self.peers) == 0:
+        if not self.peers:
             return None
         return heap.pop(self)
 
@@ -55,7 +56,7 @@ class PeerHeap(HeapOperation):
             return the top peer if heap is not empty. Otherwise return None.
         """
 
-        if len(self.peers) == 0:
+        if not self.peers:
             return None
 
         return self.peers[0]

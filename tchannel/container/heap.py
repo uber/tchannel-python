@@ -38,6 +38,7 @@ class HeapOperation(object):
 
 
 def init(h):
+    """Initialize existing object into the heap."""
     # heapify
     n = h.size()
     for i in six.moves.range(int(math.floor(n/2)) - 1, -1, -1):
@@ -45,11 +46,13 @@ def init(h):
 
 
 def push(h, x):
+    """Push a new value into heap."""
     h.push(x)
     up(h, h.size()-1)
 
 
 def pop(h):
+    """Pop the heap value from the heap."""
     n = h.size() - 1
     h.swap(0, n)
     down(h, 0, n)
@@ -57,6 +60,7 @@ def pop(h):
 
 
 def remove(h, i):
+    """Remove the item at position i of the heap."""
     n = h.size() - 1
     if n != i:
         h.swap(i, n)
@@ -67,6 +71,7 @@ def remove(h, i):
 
 
 def fix(h, i):
+    """Rearrange the heap after the item at position i got updated."""
     down(h, i, h.size())
     up(h, i)
 
