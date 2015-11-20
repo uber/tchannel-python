@@ -14,7 +14,7 @@ class IntHeap(HeapOperation):
     def size(self):
         return len(self.values)
 
-    def less(self, i, j):
+    def lt(self, i, j):
         return self.values[i] < self.values[j]
 
     def push(self, x):
@@ -51,11 +51,11 @@ def verify(ph, parent):
     child1 = 2 * parent + 1
     child2 = 2 * parent + 2
     if child2 < ph.size():
-        assert ph.less(parent, child1)
+        assert ph.lt(parent, child1)
         verify(ph, child1)
 
     if child2 < ph.size():
-        assert ph.less(parent, child2)
+        assert ph.lt(parent, child2)
         verify(ph, child2)
 
 

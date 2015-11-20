@@ -11,7 +11,7 @@ class HeapOperation(object):
     order to have complete heap functions.
     """
 
-    def less(self, i, j):
+    def lt(self, i, j):
         """Compare the items in position i and j of the heap.
 
         :param i: the first item's position of the heap list
@@ -74,7 +74,7 @@ def fix(h, i):
 def up(h, child):
     while child > 0:
         parent = int(math.floor((child - 1) / 2))
-        if not h.less(child, parent):
+        if not h.lt(child, parent):
             break
 
         h.swap(parent, child)
@@ -89,10 +89,10 @@ def down(h, parent, n):
 
         min_child = child1
         child2 = child1 + 1
-        if child2 < n and not h.less(child1, child2):
+        if child2 < n and not h.lt(child1, child2):
             min_child = child2
 
-        if not h.less(min_child, parent):
+        if not h.lt(min_child, parent):
             break
 
         h.swap(parent, min_child)
