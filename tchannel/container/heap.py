@@ -41,7 +41,6 @@ def init(h):
     # heapify
     n = h.size()
     for i in six.moves.range(int(math.floor(n/2)) - 1, -1, -1):
-        print i
         down(h, i, n)
 
 
