@@ -226,10 +226,8 @@ class RequestDispatcher(object):
             e.id = request.id
             connection.send_error(e)
         except Exception as e:
-            log.exception("Unexpected Error: '%s'" % e.message)
-
             error = UnexpectedError(
-                description='An unexpected error occurred from the handler',
+                description="Unexpected Error: '%s'" % e.message,
                 id=request.id,
                 tracing=request.tracing,
             )
@@ -238,6 +236,7 @@ class RequestDispatcher(object):
 
             connection.send_error(error)
             tchannel.event_emitter.fire(EventType.on_exception, request, error)
+            log.exception(error.description)
 
         raise gen.Return(response)
 
