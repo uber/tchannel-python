@@ -4,7 +4,9 @@ Changes by Version
 0.20.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Lower the log level for Hyperbahn advertisement failures that can be retried.
+- Include the full stack trace when Hyperbahn advertisement failures are logged.
+- Include the error message for unexpected server side failures in the error returned to the client.
 
 
 0.20.1 (2015-11-12)
