@@ -68,10 +68,10 @@ def _advertise(tchannel, service):
             ttl=2.0,
         )
     except Exception as e:  # Big scope to keep it alive.
-        log.warn('Failed to register with Hyperbahn: %s', e)
+        log.info('Failed to register with Hyperbahn: %s', e, exc_info=True)
     else:
         if response.code != StatusCode.ok:
-            log.warn('Failed to register with Hyperbahn: %s', response)
+            log.info('Failed to register with Hyperbahn: %s', response)
         else:
             log.info('Successfully registered with Hyperbahn')
 
@@ -86,7 +86,9 @@ def _advertise_with_backoff(tchannel, service, timeout=None):
 
     while True:
         if timeout and time.time() - start > timeout:
-            raise TimeoutError("Failed to register with Hyperbahn.")
+            raise TimeoutError(
+                "Failed to register with Hyperbahn due to timeout.",
+            )
 
         response = yield _advertise(tchannel, service)
 
