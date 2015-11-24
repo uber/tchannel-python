@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='tchannel',
-    version='0.20.2.dev0',
+    version='0.20.3.dev0',
     author=', '.join([
         'Abhinav Gupta',
         'Aiden Scandella',
