@@ -190,7 +190,7 @@ our endpoints will manipulate:
         value = values.get(key)
 
         if value is None:
-            raise service.KeyValue.NotFoundError(key)
+            raise service.NotFoundError(key)
 
         return value
 
