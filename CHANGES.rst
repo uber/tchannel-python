@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.20.2 (unreleased)
+0.20.2 (2015-11-25)
 -------------------
 
 - Lower the log level for Hyperbahn advertisement failures that can be retried.
