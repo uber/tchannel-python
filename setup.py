@@ -1,9 +1,24 @@
 from setuptools import find_packages, setup
 
+import re
+
+version = None
+with open('tchannel/__init__.py', 'r') as f:
+    for line in f:
+        m = re.match(r'^__version__\s*=\s*(["\'])([^"\']+)\1', line)
+        if m:
+            version = m.group(2)
+            break
+
+if not version:
+    raise Exception(
+        'Could not determine version number from tchannel/__init__.py'
+    )
+
 
 setup(
     name='tchannel',
-    version='0.20.2.dev0',
+    version=version,
     author=', '.join([
         'Abhinav Gupta',
         'Aiden Scandella',
