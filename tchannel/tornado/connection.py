@@ -141,6 +141,10 @@ class TornadoConnection(object):
 
         connection.set_close_callback(self._on_close)
 
+    @property
+    def num_out_pendings(self):
+        return len(self._out_pending_res) + len(self._out_pending_req)
+
     def set_close_callback(self, cb):
         """Specify a function to be called when this connection is closed.
 

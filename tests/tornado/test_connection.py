@@ -28,6 +28,7 @@ import tornado.testing
 from tchannel.messages import Types
 from tchannel import TChannel
 from tchannel.tornado.connection import StreamConnection
+from tchannel.tornado.util import num_out_pendings
 
 
 def dummy_headers():
@@ -81,3 +82,55 @@ def test_close_callback_is_called():
     conn.close()
 
     assert (yield cb_future)
+
+
+@pytest.mark.gen_test
+def test_pending_outgoing():
+    server = TChannel('server')
+    server.listen()
+
+    @server.raw.register
+    def hello(request):
+        return 'hi'
+
+    client = TChannel('client')
+    yield client.raw(
+        hostport=server.hostport,
+        body='work',
+        endpoint='hello',
+        service='server'
+    )
+
+    assert num_out_pendings(
+        client._dep_tchannel.peers.get(server.hostport).connections
+    ) == 0
+
+    assert num_out_pendings(
+        server._dep_tchannel.peers.peers[0].connections
+    ) == 0
+
+
+@pytest.mark.gen_test
+def test_pending_outgoing_mock():
+    server = TChannel('server')
+    server.listen()
+
+    @server.raw.register
+    def hello(request):
+        return 'hi'
+
+    client = TChannel('client')
+    yield client.raw(
+        hostport=server.hostport,
+        body='work',
+        endpoint='hello',
+        service='server'
+    )
+
+    assert num_out_pendings(
+        client._dep_tchannel.peers.get(server.hostport).connections
+    ) == 0
+
+    assert num_out_pendings(
+        server._dep_tchannel.peers.peers[0].connections
+    ) == 0
