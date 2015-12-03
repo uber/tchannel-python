@@ -108,29 +108,3 @@ def test_pending_outgoing():
     assert num_out_pendings(
         server._dep_tchannel.peers.peers[0].connections
     ) == 0
-
-
-@pytest.mark.gen_test
-def test_pending_outgoing_mock():
-    server = TChannel('server')
-    server.listen()
-
-    @server.raw.register
-    def hello(request):
-        return 'hi'
-
-    client = TChannel('client')
-    yield client.raw(
-        hostport=server.hostport,
-        body='work',
-        endpoint='hello',
-        service='server'
-    )
-
-    assert num_out_pendings(
-        client._dep_tchannel.peers.get(server.hostport).connections
-    ) == 0
-
-    assert num_out_pendings(
-        server._dep_tchannel.peers.peers[0].connections
-    ) == 0
