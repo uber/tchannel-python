@@ -143,7 +143,7 @@ class TornadoConnection(object):
 
     @property
     def total_outbound_pendings(self):
-        """Return total amount of outbounding pending req/res."""
+        """Returns the total number of pending outbound requests and responses."""
         return (len(self._outbound_pending_res) +
                 len(self._outbound_pending_req))
 
