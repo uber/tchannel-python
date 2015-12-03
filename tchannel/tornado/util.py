@@ -90,12 +90,3 @@ def chain(iterable, func):
     go()
 
     return all_done_future
-
-
-def num_out_pendings(conns):
-    """Return the total number of out pending req/res among connections"""
-    num = 0
-    for con in conns:
-        num += con.num_out_pendings
-
-    return num
