@@ -31,6 +31,7 @@ from tchannel import TChannel
 from tchannel import messages
 from tchannel.errors import TimeoutError, ReadError
 from tchannel.tornado import connection
+from tchannel.tornado.message_factory import MessageFactory
 
 
 def dummy_headers():
@@ -147,6 +148,52 @@ def test_other_error_on_read(tornado_pair):
 
     assert mock_log.error.call_count == 1
     assert mock_log.info.call_count == 0
+
+
+@pytest.mark.gen_test
+def test_pending_outgoing():
+    server = TChannel('server')
+    server.listen()
+
+    @server.raw.register
+    def hello(request):
+        assert server._dep_tchannel.peers.peers[0].total_outbound_pendings == 1
+        return 'hi'
+
+    client = TChannel('client')
+    yield client.raw(
+        hostport=server.hostport,
+        body='work',
+        endpoint='hello',
+        service='server'
+    )
+
+    client_peer = client._dep_tchannel.peers.peers[0]
+    server_peer = server._dep_tchannel.peers.peers[0]
+    assert client_peer.total_outbound_pendings == 0
+    assert server_peer.total_outbound_pendings == 0
+
+    class FakeMessageFactory(MessageFactory):
+        def build_raw_message(self, context, args, is_completed=True):
+            assert client_peer.total_outbound_pendings == 1
+            return super(FakeMessageFactory, self).build_raw_message(
+                context, args, is_completed,
+            )
+
+    client_conn = client_peer.connections[0]
+    client_conn.request_message_factory = FakeMessageFactory(
+        client_conn.remote_host,
+        client_conn.remote_host_port,
+    )
+    yield client.raw(
+        hostport=server.hostport,
+        body='work',
+        endpoint='hello',
+        service='server'
+    )
+
+    assert client_peer.total_outbound_pendings == 0
+    assert server_peer.total_outbound_pendings == 0
 
 
 @pytest.mark.gen_test
