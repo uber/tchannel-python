@@ -82,6 +82,10 @@ class PeerHeap(HeapOperation):
         return self.peers[0]
 
     def remove_peer(self, peer):
-        """Remove the peer from the heap."""
-        if peer.index < self.size():
-            heap.remove(self, peer.index)
+        """Remove the peer from the heap.
+        If the peer's index out of range[0, peer'size), the remove function
+        will do nothing.
+        """
+        if 0 <= peer.index < self.size():
+            p = heap.remove(self, peer.index)
+            assert p == peer
