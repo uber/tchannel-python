@@ -85,4 +85,3 @@ class PeerHeap(HeapOperation):
         """Remove the peer from the heap."""
         if peer.index < self.size():
             heap.remove(self, peer.index)
-
