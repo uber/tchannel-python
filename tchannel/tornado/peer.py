@@ -191,6 +191,15 @@ class Peer(object):
         )
 
     @property
+    def total_outbound_pendings(self):
+        """Return the total number of out pending req/res among connections"""
+        num = 0
+        for con in self.connections:
+            num += con.total_outbound_pendings
+
+        return num
+
+    @property
     def is_ephemeral(self):
         """Whether this Peer is ephemeral."""
         return self.host == '0.0.0.0' and self.port == 0
