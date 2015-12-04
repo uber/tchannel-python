@@ -155,8 +155,10 @@ def test_remove_mismatch(peer_heap, peers):
     # create a fake peer with duplicated index.
     fake_peer = mock_peer()
     fake_peer.index = 1
-    with pytest.raises(AssertionError):
-        assert fake_peer is peer_heap.remove_peer(fake_peer)
+    with pytest.raises(AssertionError) as e:
+        peer_heap.remove_peer(fake_peer)
+
+    assert e.value.message == 'peer is not in the heap'
 
 
 @pytest.mark.heapfuzz
