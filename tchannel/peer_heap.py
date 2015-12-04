@@ -88,6 +88,7 @@ class PeerHeap(HeapOperation):
         Return: removed peer if peer exists, Otherwise return None.
         """
         if 0 <= peer.index < self.size():
+            assert (peer is self.peers[peer.index],
+                    "peer doesn't exist in the heap")
             p = heap.remove(self, peer.index)
-            assert p is peer
             return p
