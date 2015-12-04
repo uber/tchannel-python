@@ -83,12 +83,13 @@ class PeerHeap(HeapOperation):
 
     def remove_peer(self, peer):
         """Remove the peer from the heap.
-        Note: Unknown peers are ignored.
 
-        Return: removed peer if peer exists, Otherwise return None.
+        Return: removed peer if peer exists. If peer's index is out of range,
+        raise IndexError.
         """
-        if 0 <= peer.index < self.size():
-            assert (peer is self.peers[peer.index],
-                    "peer doesn't exist in the heap")
-            p = heap.remove(self, peer.index)
-            return p
+        if peer.index < 0 or peer.index >= self.size():
+            raise IndexError('Peer index is out of range')
+
+        assert peer is self.peers[peer.index], "peer is not in the heap"
+
+        return heap.remove(self, peer.index)

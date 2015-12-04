@@ -135,22 +135,16 @@ def test_remove_duplicate(peer_heap, peers):
     for _ in six.moves.range(n):
         p = peer_heap.peers[random.randint(0, peer_heap.size() - 1)]
         assert p is peer_heap.remove_peer(p)
-        assert peer_heap.remove_peer(p) is None
+        with pytest.raises(IndexError):
+            peer_heap.remove_peer(p)
         verify(peer_heap, 0)
         verify_peer_not_in_heap(peer_heap, p)
 
 
 def test_remove_from_empty_heap():
     heap = PeerHeap()
-    heap.remove_peer(mock_peer())
-
-
-def test_remove_none_exist(peer_heap, peers):
-    for peer in peers:
-        peer_heap.push_peer(peer)
-        verify(peer_heap, 0)
-
-    peer_heap.remove_peer(peers[0])
+    with pytest.raises(IndexError):
+        heap.remove_peer(mock_peer())
 
 
 def test_remove_mismatch(peer_heap, peers):
