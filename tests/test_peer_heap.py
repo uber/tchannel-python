@@ -115,8 +115,9 @@ def test_remove(peer_heap, peers):
     n = len(peers)
     for _ in six.moves.range(n):
         p = peer_heap.peers[random.randint(0, peer_heap.size() - 1)]
-        peer_heap.remove_peer(p)
+        assert p is peer_heap.remove_peer(p)
         verify(peer_heap, 0)
+        verify_peer_not_in_heap(peer_heap, p)
 
 
 def verify_peer_not_in_heap(peer_heap, p):
@@ -133,8 +134,8 @@ def test_remove_duplicate(peer_heap, peers):
 
     for _ in six.moves.range(n):
         p = peer_heap.peers[random.randint(0, peer_heap.size() - 1)]
-        peer_heap.remove_peer(p)
-        peer_heap.remove_peer(p)
+        assert p is peer_heap.remove_peer(p)
+        assert peer_heap.remove_peer(p) is None
         verify(peer_heap, 0)
         verify_peer_not_in_heap(peer_heap, p)
 
@@ -161,7 +162,7 @@ def test_remove_mismatch(peer_heap, peers):
     fake_peer = mock_peer()
     fake_peer.index = 1
     with pytest.raises(AssertionError):
-        peer_heap.remove_peer(fake_peer)
+        assert fake_peer is peer_heap.remove_peer(fake_peer)
 
 
 @pytest.mark.heapfuzz
