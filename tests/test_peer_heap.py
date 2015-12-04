@@ -36,7 +36,7 @@ def peer_heap():
 
 @pytest.fixture(params=['unique', 'duplicate', 'reverse'])
 def peers(request):
-    n = 1000
+    n = 100
     v = []
 
     if request.param == "unique":
@@ -105,6 +105,18 @@ def test_update(peer_heap, peers):
     verify(peer_heap, 0)
     assert peer_heap.peek_peer().score == -1
     assert peer_heap.peek_peer() == p
+
+
+def test_remove(peer_heap, peers):
+    for peer in peers:
+        peer_heap.push_peer(peer)
+        verify(peer_heap, 0)
+
+    n = len(peers)
+    for _ in six.moves.range(n):
+        p = peer_heap.peers[random.randint(0, peer_heap.size() - 1)]
+        peer_heap.remove_peer(p)
+        verify(peer_heap, 0)
 
 
 @pytest.mark.heapfuzz
