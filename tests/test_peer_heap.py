@@ -119,6 +119,11 @@ def test_remove(peer_heap, peers):
         verify(peer_heap, 0)
 
 
+def verify_peer_not_in_heap(peer_heap, p):
+    for peer in peer_heap.peers:
+        assert peer is not p
+
+
 def test_remove_duplicate(peer_heap, peers):
     for peer in peers:
         peer_heap.push_peer(peer)
@@ -131,6 +136,7 @@ def test_remove_duplicate(peer_heap, peers):
         peer_heap.remove_peer(p)
         peer_heap.remove_peer(p)
         verify(peer_heap, 0)
+        verify_peer_not_in_heap(peer_heap, p)
 
 
 def test_remove_from_empty_heap():
