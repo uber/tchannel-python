@@ -36,7 +36,7 @@ def peer_heap():
 
 @pytest.fixture(params=['unique', 'duplicate', 'reverse'])
 def peers(request):
-    n = 1000
+    n = 100
     v = []
 
     if request.param == "unique":
@@ -105,6 +105,60 @@ def test_update(peer_heap, peers):
     verify(peer_heap, 0)
     assert peer_heap.peek_peer().score == -1
     assert peer_heap.peek_peer() == p
+
+
+def test_remove(peer_heap, peers):
+    for peer in peers:
+        peer_heap.push_peer(peer)
+        verify(peer_heap, 0)
+
+    n = len(peers)
+    for _ in six.moves.range(n):
+        p = peer_heap.peers[random.randint(0, peer_heap.size() - 1)]
+        assert p is peer_heap.remove_peer(p)
+        verify(peer_heap, 0)
+        verify_peer_not_in_heap(peer_heap, p)
+
+
+def verify_peer_not_in_heap(peer_heap, p):
+    for peer in peer_heap.peers:
+        assert peer is not p
+
+
+def test_remove_duplicate(peer_heap, peers):
+    for peer in peers:
+        peer_heap.push_peer(peer)
+        verify(peer_heap, 0)
+
+    n = random.randint(0, len(peers))
+
+    for _ in six.moves.range(n):
+        p = peer_heap.peers[random.randint(0, peer_heap.size() - 1)]
+        assert p is peer_heap.remove_peer(p)
+        with pytest.raises(IndexError):
+            peer_heap.remove_peer(p)
+        verify(peer_heap, 0)
+        verify_peer_not_in_heap(peer_heap, p)
+
+
+def test_remove_from_empty_heap():
+    heap = PeerHeap()
+    with pytest.raises(IndexError):
+        heap.remove_peer(mock_peer())
+
+
+def test_remove_mismatch(peer_heap, peers):
+    for peer in peers:
+        peer_heap.push_peer(peer)
+        verify(peer_heap, 0)
+
+    # create a fake peer with duplicated index.
+    fake_peer = mock_peer()
+    fake_peer.index = 1
+    with pytest.raises(AssertionError) as e:
+        peer_heap.remove_peer(fake_peer)
+
+    assert e.value.message == 'peer is not in the heap'
 
 
 @pytest.mark.heapfuzz
