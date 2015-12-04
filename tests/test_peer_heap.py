@@ -119,6 +119,33 @@ def test_remove(peer_heap, peers):
         verify(peer_heap, 0)
 
 
+def test_remove_duplicate(peer_heap, peers):
+    for peer in peers:
+        peer_heap.push_peer(peer)
+        verify(peer_heap, 0)
+
+    n = random.randint(0, len(peers))
+
+    for _ in six.moves.range(n):
+        p = peer_heap.peers[random.randint(0, peer_heap.size() - 1)]
+        peer_heap.remove_peer(p)
+        peer_heap.remove_peer(p)
+        verify(peer_heap, 0)
+
+
+def test_remove_from_empty_heap():
+    heap = PeerHeap()
+    heap.remove_peer(mock_peer())
+
+
+def test_remove_none_exist(peer_heap, peers):
+    for peer in peers:
+        peer_heap.push_peer(peer)
+        verify(peer_heap, 0)
+
+    peer_heap.remove_peer(peers[0])
+
+
 @pytest.mark.heapfuzz
 @pytest.mark.skipif(True, reason='stress test for the peer heap operations')
 def test_heap_fuzz(peer_heap):
