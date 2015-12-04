@@ -146,6 +146,18 @@ def test_remove_none_exist(peer_heap, peers):
     peer_heap.remove_peer(peers[0])
 
 
+def test_remove_mismatch(peer_heap, peers):
+    for peer in peers:
+        peer_heap.push_peer(peer)
+        verify(peer_heap, 0)
+
+    # create a fake peer with duplicated index.
+    fake_peer = mock_peer()
+    fake_peer.index = 1
+    with pytest.raises(AssertionError):
+        peer_heap.remove_peer(fake_peer)
+
+
 @pytest.mark.heapfuzz
 @pytest.mark.skipif(True, reason='stress test for the peer heap operations')
 def test_heap_fuzz(peer_heap):
