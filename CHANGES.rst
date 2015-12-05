@@ -8,8 +8,8 @@ Changes by Version
 - ``tchannel.TChannel.FALLBACK`` may now be used to register fallback endpoints
   which are called for requests with unrecognized endpoints. For more
   information, see :ref:`fallback-endpoint`
-- Expose ``timeout``, ``service``, and ``trace`` attributes on ``Request``
-  objects inside endpoint handlers.
+- Expose ``timeout`` and ``service`` attributes on ``Request`` objects inside
+  endpoint handlers.
 
 
 0.20.2 (2015-11-25)

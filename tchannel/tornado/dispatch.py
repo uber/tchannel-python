@@ -189,7 +189,6 @@ class RequestDispatcher(object):
                     endpoint=request.endpoint,
                     service=request.service,
                     timeout=request.ttl,
-                    trace=request.tracing,
                 )
 
                 # Not safe to have coroutine yields statement within

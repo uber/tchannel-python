@@ -54,9 +54,6 @@ class Request(object):
     :ivar timeout:
         Amount of time (in seconds) within which this request is expected to
         finish.
-
-    :ivar trace:
-        Zipkin tracing information for this request.
     """
 
     # TODO move over other props from tchannel.tornado.request
@@ -68,7 +65,6 @@ class Request(object):
         'transport',
         'endpoint',
         'timeout',
-        'trace',
     )
 
     def __init__(
@@ -79,7 +75,6 @@ class Request(object):
         endpoint=None,
         service=None,
         timeout=None,
-        trace=None,
     ):
         self.body = body
         self.headers = headers
@@ -87,7 +82,6 @@ class Request(object):
         self.endpoint = endpoint
         self.service = service
         self.timeout = timeout
-        self.trace = trace
 
 
 class TransportHeaders(object):
