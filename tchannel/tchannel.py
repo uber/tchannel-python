@@ -237,6 +237,10 @@ class TChannel(object):
         return self._dep_tchannel.hostport
 
     def register(self, scheme, endpoint=None, handler=None, **kwargs):
+        if scheme is self.FALLBACK:
+            # scheme is not required for fallback endpoints
+            endpoint = scheme
+            scheme = None
 
         def decorator(fn):
 

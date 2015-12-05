@@ -8,8 +8,8 @@ Can I register an endpoint that accepts all requests?
 
 The fallback endpoint is the endpoint called when an unrecognized request is
 received. By default, the fallback endpoint simply returns a
-``BadRequestError`` to the caller. This behavior may be overriden by
-registering a raw endpoint with ``TChannel.FALLBACK``.
+``BadRequestError`` to the caller. This behavior may be changed by
+registering an endpoint with ``TChannel.FALLBACK``.
 
 .. code-block:: python
 
@@ -17,7 +17,7 @@ registering a raw endpoint with ``TChannel.FALLBACK``.
 
     server = TChannel(name='myservice')
 
-    @server.register('raw', TChannel.FALLBACK)
+    @server.register(TChannel.FALLBACK)
     def handler(request):
         # ...
 

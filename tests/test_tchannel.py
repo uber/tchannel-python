@@ -436,7 +436,7 @@ def test_forwarding(tmpdir):
         name='proxy-client', known_peers=[real_server.hostport],
     )
 
-    @proxy_server.register('raw', TChannel.FALLBACK)
+    @proxy_server.register(TChannel.FALLBACK)
     @gen.coroutine
     def handler(request):
         response = yield proxy_server_client.call(
