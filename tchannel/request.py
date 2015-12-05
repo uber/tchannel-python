@@ -49,7 +49,10 @@ class Request(object):
         application that created this request.
 
     :ivar service:
-        Name of the service being called.
+        Name of the service being called. Inside request handlers, this is
+        usually the name of "this" service itself. However, for services that
+        simply forward requests to other services, this is the name of the
+        target service.
 
     :ivar timeout:
         Amount of time (in seconds) within which this request is expected to
