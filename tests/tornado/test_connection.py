@@ -29,6 +29,7 @@ from tchannel.messages import Types
 from tchannel import TChannel
 from tchannel.tornado.connection import StreamConnection
 from tchannel.tornado.message_factory import MessageFactory
+from tchannel.tornado.peer import Peer
 
 
 def dummy_headers():
@@ -128,3 +129,52 @@ def test_pending_outgoing():
 
     assert client_peer.total_outbound_pendings == 0
     assert server_peer.total_outbound_pendings == 0
+
+
+@pytest.mark.gen_test
+def test_client_connection_change_callback():
+    server = TChannel('server')
+    server.listen()
+
+    @server.raw.register
+    def hello(request):
+        return 'hi'
+
+    client = TChannel('client')
+    count = [0]
+
+    def test_cb(peer):
+        count[0] += 1
+
+    client._dep_tchannel.peers.get(
+        server.hostport)._on_conn_change_cb = test_cb
+    yield client.raw(
+        hostport=server.hostport,
+        body='work',
+        endpoint='hello',
+        service='server'
+    )
+
+    # 1: connection built, 1: sending request, 1: finish sending request
+    assert count[0] == 3
+
+
+@pytest.mark.gen_test
+def test_both_connection_change_callback():
+    client = TChannel('client')
+
+    with mock.patch.object(Peer, '_on_conn_change') as mock_conn_change:
+        server = TChannel('server')
+        server.listen()
+
+        @server.raw.register
+        def hello(request):
+            return 'hi'
+
+        yield client.raw(
+            hostport=server.hostport,
+            body='work',
+            endpoint='hello',
+            service='server'
+        )
+        assert mock_conn_change.call_count == 6

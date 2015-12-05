@@ -430,7 +430,7 @@ class TChannelServer(tornado.tcpserver.TCPServer):
         self.tchannel.peers.get(
             "%s:%s" % (conn.remote_host,
                        conn.remote_host_port)
-        ).register_incoming(conn)
+        ).register_incoming_conn(conn)
 
         yield conn.serve(handler=self._handle)
 

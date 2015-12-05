@@ -20,6 +20,8 @@
 
 from __future__ import absolute_import
 
+import random
+
 from .container import heap
 from .container.heap import HeapOperation
 
@@ -31,11 +33,26 @@ class PeerHeap(HeapOperation):
 
     def __init__(self):
         self.peers = []
+        self.order = 0
 
     def size(self):
         return len(self.peers)
 
     def lt(self, i, j):
+        """Compare the priority of two peers.
+
+        Primary comparator will be the score of each peer. If the score is
+        same then use FIFO policy. The ``order`` attribute of the peer tracks
+        the heap push order of the peer. This help solve the imbalance
+        problem caused by randomization when deal with same score situation.
+
+        :param i: ith peer
+        :param j: jth peer
+        :return: True or False
+        """
+        if self.peers[i].score == self.peers[j].score:
+            return self.peers[i].order < self.peers[i].order
+
         return self.peers[i].score < self.peers[j].score
 
     def push(self, x):
@@ -67,7 +84,28 @@ class PeerHeap(HeapOperation):
         return heap.pop(self)
 
     def push_peer(self, peer):
-        """Push a new peer into the heap"""
+        """Push a new peer into the heap
+
+        Order is equal to peer heap's current order plus random value within
+        the current peer size. It solves two problems when peers are in
+        same score:
+
+        1. 'dead peer' caused by random problem. If use fully random value, and
+        one peer is very unlock to get the worst value, as the peer selection
+        keeps working, that peer may not be selected anymore.
+
+        2. deterministic problem. If we just use push order, then all the
+        tchannel instance will follow the same pattern. If they all get the
+        same list of hyperbahn nodes, the peers that they pick to talk to
+        hyperbahn will be same. In that situation, it will cause the hyperbahn
+        node received very imbalance requests from tchannel clients.
+
+        All in all, it will keep certain level randomization but at the same
+        time make the peer score not deterministic among different tchannel
+        instance. For
+        """
+        self.order += 1
+        peer.order = self.order + random.randint(0, self.size())
         heap.push(self, peer)
 
     def peek_peer(self):

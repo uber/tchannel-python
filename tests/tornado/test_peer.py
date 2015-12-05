@@ -204,5 +204,5 @@ def test_peer_incoming_connections_are_preferred(request):
 
     assert (yield peer.connect()) is outgoing
 
-    peer.register_incoming(incoming)
+    peer.register_incoming_conn(incoming)
     assert (yield peer.connect()) is incoming
