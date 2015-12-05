@@ -20,6 +20,8 @@
 
 from __future__ import absolute_import
 
+import sys
+
 
 class ScoreCalculator(object):
     """ScoreCalculator provides interface to calculate the score of a peer."""
@@ -30,3 +32,23 @@ class ScoreCalculator(object):
 class ZeroScoreCalculator(ScoreCalculator):
     def get_score(self, peer):
         return 0
+
+
+class PreferIncomingCalculator(ScoreCalculator):
+    def get_score(self, peer):
+        """Calculate the peer score based on connections.
+
+        If the peer has no incoming connections, it will have largest score.
+        In our peer selection strategy, the largest number has least priority
+        in the heap.
+
+        If the peer has incoming connections, we will return number of outbound
+        pending requests and responses.
+
+        :param peer: instance of `tchannel.tornado.peer.Peer`
+        :return: score of the peer
+        """
+        if len(peer.incoming_connections) == 0:
+            return sys.maxint
+
+        return peer.total_outbound_pendings

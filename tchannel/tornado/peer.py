@@ -23,10 +23,10 @@ from __future__ import (
 )
 
 import logging
-import random
 from collections import deque
 from itertools import takewhile, dropwhile
 import sys
+
 from tornado import gen
 from tornado.iostream import StreamClosedError
 
@@ -34,7 +34,6 @@ from ..schemes import DEFAULT as DEFAULT_SCHEME
 from ..retry import (
     DEFAULT as DEFAULT_RETRY, DEFAULT_RETRY_LIMIT
 )
-
 from ..context import get_current_context
 from ..errors import BadRequestError
 from ..errors import NoAvailablePeerError
@@ -43,6 +42,8 @@ from ..errors import NetworkError
 from ..event import EventType
 from ..glossary import DEFAULT_TIMEOUT
 from ..glossary import MAX_SIZE_OF_ARG1
+from ..peer_heap import PeerHeap
+from ..peer_strategy import PreferIncomingCalculator
 from ..zipkin.annotation import Endpoint
 from ..zipkin.trace import Trace
 from .connection import StreamConnection
@@ -66,9 +67,13 @@ class Peer(object):
 
         'score',
         'index',
+        'order',
+        'chosen_count',
+        'on_conn_change',
 
         '_connections',
         '_connecting',
+        '_on_conn_change_cb',
     )
 
     # Class used to create new outgoing connections.
@@ -76,13 +81,19 @@ class Peer(object):
     # It must support a .outgoing method.
     connection_class = StreamConnection
 
-    def __init__(self, tchannel, hostport):
+    def __init__(self, tchannel, hostport, score=None, on_conn_change=None):
         """Initialize a Peer
 
         :param tchannel:
             TChannel through which requests will be made.
         :param hostport:
             Host-port this Peer is for.
+        :param score:
+            The score of a peer will affect the chance that the peer gets
+            selected when the client sends outbound requests.
+        :param on_conn_change:
+            A callback method takes Peer object as input and is called whenever
+            there are connection changes in the peer.
         """
         assert hostport, "hostport is required"
 
@@ -102,9 +113,18 @@ class Peer(object):
 
         # score is used to measure the performance of the peer.
         # It will be used in the peer heap.
-        self.score = sys.maxint
+        if score is not None:
+            self.score = score
+        else:
+            self.score = sys.maxint
         # index records the position of the peer in the peer heap
         self.index = -1
+        # order maintains the push order of the peer in the heap.
+        self.order = 0
+        # for debug purpose, count the number of times the peer gets selected.
+        self.chosen_count = 0
+
+        self._on_conn_change_cb = on_conn_change
 
     def connect(self):
         """Get a connection to this peer.
@@ -141,8 +161,7 @@ class Peer(object):
                 # We don't actually need to handle the exception. That's on
                 # the caller.
                 connection = conn_future.result()
-                self._connections.append(connection)
-                self._set_on_close_cb(connection)
+                self.register_outgoing_conn(connection)
             self._connecting = None
 
         conn_future.add_done_callback(on_connect)
@@ -152,13 +171,30 @@ class Peer(object):
 
         def on_close():
             self._connections.remove(conn)
+            self._on_conn_change()
 
         conn.set_close_callback(on_close)
 
-    def register_incoming(self, conn):
+    def register_outgoing_conn(self, conn):
+        """Add outgoing connection into the heap."""
         assert conn, "conn is required"
+        conn.set_outbound_pending_change_callback(self._on_conn_change)
+        self._connections.append(conn)
+        self._set_on_close_cb(conn)
+        self._on_conn_change()
+
+    def register_incoming_conn(self, conn):
+        """Add incoming connection into the heap."""
+        assert conn, "conn is required"
+        conn.set_outbound_pending_change_callback(self._on_conn_change)
         self._connections.appendleft(conn)
         self._set_on_close_cb(conn)
+        self._on_conn_change()
+
+    def _on_conn_change(self):
+        """Function will be called any time there is connection changes."""
+        if self._on_conn_change_cb:
+            self._on_conn_change_cb(self)
 
     @property
     def hostport(self):
@@ -535,6 +571,8 @@ class PeerGroup(object):
 
     __slots__ = (
         'tchannel',
+        'peer_heap',
+        'score_calculator',
         '_peers',
         '_resetting',
         '_reset_condition',
@@ -554,6 +592,9 @@ class PeerGroup(object):
         # Notified when a reset is performed. This allows multiple coroutines
         # to block on the same reset.
         self._resetting = False
+
+        self.peer_heap = PeerHeap()
+        self.score_calculator = PreferIncomingCalculator()
 
     def __str__(self):
         return "<PeerGroup peers=%s>" % str(self._peers)
@@ -583,7 +624,9 @@ class PeerGroup(object):
         """
         assert hostport, "hostport is required"
         if hostport not in self._peers:
-            self._peers[hostport] = self.peer_class(self.tchannel, hostport)
+            self.add(hostport)
+            return self.get(hostport)
+
         return self._peers[hostport]
 
     def lookup(self, hostport):
@@ -602,7 +645,10 @@ class PeerGroup(object):
         :returns: The removed Peer
         """
         assert hostport, "hostport is required"
-        return self._peers.pop(hostport, None)
+        peer = self._peers.pop(hostport, None)
+        if peer:
+            self.peer_heap.remove_peer(peer)
+        return peer
 
     def add(self, peer):
         """Add an existing Peer to this group.
@@ -613,13 +659,28 @@ class PeerGroup(object):
 
         if isinstance(peer, basestring):
             # Assume strings are host-ports
-            peer = self.peer_class(self.tchannel, peer)
+            peer = self.peer_class(
+                tchannel=self.tchannel,
+                hostport=peer,
+                on_conn_change=self.update_heap,
+            )
+            peer.score = self.score_calculator.get_score(peer)
 
         assert peer.hostport not in self._peers, (
             "%s already has a peer" % peer.hostport
         )
 
         self._peers[peer.hostport] = peer
+        self.peer_heap.push_peer(peer)
+
+    def update_heap(self, peer):
+        """Recalculate the peer's score and update itself in the peer heap."""
+        score = self.score_calculator.get_score(peer)
+        if score == peer.score:
+            return
+
+        peer.score = score
+        self.peer_heap.update_peer(peer)
 
     @property
     def hosts(self):
