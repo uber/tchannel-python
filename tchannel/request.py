@@ -47,6 +47,16 @@ class Request(object):
         The most useful piece of information here is probably
         ``request.transport.caller_name``, which is the identity of the
         application that created this request.
+
+    :ivar service:
+        Name of the service being called.
+
+    :ivar timeout:
+        Amount of time (in seconds) within which this request is expected to
+        finish.
+
+    :ivar trace:
+        Zipkin tracing information for this request.
     """
 
     # TODO move over other props from tchannel.tornado.request
@@ -54,8 +64,11 @@ class Request(object):
     __slots__ = (
         'body',
         'headers',
+        'service',
         'transport',
         'endpoint',
+        'timeout',
+        'trace',
     )
 
     def __init__(
@@ -64,11 +77,17 @@ class Request(object):
         headers=None,
         transport=None,
         endpoint=None,
+        service=None,
+        timeout=None,
+        trace=None,
     ):
         self.body = body
         self.headers = headers
         self.transport = transport
         self.endpoint = endpoint
+        self.service = service
+        self.timeout = timeout
+        self.trace = trace
 
 
 class TransportHeaders(object):

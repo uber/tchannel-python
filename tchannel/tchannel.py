@@ -79,6 +79,8 @@ class TChannel(object):
 
     """
 
+    FALLBACK = DeprecatedTChannel.FALLBACK
+
     def __init__(self, name, hostport=None, process_name=None,
                  known_peers=None, trace=False):
         """
