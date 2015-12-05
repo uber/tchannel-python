@@ -138,6 +138,8 @@ class TornadoConnection(object):
 
         self.tchannel = tchannel
         self._close_cb = None
+        # callback that will be called when there is a change in the outbound
+        # pending request/response lists.
         self._outbound_pending_change_cb = None
 
         connection.set_close_callback(self._on_close)
@@ -547,6 +549,7 @@ class TornadoConnection(object):
         return self._write(messages.PingResponseMessage())
 
     def _outbound_pending_change(self):
+        """Called when there is a change in the outbound pending list."""
         if self._outbound_pending_change_cb:
             self._outbound_pending_change_cb()
 

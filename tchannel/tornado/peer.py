@@ -26,7 +26,7 @@ import logging
 from collections import deque
 from itertools import takewhile, dropwhile
 import sys
-
+import random
 from tornado import gen
 from tornado.iostream import StreamClosedError
 
@@ -124,6 +124,7 @@ class Peer(object):
         # for debug purpose, count the number of times the peer gets selected.
         self.chosen_count = 0
 
+        # callback is called when there is a change in connections.
         self._on_conn_change_cb = on_conn_change
 
     def connect(self):
