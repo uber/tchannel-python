@@ -137,6 +137,7 @@ class TChannel(object):
         timeout=None,
         retry_on=None,
         retry_limit=None,
+        routing_delegate=None,
         hostport=None,
         shard_key=None,
         trace=None,
@@ -184,6 +185,8 @@ class TChannel(object):
         }
         if shard_key:
             transport_headers[transport.SHARD_KEY] = shard_key
+        if routing_delegate:
+            transport_headers[transport.ROUTING_DELEGATE] = routing_delegate
 
         # If we got some parent tracing info we always want to propagate it
         # along. Otherwise use the ``trace`` parameter that was passed in. If
