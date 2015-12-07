@@ -1,0 +1,5 @@
+contextlib2
+crcmod>=1,<2
+tornado>=4.2,<5
+thriftrw>=0.4,<2
+threadloop>=1,<2
