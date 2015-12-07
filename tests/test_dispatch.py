@@ -22,6 +22,7 @@ from __future__ import absolute_import
 
 import pytest
 
+from tchannel import TChannel
 from tchannel.errors import FatalProtocolError
 from tchannel.messages import CallResponseMessage
 from tchannel.serializer.raw import RawSerializer
@@ -50,3 +51,50 @@ def test_dispatch_unexpected_message():
     dispatcher = RequestDispatcher()
     with pytest.raises(FatalProtocolError):
         dispatcher.handle(CallResponseMessage(), None)
+
+
+@pytest.mark.gen_test
+def test_routing_delegate_is_propagated_raw():
+    server = TChannel('server')
+    server.listen()
+
+    @server.raw.register('foo')
+    def handler(request):
+        assert request.transport.routing_delegate == 'delegate'
+        return b'success'
+
+    client = TChannel('client', known_peers=[server.hostport])
+    res = yield client.raw('service', 'foo', b'', routing_delegate='delegate')
+    assert res.body == b'success'
+
+
+@pytest.mark.gen_test
+def test_routing_delegate_is_propagated_json():
+    server = TChannel('server')
+    server.listen()
+
+    @server.json.register('foo')
+    def handler(request):
+        assert request.transport.routing_delegate == 'delegate'
+        return {'success': True}
+
+    client = TChannel('client', known_peers=[server.hostport])
+    res = yield client.json('service', 'foo', {}, routing_delegate='delegate')
+    assert res.body == {'success': True}
+
+
+@pytest.mark.gen_test
+def test_routing_delegate_is_propagated_thrift(thrift_module):
+    server = TChannel('server')
+    server.listen()
+
+    @server.thrift.register(thrift_module.Service)
+    def healthy(request):
+        assert request.transport.routing_delegate == 'delegate'
+        return True
+
+    client = TChannel('client', known_peers=[server.hostport])
+    res = yield client.thrift(
+        thrift_module.Service.healthy(), routing_delegate='delegate'
+    )
+    assert res.body is True

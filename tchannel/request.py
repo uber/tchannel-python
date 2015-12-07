@@ -83,6 +83,7 @@ class TransportHeaders(object):
         'claim_at_finish',
         'failure_domain',
         'retry_flags',
+        'routing_delegate',
         'scheme',
         'speculative_exe',
         'shard_key',
@@ -97,6 +98,7 @@ class TransportHeaders(object):
                  scheme=None,
                  speculative_exe=None,
                  shard_key=None,
+                 routing_delegate=None,
                  **kwargs):
 
         if scheme is None:
@@ -107,6 +109,7 @@ class TransportHeaders(object):
         self.claim_at_finish = claim_at_finish
         self.failure_domain = failure_domain
         self.retry_flags = retry_flags
+        self.routing_delegate = routing_delegate
         self.scheme = scheme
         self.speculative_exe = speculative_exe
         self.shard_key = shard_key

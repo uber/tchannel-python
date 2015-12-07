@@ -78,6 +78,7 @@ class ThriftArgScheme(object):
         shard_key=None,
         trace=None,
         hostport=None,
+        routing_delegate=None,
     ):
         """Make a Thrift TChannel request.
 
@@ -103,6 +104,10 @@ class ThriftArgScheme(object):
             ``tchannel.retry``.
         :param string retry_limit:
             How many times to retry before
+        :param routing_delegate:
+            Name of a service to which the request router should forward the
+            request instead of the service specified in the call req.
+
         :rtype: Response
         """
         if not headers:
@@ -134,6 +139,7 @@ class ThriftArgScheme(object):
             hostport=hostport or request.hostport,
             shard_key=shard_key,
             trace=trace,
+            routing_delegate=routing_delegate,
         )
 
         response.headers = serializer.deserialize_header(
