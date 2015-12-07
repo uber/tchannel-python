@@ -4,7 +4,7 @@ Changes by Version
 0.20.3 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Add support for ``rd`` transport header.
 
 
 0.20.2 (2015-11-25)
