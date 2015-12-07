@@ -47,6 +47,16 @@ class Request(object):
         The most useful piece of information here is probably
         ``request.transport.caller_name``, which is the identity of the
         application that created this request.
+
+    :ivar service:
+        Name of the service being called. Inside request handlers, this is
+        usually the name of "this" service itself. However, for services that
+        simply forward requests to other services, this is the name of the
+        target service.
+
+    :ivar timeout:
+        Amount of time (in seconds) within which this request is expected to
+        finish.
     """
 
     # TODO move over other props from tchannel.tornado.request
@@ -54,8 +64,10 @@ class Request(object):
     __slots__ = (
         'body',
         'headers',
+        'service',
         'transport',
         'endpoint',
+        'timeout',
     )
 
     def __init__(
@@ -64,11 +76,15 @@ class Request(object):
         headers=None,
         transport=None,
         endpoint=None,
+        service=None,
+        timeout=None,
     ):
         self.body = body
         self.headers = headers
         self.transport = transport
         self.endpoint = endpoint
+        self.service = service
+        self.timeout = timeout
 
 
 class TransportHeaders(object):

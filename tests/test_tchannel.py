@@ -34,7 +34,7 @@ import pytest
 
 from tornado import gen
 
-from tchannel import TChannel, Request, Response, schemes, errors
+from tchannel import TChannel, Request, Response, schemes, errors, thrift
 from tchannel.errors import AlreadyListeningError
 from tchannel.errors import BadRequestError
 from tchannel.errors import TimeoutError
@@ -396,3 +396,99 @@ def test_arg1_limit():
             e.message == 'arg1 size is %d which exceeds the max size 16KB.' %
                          (MAX_SIZE_OF_ARG1 + 1)
         )
+
+
+@pytest.mark.gen_test
+def test_forwarding(tmpdir):
+    from tornado import gen
+
+    path = tmpdir.join('keyvalue.thrift')
+    path.write('''
+        exception ItemDoesNotExist {
+            1: optional string key
+        }
+
+        service KeyValue {
+            string getItem(1: string key)
+                throws (1: ItemDoesNotExist doesNotExist)
+        }
+    ''')
+
+    kv = thrift.load(str(path), service='keyvalue')
+
+    real_server = TChannel(name='real_server')
+    real_server.listen()
+
+    items = {}
+
+    @real_server.thrift.register(kv.KeyValue)
+    def getItem(request):
+        assert request.service == 'keyvalue'
+        key = request.body.key
+        if key in items:
+            assert request.headers == {'expect': 'success'}
+            return items[key]
+        else:
+            assert request.headers == {'expect': 'failure'}
+            raise kv.ItemDoesNotExist(key)
+
+    @real_server.json.register('putItem')
+    def json_put_item(request):
+        assert request.service == 'keyvalue'
+        assert request.timeout == 0.5
+        key = request.body['key']
+        value = request.body['value']
+        items[key] = value
+        return {'success': True}
+
+    proxy_server = TChannel(name='proxy_server')
+    proxy_server.listen()
+
+    # The client that the proxy uses to make requests should be a different
+    # TChannel. That's because TChannel treats all peers (incoming and
+    # outgoing) as the same. So, if the server receives a request and then
+    # uses the same channel to make the request, there's a chance that it gets
+    # forwarded back to the peer that originally made the request.
+    #
+    # This is desirable behavior because we do want to treat all Hyperbahn
+    # nodes as equal.
+    proxy_server_client = TChannel(
+        name='proxy-client', known_peers=[real_server.hostport],
+    )
+
+    @proxy_server.register(TChannel.FALLBACK)
+    @gen.coroutine
+    def handler(request):
+        response = yield proxy_server_client.call(
+            scheme=request.transport.scheme,
+            service=request.service,
+            arg1=request.endpoint,
+            arg2=request.headers,
+            arg3=request.body,
+            timeout=request.timeout / 2,
+            retry_on=request.transport.retry_flags,
+            retry_limit=0,
+            shard_key=request.transport.shard_key,
+            routing_delegate=request.transport.routing_delegate,
+        )
+        raise gen.Return(response)
+
+    client = TChannel(name='client', known_peers=[proxy_server.hostport])
+
+    with pytest.raises(kv.ItemDoesNotExist):
+        response = yield client.thrift(
+            kv.KeyValue.getItem('foo'),
+            headers={'expect': 'failure'},
+        )
+
+    json_response = yield client.json('keyvalue', 'putItem', {
+        'key': 'hello',
+        'value': 'world',
+    }, timeout=1.0)
+    assert json_response.body == {'success': True}
+
+    response = yield client.thrift(
+        kv.KeyValue.getItem('hello'),
+        headers={'expect': 'success'},
+    )
+    assert response.body == 'world'

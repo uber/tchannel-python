@@ -26,4 +26,5 @@ A Python implementation of `TChannel`_.
 
    guide
    api
+   faq
    changelog

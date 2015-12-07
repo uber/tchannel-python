@@ -188,7 +188,6 @@ class RequestDispatcher(object):
         try:
             # New impl - the handler takes a request and returns a response
             if self._handler_returns_response:
-
                 # convert deprecated req to new top-level req
                 b = yield request.get_body()
                 he = yield request.get_header()
@@ -200,6 +199,8 @@ class RequestDispatcher(object):
                     headers=he,
                     transport=t,
                     endpoint=request.endpoint,
+                    service=request.service,
+                    timeout=request.ttl,
                 )
 
                 # Not safe to have coroutine yields statement within
