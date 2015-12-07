@@ -18,6 +18,19 @@ Changes by Version
 - Fix bug which prevented requests from being retried if the candidate
   connection was previously terminated.
 
+0.20.3 (unreleased)
+-------------------
+
+- Add support for ``rd`` transport header.
+
+
+0.20.2 (2015-11-25)
+-------------------
+
+- Lower the log level for Hyperbahn advertisement failures that can be retried.
+- Include the full stack trace when Hyperbahn advertisement failures are logged.
+- Include the error message for unexpected server side failures in the error returned to the client.
+
 
 0.20.1 (2015-11-12)
 -------------------
