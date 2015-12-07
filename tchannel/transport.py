@@ -27,6 +27,7 @@ CLAIM_AT_START = "cas"
 CLAIM_AT_FINISH = "caf"
 FAILURE_DOMAIN = "fd"
 RETRY_FLAGS = "re"
+ROUTING_DELEGATE = "rd"
 SCHEME = "as"
 SHARD_KEY = "sk"
 SPECULATIVE_EXE = "se"
@@ -40,6 +41,7 @@ def to_kwargs(data):
     args['claim_at_finish'] = data.get(CLAIM_AT_FINISH)
     args['failure_domain'] = data.get(FAILURE_DOMAIN)
     args['retry_flags'] = data.get(RETRY_FLAGS)
+    args['routing_delegate'] = data.get(ROUTING_DELEGATE)
     args['scheme'] = data.get(SCHEME)
     args['shard_key'] = data.get(SHARD_KEY)
     args['speculative_exe'] = data.get(SPECULATIVE_EXE)

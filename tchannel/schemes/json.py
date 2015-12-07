@@ -50,6 +50,7 @@ class JsonArgScheme(object):
         hostport=None,
         shard_key=None,
         trace=None,
+        routing_delegate=None,
     ):
         """Make JSON TChannel Request.
 
@@ -86,6 +87,9 @@ class JsonArgScheme(object):
         :param string hostport:
             A 'host:port' value to use when making a request directly to a
             TChannel service, bypassing Hyperbahn.
+        :param routing_delegate:
+            Name of a service to which the request router should forward the
+            request instead of the service specified in the call req.
 
         :rtype: Response
         """
@@ -107,6 +111,7 @@ class JsonArgScheme(object):
             hostport=hostport,
             shard_key=shard_key,
             trace=trace,
+            routing_delegate=routing_delegate,
         )
 
         # deserialize
