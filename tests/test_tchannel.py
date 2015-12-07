@@ -449,6 +449,7 @@ def test_forwarding(tmpdir):
             retry_on=request.transport.retry_flags,
             retry_limit=0,
             shard_key=request.transport.shard_key,
+            routing_delegate=request.transport.routing_delegate,
         )
         raise gen.Return(response)
 
