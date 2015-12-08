@@ -34,6 +34,7 @@ from tchannel.zipkin.trace import Trace
 from tchannel.zipkin.tracers import TChannelZipkinTracer
 from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
 from tests.mock_server import MockServer
+from tornado.concurrent import Future
 
 try:
     from cStringIO import StringIO
@@ -136,3 +137,44 @@ def test_tcollector_submit(trace_server):
     results = yield TChannelZipkinTracer(tchannel).record([(trace, anns)])
 
     assert results[0].body.ok is True
+
+
+@pytest.mark.gen_test
+def test_tcollector_submit_never_retry():
+
+    def submit(*args, **kwargs):
+        count[0] += 1
+        if f.running():
+            f.set_result(None)
+        raise Exception()
+
+    count = [0]
+    f = Future()
+
+    zipkin_server = TChannel('zipkin')
+    zipkin_server.thrift.register(TCollector, handler=submit)
+    zipkin_server.listen()
+
+    zipkin_server1 = TChannel('server')
+    zipkin_server1.thrift.register(TCollector, handler=submit)
+
+    @zipkin_server1.raw.register
+    def hello(request):
+        return 'hello'
+
+    zipkin_server1.listen()
+
+    client = TChannel('client')
+    client._dep_tchannel.peers.add(zipkin_server.hostport)
+
+    client.hooks.register(ZipkinTraceHook(tchannel=client))
+    yield client.raw(
+        service='server',
+        endpoint='hello',
+        hostport=zipkin_server1.hostport,
+        body='body',
+        trace=True,
+    )
+
+    yield f
+    assert count[0] == 1

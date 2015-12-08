@@ -144,7 +144,7 @@ class TChannelZipkinTracer(object):
         def submit_callback(f):
             if f.exception():
                 log.info(
-                    'Fail to submit zipkin trace',
+                    'Failed to submit zipkin trace',
                     exc_info=f.exc_info()
                 )
 
