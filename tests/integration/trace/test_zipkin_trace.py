@@ -142,7 +142,7 @@ def test_tcollector_submit(trace_server):
 @pytest.mark.gen_test
 def test_tcollector_submit_never_retry():
 
-    def submit(*args, **kwargs):
+    def submit(request):
         count[0] += 1
         if f.running():
             f.set_result(None)
@@ -164,9 +164,7 @@ def test_tcollector_submit_never_retry():
 
     zipkin_server1.listen()
 
-    client = TChannel('client')
-    client._dep_tchannel.peers.add(zipkin_server.hostport)
-
+    client = TChannel('client', known_peers=[zipkin_server.hostport])
     client.hooks.register(ZipkinTraceHook(tchannel=client))
     yield client.raw(
         service='server',
