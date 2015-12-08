@@ -29,13 +29,18 @@ from tchannel.zipkin.tracers import TChannelZipkinTracer
 class ZipkinTraceHook(EventHook):
     """generate zipkin-style span for tracing"""
 
-    def __init__(self, tchannel=None, dst=None):
+    DEFAULT_RATE = 0.01
+    DEFAULT_PRECISION = 100
+
+    def __init__(self, tchannel=None, dst=None, sample_rate=None):
         """Log zipkin style trace.
 
         :param tchannel:
             The tchannel instance to send zipkin trace spans
         :param dst:
             The destination to output trace information
+        :param sample_rate:
+            The rate of sampling is in the range (0, 1] with 0.01 precision.
         """
 
         if tchannel:
@@ -47,8 +52,23 @@ class ZipkinTraceHook(EventHook):
             # to dst. By default it writes to stdout
             self.tracer = DebugTracer(dst)
 
+        if sample_rate is None:
+            sample_rate = self.DEFAULT_RATE
+
+        assert 0 < sample_rate <= 1
+        self.rate = sample_rate
+        self._check_point = self.rate * (1 << 63)
+
+    def _lucky(self, id):
+        return id < self._check_point
+
     def before_send_request(self, request):
         if not request.tracing.traceflags:
+            return
+
+        if not self._lucky(request.tracing.trace_id):
+            # disable trace
+            request.tracing.traceflags = False
             return
 
         ann = annotation.client_send()

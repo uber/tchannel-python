@@ -20,6 +20,7 @@
 
 import base64
 import json
+import random
 
 import pytest
 import tornado
@@ -30,7 +31,7 @@ from tchannel.zipkin.annotation import Endpoint
 from tchannel.zipkin.annotation import client_send
 from tchannel.zipkin.tcollector import TCollector
 from tchannel.zipkin.tcollector import Response as TResponse
-from tchannel.zipkin.trace import Trace
+from tchannel.zipkin.trace import Trace, _uniq_id
 from tchannel.zipkin.tracers import TChannelZipkinTracer
 from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
 from tests.mock_server import MockServer
@@ -79,6 +80,7 @@ def trace_server():
         server.tchannel.hooks.register(
             ZipkinTraceHook(
                 dst=trace_buf,
+                sample_rate=1,
             ),
         )
         yield server
@@ -87,7 +89,7 @@ def trace_server():
 @pytest.mark.gen_test
 def test_zipkin_trace(trace_server):
     endpoint = b'endpoint1'
-    zipkin_tracer = ZipkinTraceHook(dst=trace_buf)
+    zipkin_tracer = ZipkinTraceHook(dst=trace_buf, sample_rate=1)
     tchannel = TChannel(name='test')
     tchannel.hooks.register(zipkin_tracer)
 
@@ -165,7 +167,7 @@ def test_tcollector_submit_never_retry():
     zipkin_server1.listen()
 
     client = TChannel('client', known_peers=[zipkin_server.hostport])
-    client.hooks.register(ZipkinTraceHook(tchannel=client))
+    client.hooks.register(ZipkinTraceHook(tchannel=client, sample_rate=1))
     yield client.raw(
         service='server',
         endpoint='hello',
@@ -176,3 +178,17 @@ def test_tcollector_submit_never_retry():
 
     yield f
     assert count[0] == 1
+
+
+@pytest.mark.gen_test
+def test_zipkin_trace_sampling(trace_server):
+    run_times = 100000
+    sample_rate = 1.0 - random.random()
+    hook = ZipkinTraceHook(sample_rate=sample_rate)
+    count = 0
+    for _ in range(run_times):
+        if hook._lucky(_uniq_id()):
+            count += 1
+
+    assert 0.9 * run_times * sample_rate <= count
+    assert count <= run_times * sample_rate * 1.1
