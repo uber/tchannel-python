@@ -30,7 +30,6 @@ class ZipkinTraceHook(EventHook):
     """generate zipkin-style span for tracing"""
 
     DEFAULT_RATE = 0.01
-    DEFAULT_PRECISION = 100
 
     def __init__(self, tchannel=None, dst=None, sample_rate=None):
         """Log zipkin style trace.
