@@ -65,7 +65,9 @@ class ZipkinTraceHook(EventHook):
         if not request.tracing.traceflags:
             return
 
-        if not self._lucky(request.tracing.trace_id):
+        if not request.tracing.parent_span_id and not self._lucky(
+                request.tracing.trace_id
+        ):
             # disable trace
             request.tracing.traceflags = False
             return
