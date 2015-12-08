@@ -38,6 +38,7 @@ import logging
 import sys
 from collections import defaultdict
 
+from tchannel import retry
 from . import glossary
 from .tcollector import TCollector
 from .formatters import json_formatter
@@ -142,8 +143,8 @@ class TChannelZipkinTracer(object):
 
         def submit_callback(f):
             if f.exception():
-                log.error(
-                    'Fail to submit zipkin trace',
+                log.info(
+                    'Failed to submit zipkin trace',
                     exc_info=f.exc_info()
                 )
 
@@ -152,6 +153,9 @@ class TChannelZipkinTracer(object):
             f = self._tchannel.thrift(
                 TCollector.submit(thrift_formatter(trace, annotations)),
                 shard_key=i64_to_base64(trace.trace_id),
+                retry_on=retry.NEVER,
+                retry_limit=0,
+                trace=False,
             )
             f.add_done_callback(submit_callback)
             fus.append(f)
