@@ -10,6 +10,7 @@ Changes by Version
   information, see :ref:`fallback-endpoint`
 - Expose ``timeout`` and ``service`` attributes on ``Request`` objects inside
   endpoint handlers.
+- Add zipkin trace sampling logic and disable the retry for all zipkin trace submit.
 
 
 0.20.2 (2015-11-25)
