@@ -39,7 +39,10 @@ class ZipkinTraceHook(EventHook):
         :param dst:
             The destination to output trace information
         :param sample_rate:
-            The rate of sampling is in the range (0, 1] with 0.01 precision.
+            The sample_rate determines the probability that the trace span
+            been sampled.
+            The rate of sampling is in the range [0, 1] with 0.01 precision.
+            By default it takes 1% sampling.
         """
 
         if tchannel:
@@ -54,7 +57,7 @@ class ZipkinTraceHook(EventHook):
         if sample_rate is None:
             sample_rate = self.DEFAULT_RATE
 
-        assert 0 < sample_rate <= 1
+        assert 0 <= sample_rate <= 1
         self.rate = sample_rate
         self._check_point = self.rate * (1 << 63)
 
@@ -66,7 +69,7 @@ class ZipkinTraceHook(EventHook):
             return
 
         if not request.tracing.parent_span_id and not self._lucky(
-                request.tracing.trace_id
+            request.tracing.trace_id
         ):
             # disable trace
             request.tracing.traceflags = False

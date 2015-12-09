@@ -27,6 +27,7 @@ import tornado
 import tornado.gen
 
 from tchannel import TChannel, Response
+from tchannel.tornado import Request
 from tchannel.zipkin.annotation import Endpoint
 from tchannel.zipkin.annotation import client_send
 from tchannel.zipkin.tcollector import TCollector
@@ -181,7 +182,7 @@ def test_tcollector_submit_never_retry():
 
 
 @pytest.mark.gen_test
-def test_zipkin_trace_sampling(trace_server):
+def test_zipkin_trace_sampling():
     run_times = 100000
     sample_rate = 1.0 - random.random()
     hook = ZipkinTraceHook(sample_rate=sample_rate)
@@ -192,3 +193,17 @@ def test_zipkin_trace_sampling(trace_server):
 
     assert 0.9 * run_times * sample_rate <= count
     assert count <= run_times * sample_rate * 1.1
+
+
+@pytest.mark.gen_test
+def test_zipkin_trace_zero_sampling():
+    run_times = 100000
+    hook = ZipkinTraceHook(sample_rate=0)
+
+    request = Request()
+    request.tracing.traceflags = True
+    for _ in range(run_times):
+        hook.before_send_request(request)
+
+    assert not request.tracing.annotations
+
