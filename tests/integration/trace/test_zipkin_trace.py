@@ -206,4 +206,3 @@ def test_zipkin_trace_zero_sampling():
         hook.before_send_request(request)
 
     assert not request.tracing.annotations
-
