@@ -42,7 +42,10 @@ def _uniq_id():
 
     :rtype: int
     """
-    return random.getrandbits(63)
+    if random.getrandbits(1):
+        return random.getrandbits(63)
+
+    return -random.getrandbits(63)
 
 
 class Trace(object):
