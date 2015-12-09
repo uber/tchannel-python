@@ -29,7 +29,7 @@ from tchannel.zipkin.tracers import TChannelZipkinTracer
 class ZipkinTraceHook(EventHook):
     """generate zipkin-style span for tracing"""
 
-    DEFAULT_RATE = 0.01
+    DEFAULT_RATE = 1.0
 
     def __init__(self, tchannel=None, dst=None, sample_rate=None):
         """Log zipkin style trace.
@@ -42,7 +42,7 @@ class ZipkinTraceHook(EventHook):
             The sample_rate determines the probability that the trace span
             been sampled.
             The rate of sampling is in the range [0, 1] with 0.01 precision.
-            By default it takes 1% sampling.
+            By default it takes 100% sampling.
         """
 
         if tchannel:
