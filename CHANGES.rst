@@ -20,6 +20,8 @@ Changes by Version
   propagated to child services.
 - VCR recording should not fail if the destination directory for the cassette
   does not exist.
+- Fix bug which incorrectly encoded JSON arg scheme headers in the incorrect
+  format.
 
 
 0.20.2 (2015-11-25)

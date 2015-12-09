@@ -22,7 +22,6 @@ from __future__ import absolute_import
 import pytest
 
 from tchannel.serializer.json import JsonSerializer
-from tchannel.errors import ReadError
 
 
 @pytest.mark.parametrize('v1', [
@@ -53,7 +52,7 @@ def test_body(v1, v2):
 def test_exception():
     serializer = JsonSerializer()
 
-    with pytest.raises(ReadError):
+    with pytest.raises(ValueError):
         serializer.deserialize_header('{sss')
 
     with pytest.raises(TypeError):

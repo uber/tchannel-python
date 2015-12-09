@@ -23,14 +23,27 @@ from __future__ import absolute_import
 import json
 
 from tchannel.schemes import JSON
-from tchannel.serializer.thrift import ThriftSerializer
 
 
-class JsonSerializer(ThriftSerializer):
+class JsonSerializer(object):
     name = JSON
 
-    def __init__(self):
-        pass
+    def serialize_header(self, headers):
+        headers = headers or {}
+
+        for k, v in headers.iteritems():
+            if not (isinstance(k, basestring) and isinstance(v, basestring)):
+                raise ValueError(
+                    'headers must be a map[string]string (a shallow dict '
+                    'where keys and values are strings)'
+                )
+
+        return json.dumps(headers)
+
+    def deserialize_header(self, headers):
+        if not headers:
+            return {}
+        return json.loads(headers)
 
     def deserialize_body(self, obj):
         return json.loads(obj)

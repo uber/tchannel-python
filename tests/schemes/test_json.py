@@ -97,3 +97,21 @@ def test_endpoint_can_return_just_body():
     # verify response
     assert isinstance(resp, Response)
     assert resp.body == {'resp': 'body'}
+
+
+@pytest.mark.gen_test
+def test_invalid_headers():
+    server = TChannel('server')
+    server.listen()
+
+    client = TChannel('client')
+
+    with pytest.raises(ValueError) as exc_info:
+        yield client.json(
+            service='foo',
+            endpoint='bar',
+            hostport=server.hostport,
+            headers={'foo': ['bar']},
+        )
+
+    assert 'headers must be a map[string]string' in str(exc_info)
