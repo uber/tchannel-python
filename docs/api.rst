@@ -33,6 +33,8 @@ Thrift
 
 .. autofunction:: tchannel.thrift.load
 
+.. autofunction:: tchannel.thrift_request_builder
+
 JSON
 ~~~~
 
