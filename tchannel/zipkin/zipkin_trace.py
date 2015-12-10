@@ -59,7 +59,7 @@ class ZipkinTraceHook(EventHook):
 
         assert 0 <= sample_rate <= 1
         self.rate = sample_rate
-        self._check_point = self.rate * (1 << 63)
+        self._check_point = self.rate * (1 << 64)
 
     def _lucky(self, id):
         return id < self._check_point
