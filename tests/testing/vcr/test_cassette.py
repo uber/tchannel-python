@@ -97,6 +97,19 @@ def test_replay_unknown(path):
             cass.replay(request)
 
 
+def test_record_into_nonexistent_directory(tmpdir):
+    path = tmpdir.join('somedir/data.yaml')
+    request = requests.example()
+    response = responses.example()
+
+    with Cassette(str(path)) as cass:
+        cass.record(request, response)
+
+    with Cassette(str(path)) as cass:
+        assert cass.can_replay(request)
+        assert cass.replay(request) == response
+
+
 def test_record_same(path):
     request = requests.example()
     response1 = responses.example()

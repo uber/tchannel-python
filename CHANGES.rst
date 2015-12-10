@@ -18,6 +18,8 @@ Changes by Version
   details.
 - Fix Thrift service inheritance bug which caused parent methods to not be
   propagated to child services.
+- VCR recording should not fail if the destination directory for the cassette
+  does not exist.
 
 
 0.20.2 (2015-11-25)
