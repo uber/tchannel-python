@@ -124,7 +124,7 @@ def binary_annotation_formatter(annotation):
 
 
 def i64_to_string(data):
-    return struct.pack('>q', data)
+    return struct.pack('>Q', data)
 
 
 def i64_to_base64(data):

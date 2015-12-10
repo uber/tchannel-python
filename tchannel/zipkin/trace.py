@@ -40,12 +40,9 @@ import random
 def _uniq_id():
     """Create a random 64-bit signed integer.
 
-    :rtype: int
+    :rtype: unsigned long
     """
-    if random.getrandbits(1):
-        return random.getrandbits(63)
-
-    return -random.getrandbits(63)
+    return random.getrandbits(64)
 
 
 class Trace(object):
