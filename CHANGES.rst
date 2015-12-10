@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.21.0 (unreleased)
+0.21.0 (2015-12-10)
 -------------------
 
 - Add support for zipkin trace sampling.
