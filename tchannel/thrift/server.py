@@ -87,13 +87,13 @@ def register(dispatcher, service_module, handler, method=None, service=None):
     # if the dispatcher is set to deal with handlers that
     # return responses, then use new api, else use deprecated
     if dispatcher._handler_returns_response:
-        handler = build_handler(result_type, handler)
+        new_handler = build_handler(result_type, handler)
     else:
-        handler = deprecated_build_handler(result_type, handler)
+        new_handler = deprecated_build_handler(result_type, handler)
 
     dispatcher.register(
         endpoint,
-        handler,
+        new_handler,
         ThriftSerializer(args_type),
         ThriftSerializer(result_type)
     )
