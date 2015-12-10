@@ -59,6 +59,14 @@ def thrift_request_builder(service, thrift_module, hostport=None,
             some_service.fetchPotatoes()
         )
 
+    .. deprecated:: 0.18.0
+
+        Please switch to :py:func:`tchannel.thrift.load`.
+
+    .. warning::
+
+        This API is deprecated and will be removed in a future version.
+
     :param string service:
         Name of Thrift service to call. This is used internally for
         grouping and stats, but also to route requests over Hyperbahn.
