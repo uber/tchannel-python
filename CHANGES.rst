@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.20.3 (unreleased)
+0.21.0 (unreleased)
 -------------------
 
 - Add support for ``rd`` transport header.
@@ -16,6 +16,8 @@ Changes by Version
   functions directly. This is enabled by changing ``tchannel.thrift.register``
   to return the registered function unmodified. See Upgrade Guide for more
   details.
+- Fix Thrift service inheritance bug which caused parent methods to not be
+  propagated to child services.
 
 
 0.20.2 (2015-11-25)
