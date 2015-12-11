@@ -153,6 +153,7 @@ class TChannelZipkinTracer(object):
                     exc_info=f.exc_info()
                 )
 
+        span_host = self.parse_host_port()
         fus = []
         for (trace, annotations) in traces:
             f = self._tchannel.thrift(
@@ -161,7 +162,7 @@ class TChannelZipkinTracer(object):
                         trace=trace,
                         annotations=annotations,
                         isbased64=False,
-                        span_host=self.parse_host_port(),
+                        span_host=span_host,
                     )
                 ),
                 shard_key=i64_to_base64(trace.trace_id),
