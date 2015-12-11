@@ -39,6 +39,7 @@ import sys
 from collections import defaultdict
 
 from tchannel import retry
+from tchannel.zipkin.annotation import Endpoint
 from . import glossary
 from .tcollector import TCollector
 from .formatters import json_formatter
@@ -139,6 +140,10 @@ class TChannelZipkinTracer(object):
 
         self._tchannel = tchannel
 
+    def _parse_host(self):
+        ip, _, port = self._tchannel.hostport.rpartition(':')
+        return Endpoint(ip, int(port), self._tchannel.name)
+
     def record(self, traces):
 
         def submit_callback(f):
@@ -148,10 +153,18 @@ class TChannelZipkinTracer(object):
                     exc_info=f.exc_info()
                 )
 
+        print self._parse_host()
         fus = []
         for (trace, annotations) in traces:
             f = self._tchannel.thrift(
-                TCollector.submit(thrift_formatter(trace, annotations)),
+                TCollector.submit(
+                    thrift_formatter(
+                        trace=trace,
+                        annotations=annotations,
+                        isbased64=False,
+                        span_host=self._parse_host(),
+                    )
+                ),
                 shard_key=i64_to_base64(trace.trace_id),
                 retry_on=retry.NEVER,
                 retry_limit=0,
