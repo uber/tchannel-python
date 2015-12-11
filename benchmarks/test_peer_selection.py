@@ -25,6 +25,7 @@ from __future__ import (
 import mock
 import random
 
+from tchannel.tornado.connection import INCOMING
 from tchannel.tornado.peer import (
     Peer as _Peer,
     PeerGroup as _PeerGroup,
@@ -39,7 +40,7 @@ class FakeConnection(object):
     def __init__(self, hostport):
         self.hostport = hostport
         self.closed = False
-        self.direction = object()
+        self.direction = INCOMING
 
     @classmethod
     def outgoing(cls, hostport, process_name=None, serve_hostport=None,

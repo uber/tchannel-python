@@ -127,6 +127,9 @@ class Peer(object):
         # callback is called when there is a change in connections.
         self._on_conn_change_cb = on_conn_change
 
+    def set_on_conn_change_callback(self, cb):
+        self._on_conn_change_cb = cb
+
     def connect(self):
         """Get a connection to this peer.
 

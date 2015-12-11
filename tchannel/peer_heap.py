@@ -41,9 +41,9 @@ class PeerHeap(HeapOperation):
     def lt(self, i, j):
         """Compare the priority of two peers.
 
-        Primary comparator will be the score of each peer. If the score is
-        same then use FIFO policy. The ``order`` attribute of the peer tracks
-        the heap push order of the peer. This help solve the imbalance
+        Primary comparator will be the score of each peer. If the ``score`` is
+        same then compare the ``order``. The ``order`` attribute of the peer
+        tracks the heap push order of the peer. This help solve the imbalance
         problem caused by randomization when deal with same score situation.
 
         :param i: ith peer
@@ -51,7 +51,7 @@ class PeerHeap(HeapOperation):
         :return: True or False
         """
         if self.peers[i].score == self.peers[j].score:
-            return self.peers[i].order < self.peers[i].order
+            return self.peers[i].order < self.peers[j].order
 
         return self.peers[i].score < self.peers[j].score
 
