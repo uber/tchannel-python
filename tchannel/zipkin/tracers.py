@@ -139,6 +139,7 @@ class TChannelZipkinTracer(object):
         """
 
         self._tchannel = tchannel
+        self.span_host = None
 
     def parse_host_port(self):
         ip, _, port = self._tchannel.hostport.rpartition(':')
@@ -152,8 +153,9 @@ class TChannelZipkinTracer(object):
                     'Failed to submit zipkin trace',
                     exc_info=f.exc_info()
                 )
+        if not self.span_host:
+            self.span_host = self.parse_host_port()
 
-        span_host = self.parse_host_port()
         fus = []
         for (trace, annotations) in traces:
             f = self._tchannel.thrift(
@@ -162,7 +164,7 @@ class TChannelZipkinTracer(object):
                         trace=trace,
                         annotations=annotations,
                         isbased64=False,
-                        span_host=span_host,
+                        span_host=self.span_host,
                     )
                 ),
                 shard_key=i64_to_base64(trace.trace_id),
