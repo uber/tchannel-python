@@ -28,8 +28,10 @@ import tornado.gen
 
 from tchannel import TChannel, Response
 from tchannel.tornado import Request
+from tchannel.zipkin import annotation
 from tchannel.zipkin.annotation import Endpoint
 from tchannel.zipkin.annotation import client_send
+from tchannel.zipkin.formatters import thrift_formatter, ipv4_to_int
 from tchannel.zipkin.tcollector import TCollector
 from tchannel.zipkin.tcollector import Response as TResponse
 from tchannel.zipkin.trace import Trace, _uniq_id
@@ -206,3 +208,31 @@ def test_zipkin_trace_zero_sampling():
         hook.before_send_request(request)
 
     assert not request.tracing.annotations
+
+
+def test_parse_host_port():
+    tchannel = TChannel('test')
+    tchannel.listen()
+
+    tracer = TChannelZipkinTracer(tchannel)
+    host_span = tracer.parse_host_port()
+    assert tchannel.hostport == "%s:%d" % (host_span.ipv4, host_span.port)
+    assert tchannel.name == host_span.service_name
+
+
+def test_span_host_field():
+    tchannel = TChannel('test')
+    tchannel.listen()
+
+    tracer = TChannelZipkinTracer(tchannel)
+    host_span = tracer.parse_host_port()
+    thrift_obj = thrift_formatter(
+        trace=Trace(name='test', endpoint=Endpoint('0.0.0.1', 90, 'test1')),
+        annotations=[annotation.client_send()],
+        isbased64=False,
+        span_host=host_span,
+    )
+
+    assert thrift_obj.spanHost.ipv4 == ipv4_to_int(host_span.ipv4)
+    assert thrift_obj.spanHost.port == host_span.port
+    assert thrift_obj.spanHost.serviceName == host_span.service_name
