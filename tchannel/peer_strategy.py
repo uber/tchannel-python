@@ -48,7 +48,7 @@ class PreferIncomingCalculator(ScoreCalculator):
         :param peer: instance of `tchannel.tornado.peer.Peer`
         :return: score of the peer
         """
-        if len(peer.incoming_connections) == 0:
+        if not peer.incoming_connections:
             return sys.maxint
 
         return peer.total_outbound_pendings
