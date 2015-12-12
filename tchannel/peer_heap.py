@@ -27,7 +27,27 @@ from .container.heap import HeapOperation
 
 
 class PeerHeap(HeapOperation):
-    """PeerHeap maintains a min-heap of peers based on their scores."""
+    """PeerHeap maintains a min-heap of peers based on their scores.
+
+    Peer in the heap will be arranged based on the peer's score and peer's
+    order. Order is equal to peer heap's current order number plus random value
+    within the current peer size. It solves two problems when peers are in
+    same score:
+
+    Dead peers: If the order is completely random, then an unlucky peer
+    with a very bad assigned order may never get selected.
+
+    Determinism: If the insertion order is used as-is, then all TChannel
+    instances would follow the same selection pattern, causing load
+    imbalance. For example if they get the same static list of peers, they
+    will all pick the first one, then the second one, and so on, cycling
+    between which host gets overloaded with requests.
+
+    All in all, it will keep certain level randomization but at the same
+    time make the peer score not deterministic among different tchannel
+    instances.
+
+    """
 
     __slots__ = ('peers',)
 
@@ -84,26 +104,8 @@ class PeerHeap(HeapOperation):
         return heap.pop(self)
 
     def push_peer(self, peer):
-        """Push a new peer into the heap
+        """Push a new peer into the heap"""
 
-        Order is equal to peer heap's current order plus random value within
-        the current peer size. It solves two problems when peers are in
-        same score:
-
-        1. 'dead peer' caused by random problem. If use fully random value, and
-        one peer is very unlock to get the worst value, as the peer selection
-        keeps working, that peer may not be selected anymore.
-
-        2. deterministic problem. If we just use push order, then all the
-        tchannel instance will follow the same pattern. If they all get the
-        same list of hyperbahn nodes, the peers that they pick to talk to
-        hyperbahn will be same. In that situation, it will cause the hyperbahn
-        node received very imbalance requests from tchannel clients.
-
-        All in all, it will keep certain level randomization but at the same
-        time make the peer score not deterministic among different tchannel
-        instance. For
-        """
         self.order += 1
         peer.order = self.order + random.randint(0, self.size())
         heap.push(self, peer)
