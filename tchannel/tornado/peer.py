@@ -629,7 +629,7 @@ class PeerGroup(object):
         assert hostport, "hostport is required"
         if hostport not in self._peers:
             self.add(hostport)
-            return self.get(hostport)
+            return self._peers[hostport]
 
         return self._peers[hostport]
 
