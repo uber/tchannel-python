@@ -31,7 +31,7 @@ from tchannel.tornado.peer import Peer
 
 
 @pytest.mark.gen_test
-def test_get_score_no_incoming():
+def test_get_score_no_connection():
     server = TChannel('server')
     server.listen()
     peer = Peer(TChannel('test'), '10.10.101.21:230')
@@ -48,7 +48,7 @@ def test_get_score_with_outgoing():
     peer = Peer(TChannel('test'), '10.10.101.21:230')
     calculator = PreferIncomingCalculator()
     peer.register_outgoing_conn(connection)
-    assert sys.maxint == calculator.get_score(peer)
+    assert PreferIncomingCalculator.TIERS[1] == calculator.get_score(peer)
 
 
 @pytest.mark.gen_test
