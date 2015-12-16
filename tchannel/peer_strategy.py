@@ -35,6 +35,11 @@ class ZeroScoreCalculator(ScoreCalculator):
 
 
 class PreferIncomingCalculator(ScoreCalculator):
+
+    # TIERS lists three ranges for three different kinds of peers.
+    # 0: ephemeral peers or unconnected peers
+    # 1: peers with only outgoing connections
+    # 2: peers with incoming connections
     TIERS = [sys.maxint, sys.maxint / 2, 0]
 
     def get_score(self, peer):
