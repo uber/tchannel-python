@@ -35,6 +35,8 @@ class ZeroScoreCalculator(ScoreCalculator):
 
 
 class PreferIncomingCalculator(ScoreCalculator):
+    TIERS = [sys.maxint, sys.maxint / 2, 0]
+
     def get_score(self, peer):
         """Calculate the peer score based on connections.
 
@@ -48,7 +50,10 @@ class PreferIncomingCalculator(ScoreCalculator):
         :param peer: instance of `tchannel.tornado.peer.Peer`
         :return: score of the peer
         """
-        if peer.is_ephemeral or not peer.incoming_connections:
-            return sys.maxint
+        if peer.is_ephemeral or not peer.connections:
+            return self.TIERS[0]
 
-        return peer.total_outbound_pendings
+        if not peer.incoming_connections:
+            return self.TIERS[1] + peer.total_outbound_pendings
+
+        return self.TIERS[2] + peer.total_outbound_pendings
