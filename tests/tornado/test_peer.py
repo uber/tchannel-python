@@ -280,3 +280,49 @@ def test_outbound_pending_change_propagate(peer):
     assert b[0] == 3
     connection.remove_outbound_pending_res(Response())
     assert b[0] == 4
+
+
+@pytest.fixture
+def hostports():
+    return ['127.0.0.1:' + str(i) for i in range(100)]
+
+
+def test_choose(hostports):
+    tchannel = TChannel('test')
+    peer_group = tchannel._dep_tchannel.peers
+    for hp in hostports:
+        peer_group.get(hp)
+
+    n = len(hostports)
+    for _ in hostports:
+        peer_group.choose()
+        assert peer_group.peer_heap.size() == n
+
+
+def test_choose_with_blacklist(hostports):
+    tchannel = TChannel('test')
+    peer_group = tchannel._dep_tchannel.peers
+    for hp in hostports:
+        peer_group.get(hp)
+
+    n = len(hostports)
+    blacklist = set()
+    for _ in hostports:
+        peer = peer_group.choose(blacklist=blacklist)
+        assert peer not in blacklist
+        blacklist.add(peer.hostport)
+        assert peer_group.peer_heap.size() == n
+
+
+def test_choose_with_target_hostport(hostports):
+    tchannel = TChannel('test')
+    peer_group = tchannel._dep_tchannel.peers
+    for hp in hostports:
+        peer_group.get(hp)
+
+    n = len(hostports) + 1
+    target = '1.0.0.1:9000'
+    for _ in hostports:
+        peer = peer_group.choose(hostport=target)
+        assert target == peer.hostport
+        assert peer_group.peer_heap.size() == n
