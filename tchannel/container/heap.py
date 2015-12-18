@@ -23,6 +23,11 @@ from __future__ import division
 
 import math
 import six
+from collections import deque
+
+
+class NoMatchError(Exception):
+    pass
 
 
 class HeapOperation(object):
@@ -46,6 +51,15 @@ class HeapOperation(object):
 
     def pop(self):
         """Pop an item from the heap"""
+        raise NotImplementedError()
+
+    def peek(self, i):
+        """Peek at the item at the given position without removing it from the
+        heap.
+
+        :param i:
+            0-indexed position of the iteam in the heap
+        """
         raise NotImplementedError()
 
     def swap(self, i, j):
@@ -122,3 +136,44 @@ def down(h, parent, n):
 
         h.swap(parent, min_child)
         parent = min_child
+
+
+def smallest(heap, predicate):
+    """Finds the index of the smallest item in the heap that matches the given
+    predicate.
+
+    :param heap:
+        Heap on which this search is being performed.
+    :param predicate:
+        Function that accepts an item from the heap and returns true or false.
+    :returns:
+        Index of the first item for which ``predicate`` returned true.
+    :raises NoMatchError:
+        If no matching items were found.
+    """
+    n = heap.size()
+
+    # items contains indexes of items yet to be checked.
+    items = deque([0])
+    while items:
+        current = items.popleft()
+        if current >= n:
+            continue
+
+        if predicate(heap.peek(current)):
+            return current
+
+        child1 = 2 * current + 1
+        child2 = child1 + 1
+
+        if child1 < n and child2 < n and heap.lt(child2, child1):
+            # make sure we check the smaller child first.
+            child1, child2 = child2, child1
+
+        if child1 < n:
+            items.append(child1)
+
+        if child2 < n:
+            items.append(child2)
+
+    raise NoMatchError()

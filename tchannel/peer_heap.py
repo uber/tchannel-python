@@ -75,6 +75,9 @@ class PeerHeap(HeapOperation):
 
         return self.peers[i].score < self.peers[j].score
 
+    def peek(self, i):
+        return self.peers[i]
+
     def push(self, x):
         x.index = len(self.peers)
         self.peers.append(x)
