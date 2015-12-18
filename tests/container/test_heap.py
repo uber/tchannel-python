@@ -24,9 +24,11 @@ import sys
 import math
 import pytest
 import six
+from hypothesis import given
+from hypothesis import strategies as st
 
 from tchannel.container import heap
-from tchannel.container.heap import HeapOperation
+from tchannel.container.heap import HeapOperation, NoMatchError
 
 
 class IntHeap(HeapOperation):
@@ -35,6 +37,9 @@ class IntHeap(HeapOperation):
 
     def size(self):
         return len(self.values)
+
+    def peek(self, i):
+        return self.values[i]
 
     def lt(self, i, j):
         return self.values[i] < self.values[j]
@@ -121,6 +126,40 @@ def test_remove(int_heap, values):
     for i in six.moves.range(n - 1, -1, -1):
         heap.remove(int_heap, random.randint(0, i))
         verify(int_heap, 0)
+
+
+def test_smallest_basic(int_heap, values):
+    for value in values:
+        heap.push(int_heap, value)
+        verify(int_heap, 0)
+
+    assert heap.smallest(int_heap, (lambda _: True)) == 0
+
+    with pytest.raises(NoMatchError):
+        heap.smallest(int_heap, (lambda _: False))
+
+
+def test_smallest_empty(int_heap):
+    with pytest.raises(NoMatchError):
+        heap.smallest(int_heap, (lambda _: True))
+
+
+def test_smallest_unordered_children(int_heap):
+    int_heap.values = [1, 4, 2]
+    verify(int_heap, 0)
+
+    assert heap.smallest(int_heap, (lambda x: x % 2 == 0)) == 2
+
+
+@given(st.lists(st.integers(), min_size=1))
+def test_smallest_random(values):
+    int_heap = IntHeap()
+    for v in values:
+        heap.push(int_heap, v)
+
+    target = random.choice(int_heap.values)
+    valid = [i for (i, v) in enumerate(int_heap.values) if v == target]
+    assert heap.smallest(int_heap, (lambda x: x == target)) in valid
 
 
 @pytest.mark.heapfuzz
