@@ -194,8 +194,11 @@ class TChannel(object):
         # along. Otherwise use the ``trace`` parameter that was passed in. If
         # **that** wasn't provided, fall back to the TChannel default.
         trace_override = self._dep_tchannel.trace if trace is None else trace
-        traceflag = bool(context.parent_tracing if context else trace_override)
 
+        # TODO decide: whether the parent request's traceflag can override the
+        # sub child request's traceflag. If it does, we will put parent
+        # traceflag into request context.
+        traceflag = trace_override
         response = yield operation.send(
             arg1=arg1,
             arg2=arg2,

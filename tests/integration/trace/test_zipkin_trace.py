@@ -57,6 +57,7 @@ def register(tchannel):
             service='handler2',
             hostport=hostport,
             endpoint="endpoint2",
+            trace=True,
         )
 
         raise tornado.gen.Return(Response(res.body, "from handler1"))
@@ -126,7 +127,6 @@ def test_zipkin_trace(trace_server):
             parent_span_id = trace[0][u'parent_span_id']
         else:
             span_id = trace[0][u'span_id']
-
     assert parent_span_id == span_id
 
 
@@ -151,7 +151,7 @@ def test_tcollector_submit_never_retry():
         count[0] += 1
         if f.running():
             f.set_result(None)
-        raise Exception()
+        return TResponse(True)
 
     count = [0]
     f = Future()
@@ -236,3 +236,52 @@ def test_span_host_field():
     assert thrift_obj.spanHost.ipv4 == ipv4_to_int(host_span.ipv4)
     assert thrift_obj.spanHost.port == host_span.port
     assert thrift_obj.spanHost.serviceName == host_span.service_name
+
+
+@pytest.mark.gen_test(timeout=111)
+def test_no_infinite_trace_submit():
+
+    def submit(request):
+        count[0] += 1
+        # three time (1 time as client, 2 times as server)
+        if count[0] == 3 and f.running():
+            f.set_result(count[0])
+        return TResponse(True)
+
+    count = [0]
+    f = Future()
+
+    zipkin_server = TChannel('zipkin')
+    zipkin_server.thrift.register(TCollector, handler=submit)
+    zipkin_server.listen()
+
+    server = TChannel('server', known_peers=[zipkin_server.hostport])
+    server.hooks.register(ZipkinTraceHook(tchannel=server, sample_rate=1))
+    server.thrift.register(TCollector, handler=submit)
+
+    @server.raw.register
+    @tornado.gen.coroutine
+    def hello(request):
+        if request.body == 'body':
+            yield server.raw(
+                service='server',
+                endpoint='hello',
+                body='boy',
+                hostport=server.hostport,
+                trace=True,
+            )
+        raise tornado.gen.Return('hello')
+
+    server.listen()
+
+    client = TChannel('client')
+    client.thrift.register(TCollector, handler=submit)
+    yield client.raw(
+        service='server',
+        endpoint='hello',
+        hostport=server.hostport,
+        body='body',
+        trace=True,
+    )
+
+    assert count[0] == (yield f)
