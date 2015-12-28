@@ -256,5 +256,6 @@ def test_no_infinite_trace_submit():
         trace=True,
     )
 
-    assert count[0] == (yield f)
+    count = yield f
+    assert count == 3
     assert test_trace_hook.invalid_traceflag == 0
