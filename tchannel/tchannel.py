@@ -196,8 +196,8 @@ class TChannel(object):
         trace_override = self._dep_tchannel.trace if trace is None else trace
 
         # TODO decide: whether the parent request's traceflag can override the
-        # sub child request's traceflag. If it does, we will put parent
-        # traceflag into request context.
+        # sub child request's traceflag. If it does, we will use parent tracing
+        # flag to override sub request's. (Except zipkin trace request)
         traceflag = trace_override
         response = yield operation.send(
             arg1=arg1,

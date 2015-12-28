@@ -27,6 +27,7 @@ import tornado
 import tornado.gen
 
 from tchannel import TChannel, Response
+from tchannel.event import EventHook
 from tchannel.tornado import Request
 from tchannel.zipkin import annotation
 from tchannel.zipkin.annotation import Endpoint
@@ -145,45 +146,6 @@ def test_tcollector_submit(trace_server):
 
 
 @pytest.mark.gen_test
-def test_tcollector_submit_never_retry():
-
-    def submit(request):
-        count[0] += 1
-        if f.running():
-            f.set_result(None)
-        return TResponse(True)
-
-    count = [0]
-    f = Future()
-
-    zipkin_server = TChannel('zipkin')
-    zipkin_server.thrift.register(TCollector, handler=submit)
-    zipkin_server.listen()
-
-    zipkin_server1 = TChannel('server')
-    zipkin_server1.thrift.register(TCollector, handler=submit)
-
-    @zipkin_server1.raw.register
-    def hello(request):
-        return 'hello'
-
-    zipkin_server1.listen()
-
-    client = TChannel('client', known_peers=[zipkin_server.hostport])
-    client.hooks.register(ZipkinTraceHook(tchannel=client, sample_rate=1))
-    yield client.raw(
-        service='server',
-        endpoint='hello',
-        hostport=zipkin_server1.hostport,
-        body='body',
-        trace=True,
-    )
-
-    yield f
-    assert count[0] == 1
-
-
-@pytest.mark.gen_test
 def test_zipkin_trace_sampling():
     run_times = 100000
     sample_rate = 1.0 - random.random()
@@ -238,13 +200,13 @@ def test_span_host_field():
     assert thrift_obj.spanHost.serviceName == host_span.service_name
 
 
-@pytest.mark.gen_test(timeout=111)
+@pytest.mark.gen_test
 def test_no_infinite_trace_submit():
 
     def submit(request):
         count[0] += 1
         # three time (1 time as client, 2 times as server)
-        if count[0] == 3 and f.running():
+        if count[0] == 3:
             f.set_result(count[0])
         return TResponse(True)
 
@@ -255,8 +217,18 @@ def test_no_infinite_trace_submit():
     zipkin_server.thrift.register(TCollector, handler=submit)
     zipkin_server.listen()
 
+    class TestTraceHook(EventHook):
+        def __init__(self):
+            self.invalid_traceflag = 0
+
+        def before_send_request(self, request):
+            if request.service == 'tcollector' and request.tracing.traceflags:
+                self.invalid_traceflag += 1
+
     server = TChannel('server', known_peers=[zipkin_server.hostport])
     server.hooks.register(ZipkinTraceHook(tchannel=server, sample_rate=1))
+    test_trace_hook = TestTraceHook()
+    server.hooks.register(test_trace_hook)
     server.thrift.register(TCollector, handler=submit)
 
     @server.raw.register
@@ -285,3 +257,4 @@ def test_no_infinite_trace_submit():
     )
 
     assert count[0] == (yield f)
+    assert test_trace_hook.invalid_traceflag == 0
