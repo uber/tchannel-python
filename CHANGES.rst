@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.21.1 (unreleased)
+0.21.1 (2015-12-29)
 -------------------
 
 - Fixed a bug in Zipkin instrumentation that would cause CPU spikes due to an
