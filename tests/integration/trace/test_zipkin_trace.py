@@ -39,7 +39,6 @@ from tchannel.zipkin.trace import Trace, _uniq_id
 from tchannel.zipkin.tracers import TChannelZipkinTracer
 from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
 from tests.mock_server import MockServer
-from tornado.concurrent import Future
 
 try:
     from cStringIO import StringIO
@@ -202,16 +201,10 @@ def test_span_host_field():
 
 @pytest.mark.gen_test
 def test_no_infinite_trace_submit():
+    """Zipkin submissions must not trace themselves."""
 
     def submit(request):
-        count[0] += 1
-        # three time (1 time as client, 2 times as server)
-        if count[0] == 3:
-            f.set_result(count[0])
         return TResponse(True)
-
-    count = [0]
-    f = Future()
 
     zipkin_server = TChannel('zipkin')
     zipkin_server.thrift.register(TCollector, handler=submit)
@@ -219,11 +212,11 @@ def test_no_infinite_trace_submit():
 
     class TestTraceHook(EventHook):
         def __init__(self):
-            self.invalid_traceflag = 0
+            self.tracings = []
 
         def before_send_request(self, request):
-            if request.service == 'tcollector' and request.tracing.traceflags:
-                self.invalid_traceflag += 1
+            # if request.service == 'tcollector':
+            self.tracings.append(request.tracing)
 
     server = TChannel('server', known_peers=[zipkin_server.hostport])
     server.hooks.register(ZipkinTraceHook(tchannel=server, sample_rate=1))
@@ -248,6 +241,7 @@ def test_no_infinite_trace_submit():
 
     client = TChannel('client')
     client.thrift.register(TCollector, handler=submit)
+
     yield client.raw(
         service='server',
         endpoint='hello',
@@ -256,6 +250,11 @@ def test_no_infinite_trace_submit():
         trace=True,
     )
 
-    count = yield f
-    assert count == 3
-    assert test_trace_hook.invalid_traceflag == 0
+    # Continue yielding to the IO loop to allow our zipkin traces to be
+    # handled.
+    for _ in xrange(100):
+        yield tornado.gen.moment
+
+    # One trace for 'hello' and then 3 submissions to tcollector (1 time as
+    # client, 2 times as server)
+    assert len(test_trace_hook.tracings) == 4, test_trace_hook.tracings

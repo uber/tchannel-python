@@ -123,7 +123,7 @@ class Trace(object):
 
     def __repr__(self):
         return (
-            '{0.__class__.__name__}({0.name!r} trace_id={0.trace_id!r}, '
+            '{0.__class__.__name__}(name={0.name!r}, trace_id={0.trace_id!r}, '
             'span_id={0.span_id!r}, parent_span_id={0.parent_span_id!r})'
         ).format(self)
 
