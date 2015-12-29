@@ -27,6 +27,7 @@ import tornado
 import tornado.gen
 
 from tchannel import TChannel, Response
+from tchannel.event import EventHook
 from tchannel.tornado import Request
 from tchannel.zipkin import annotation
 from tchannel.zipkin.annotation import Endpoint
@@ -38,7 +39,6 @@ from tchannel.zipkin.trace import Trace, _uniq_id
 from tchannel.zipkin.tracers import TChannelZipkinTracer
 from tchannel.zipkin.zipkin_trace import ZipkinTraceHook
 from tests.mock_server import MockServer
-from tornado.concurrent import Future
 
 try:
     from cStringIO import StringIO
@@ -57,6 +57,7 @@ def register(tchannel):
             service='handler2',
             hostport=hostport,
             endpoint="endpoint2",
+            trace=True,
         )
 
         raise tornado.gen.Return(Response(res.body, "from handler1"))
@@ -126,7 +127,6 @@ def test_zipkin_trace(trace_server):
             parent_span_id = trace[0][u'parent_span_id']
         else:
             span_id = trace[0][u'span_id']
-
     assert parent_span_id == span_id
 
 
@@ -142,45 +142,6 @@ def test_tcollector_submit(trace_server):
     results = yield TChannelZipkinTracer(tchannel).record([(trace, anns)])
 
     assert results[0].body.ok is True
-
-
-@pytest.mark.gen_test
-def test_tcollector_submit_never_retry():
-
-    def submit(request):
-        count[0] += 1
-        if f.running():
-            f.set_result(None)
-        raise Exception()
-
-    count = [0]
-    f = Future()
-
-    zipkin_server = TChannel('zipkin')
-    zipkin_server.thrift.register(TCollector, handler=submit)
-    zipkin_server.listen()
-
-    zipkin_server1 = TChannel('server')
-    zipkin_server1.thrift.register(TCollector, handler=submit)
-
-    @zipkin_server1.raw.register
-    def hello(request):
-        return 'hello'
-
-    zipkin_server1.listen()
-
-    client = TChannel('client', known_peers=[zipkin_server.hostport])
-    client.hooks.register(ZipkinTraceHook(tchannel=client, sample_rate=1))
-    yield client.raw(
-        service='server',
-        endpoint='hello',
-        hostport=zipkin_server1.hostport,
-        body='body',
-        trace=True,
-    )
-
-    yield f
-    assert count[0] == 1
 
 
 @pytest.mark.gen_test
@@ -236,3 +197,64 @@ def test_span_host_field():
     assert thrift_obj.spanHost.ipv4 == ipv4_to_int(host_span.ipv4)
     assert thrift_obj.spanHost.port == host_span.port
     assert thrift_obj.spanHost.serviceName == host_span.service_name
+
+
+@pytest.mark.gen_test
+def test_no_infinite_trace_submit():
+    """Zipkin submissions must not trace themselves."""
+
+    def submit(request):
+        return TResponse(True)
+
+    zipkin_server = TChannel('zipkin')
+    zipkin_server.thrift.register(TCollector, handler=submit)
+    zipkin_server.listen()
+
+    class TestTraceHook(EventHook):
+        def __init__(self):
+            self.tracings = []
+
+        def before_send_request(self, request):
+            # if request.service == 'tcollector':
+            self.tracings.append(request.tracing)
+
+    server = TChannel('server', known_peers=[zipkin_server.hostport])
+    server.hooks.register(ZipkinTraceHook(tchannel=server, sample_rate=1))
+    test_trace_hook = TestTraceHook()
+    server.hooks.register(test_trace_hook)
+    server.thrift.register(TCollector, handler=submit)
+
+    @server.raw.register
+    @tornado.gen.coroutine
+    def hello(request):
+        if request.body == 'body':
+            yield server.raw(
+                service='server',
+                endpoint='hello',
+                body='boy',
+                hostport=server.hostport,
+                trace=True,
+            )
+        raise tornado.gen.Return('hello')
+
+    server.listen()
+
+    client = TChannel('client')
+    client.thrift.register(TCollector, handler=submit)
+
+    yield client.raw(
+        service='server',
+        endpoint='hello',
+        hostport=server.hostport,
+        body='body',
+        trace=True,
+    )
+
+    # Continue yielding to the IO loop to allow our zipkin traces to be
+    # handled.
+    for _ in xrange(100):
+        yield tornado.gen.moment
+
+    # One trace for 'hello' and then 3 submissions to tcollector (1 time as
+    # client, 2 times as server)
+    assert len(test_trace_hook.tracings) == 4, test_trace_hook.tracings
