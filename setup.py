@@ -30,6 +30,16 @@ setup(
     description='Network multiplexing and framing protocol for RPC',
     license='MIT',
     url='https://github.com/uber/tchannel-python',
+    keywords=['rpc'],
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: Implementation :: PyPy',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+    ],
     packages=find_packages(exclude=['tests', 'tests.*']),
     package_data={
         '': ['*.thrift'],
