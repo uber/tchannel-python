@@ -4,7 +4,8 @@ Changes by Version
 0.21.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed a bug in Zipkin instrumentation that would cause CPU spikes due to an
+  infinite loop during downstream requests.
 
 
 0.21.0 (2015-12-10)
