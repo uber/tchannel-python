@@ -19,7 +19,9 @@
 # THE SOFTWARE.
 
 import pytest
+import pkg_resources
 
+from tchannel import TChannel
 from tchannel import thrift
 
 
@@ -57,3 +59,77 @@ def test_thriftrw_client_with_service_or_hostport_specified(hostport, service):
     )
 
     assert client.ThriftTest.testVoid()
+
+
+@pytest.mark.gen_test
+def test_service_inheritance(tmpdir):
+    path = tmpdir.join('myservice.thrift')
+    path.write('''
+        service Base { bool healthy() }
+
+        service MyService extends Base {
+            i32 getValue()
+        }
+    ''')
+    service = thrift.load(str(path), service='myservice')
+
+    server = TChannel('server')
+    server.listen()
+
+    @server.thrift.register(service.MyService)
+    def getValue(request):
+        return 42
+
+    @server.thrift.register(service.MyService)
+    def healthy(request):
+        return True
+
+    client = TChannel('client', known_peers=[server.hostport])
+
+    response = yield client.thrift(service.MyService.getValue())
+    assert response.body == 42
+
+    response = yield client.thrift(service.MyService.healthy())
+    assert response.body is True
+
+
+@pytest.mark.skipif(
+    pkg_resources.get_distribution('thriftrw').version.startswith('0.'),
+    reason='Imports were not supported before 1.0',
+)
+@pytest.mark.gen_test
+def test_service_inheritance_with_import(tmpdir):
+    tmpdir.join('shared/base.thrift').write(
+        'service Base { bool healthy() }', ensure=True
+    )
+
+    inherited = tmpdir.join('myservice.thrift')
+    inherited.write('''
+        include "./shared/base.thrift"
+
+        service MyService extends base.Base {
+            i32 getValue()
+        }
+    ''')
+
+    service = thrift.load(str(inherited), service='myservice')
+
+    server = TChannel('server')
+
+    @server.thrift.register(service.MyService)
+    def getValue(request):
+        return 42
+
+    @server.thrift.register(service.MyService)
+    def healthy(request):
+        return True
+
+    server.listen()
+
+    client = TChannel('client', known_peers=[server.hostport])
+
+    response = yield client.thrift(service.MyService.getValue())
+    assert response.body == 42
+
+    response = yield client.thrift(service.MyService.healthy())
+    assert response.body is True

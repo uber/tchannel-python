@@ -20,6 +20,8 @@
 
 from __future__ import absolute_import
 
+import os
+import os.path
 from itertools import chain
 from collections import deque
 from collections import namedtuple
@@ -207,6 +209,10 @@ class Cassette(object):
                 'version': VERSION,
             }
         )
+
+        cassette_dir = os.path.dirname(self.path)
+        if not os.path.isdir(cassette_dir):
+            os.makedirs(cassette_dir)
 
         with open(self.path, 'wb') as f:
             f.write(data)
