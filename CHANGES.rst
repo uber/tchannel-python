@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.21.0 (unreleased)
+0.22.0 (unreleased)
 -------------------
 
 - **BREAKING** - Removed support for the Apache ``thrift`` library.
@@ -18,15 +18,35 @@ Changes by Version
 - Fix bug which prevented requests from being retried if the candidate
   connection was previously terminated.
 
-0.20.3 (unreleased)
+
+0.21.1 (2015-12-29)
 -------------------
 
-- Add support for ``rd`` transport header.
+- Fixed a bug in Zipkin instrumentation that would cause CPU spikes due to an
+  infinite loop during downstream requests.
+
+
+0.21.0 (2015-12-10)
+-------------------
+
+- Add support for zipkin trace sampling.
 - ``tchannel.TChannel.FALLBACK`` may now be used to register fallback endpoints
   which are called for requests with unrecognized endpoints. For more
   information, see :ref:`fallback-endpoint`
 - Expose ``timeout`` and ``service`` attributes on ``Request`` objects inside
   endpoint handlers.
+- Disable the retry for all zipkin trace submit.
+- Fix Thrift service inheritance bug which caused parent methods to not be
+  propagated to child services.
+- VCR recording should not fail if the destination directory for the cassette
+  does not exist.
+- Fix bug which incorrectly encoded JSON arg scheme headers in the incorrect
+  format.
+- Add support for ``rd`` transport header.
+- **BREAKING** - Support unit testing endpoints by calling the handler
+  functions directly. This is enabled by changing ``tchannel.thrift.register``
+  to return the registered function unmodified. See Upgrade Guide for more
+  details.
 
 
 0.20.2 (2015-11-25)

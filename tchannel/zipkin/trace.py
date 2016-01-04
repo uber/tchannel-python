@@ -40,12 +40,9 @@ import random
 def _uniq_id():
     """Create a random 64-bit signed integer.
 
-    Note: By experimentation Zipkin has trouble recording traces with ids
-    larger than (2 ** 56) - 1.
-
-    :rtype: int
+    :rtype: unsigned long
     """
-    return random.randint(0, (2 ** 56) - 1)
+    return random.getrandbits(64)
 
 
 class Trace(object):
@@ -126,7 +123,7 @@ class Trace(object):
 
     def __repr__(self):
         return (
-            '{0.__class__.__name__}({0.name!r} trace_id={0.trace_id!r}, '
+            '{0.__class__.__name__}(name={0.name!r}, trace_id={0.trace_id!r}, '
             'span_id={0.span_id!r}, parent_span_id={0.parent_span_id!r})'
         ).format(self)
 

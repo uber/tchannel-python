@@ -216,3 +216,24 @@ def test_use_cassette_with_matchers(tmpdir, mock_server, call, get_body):
         assert 'world' == (yield get_body(response))
 
     assert cass.play_count == 1
+
+
+@pytest.mark.gen_test
+def test_record_into_nonexistent_directory(tmpdir, mock_server, call,
+                                           get_body):
+    path = tmpdir.join('somedir/data.yaml')
+
+    mock_server.expect_call('hello').and_write('world').once()
+
+    with vcr.use_cassette(str(path)) as cass:
+        response = yield call('hello', 'world', service='hello_service')
+        assert 'world' == (yield get_body(response))
+
+    assert cass.play_count == 0
+    assert path.check(file=True)
+
+    with vcr.use_cassette(str(path)) as cass:
+        response = yield call('hello', 'world', service='hello_service')
+        assert 'world' == (yield get_body(response))
+
+    assert cass.play_count == 1

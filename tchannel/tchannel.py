@@ -190,11 +190,9 @@ class TChannel(object):
         if routing_delegate:
             transport_headers[transport.ROUTING_DELEGATE] = routing_delegate
 
-        # If we got some parent tracing info we always want to propagate it
-        # along. Otherwise use the ``trace`` parameter that was passed in. If
-        # **that** wasn't provided, fall back to the TChannel default.
-        trace_override = self._dep_tchannel.trace if trace is None else trace
-        traceflag = bool(context.parent_tracing if context else trace_override)
+        # Fall back to our original TChannel's default if ``trace`` wasn't
+        # specified.
+        traceflag = self._dep_tchannel.trace if trace is None else trace
 
         response = yield operation.send(
             arg1=arg1,

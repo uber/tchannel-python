@@ -124,14 +124,14 @@ def binary_annotation_formatter(annotation):
 
 
 def i64_to_string(data):
-    return struct.pack('>q', data)
+    return struct.pack('>Q', data)
 
 
 def i64_to_base64(data):
     return base64.b64encode(i64_to_string(data))
 
 
-def thrift_formatter(trace, annotations, isbased64=False):
+def thrift_formatter(trace, annotations, isbased64=False, span_host=None):
     thrift_annotations = []
     binary_annotations = []
 
@@ -153,6 +153,13 @@ def thrift_formatter(trace, annotations, isbased64=False):
             binary_annotations.append(
                 binary_annotation_formatter(annotation))
 
+    if span_host:
+        span_host = tcollector.Endpoint(
+            ipv4=ipv4_to_int(span_host.ipv4),
+            port=span_host.port,
+            serviceName=span_host.service_name,
+        )
+
     thrift_trace = tcollector.Span(
         traceId=i64_to_string(trace.trace_id),
         name=trace.name,
@@ -160,7 +167,9 @@ def thrift_formatter(trace, annotations, isbased64=False):
         host=host,
         parentId=i64_to_string(trace.parent_span_id),
         annotations=thrift_annotations,
-        binaryAnnotations=binary_annotations
+        binaryAnnotations=binary_annotations,
+        debug=False,
+        spanHost=span_host,
     )
 
     if isbased64:

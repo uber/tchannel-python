@@ -1089,7 +1089,7 @@ def test_non_void_call_directly(server, ThriftTest):
     assert resp == 'howdy'
 
 
-def test_non_void_with_headers_cal_directly(
+def test_non_void_with_headers_call_directly(
     server, service, ThriftTest, server_ttypes, client_ttypes
 ):
 
@@ -1114,4 +1114,4 @@ def test_non_void_with_headers_cal_directly(
 
     assert isinstance(resp, Response)
     assert resp.headers == {'resp': 'header'}
-    assert resp.body == client_ttypes.Xtruct("resp string")
+    assert resp.body == server_ttypes.Xtruct("resp string")

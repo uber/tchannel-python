@@ -207,7 +207,14 @@ class Service(object):
         self._cls = cls
         self._spec = cls.service_spec
 
-        for func_spec in self._spec.functions:
+        self._setup_functions(self._spec)
+
+    def _setup_functions(self, spec):
+        if spec.parent:
+            # Set up inherited functions first.
+            self._setup_functions(spec.parent)
+
+        for func_spec in spec.functions:
             setattr(self, func_spec.name, Function(func_spec, self))
 
     @property

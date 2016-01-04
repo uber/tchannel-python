@@ -55,6 +55,7 @@ struct Span {
     6: required list<Annotation> annotations
     7: required list<BinaryAnnotation> binaryAnnotations
     8: optional bool debug = false
+    9: optional Endpoint spanHost        // host that sent this span. The #2 'host' field above is deprecated, set this one instead.
 }
 
 struct Response {
