@@ -103,7 +103,6 @@ class TChannel(AsyncTChannel):
 
         )
         self._threadloop = threadloop or ThreadLoop()
-        self._threadloop.start()
 
         self.advertise = self._wrap(self.advertise)
 
@@ -115,6 +114,9 @@ class TChannel(AsyncTChannel):
         assert callable(f)
 
         def wrapper(*a, **kw):
+            if not self._threadloop.is_ready():
+                self._threadloop.start()
+
             future = self._threadloop.submit(
                 lambda: f(*a, **kw)
             )
