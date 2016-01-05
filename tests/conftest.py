@@ -21,6 +21,7 @@
 from __future__ import absolute_import
 
 import pytest
+import threadloop
 
 from .mock_server import MockServer
 from .util import get_thrift_service_module
@@ -55,3 +56,11 @@ def mock_server():
 def thrift_service(tmpdir):
     with get_thrift_service_module(tmpdir, True) as m:
         yield m
+
+
+@pytest.yield_fixture
+def loop():
+    tl = threadloop.ThreadLoop()
+    tl.start()
+    yield tl
+    tl.stop()

@@ -50,6 +50,29 @@ def test_sync_client_should_get_raw_response(mock_server):
 
 
 @pytest.mark.integration
+def test_sync_client_with_injected_threadloop(mock_server, loop):
+
+    endpoint = 'health'
+    mock_server.expect_call(endpoint).and_write(
+        headers="",
+        body="OK"
+    )
+
+    client = TChannel('test-client', threadloop=loop)
+
+    future = client.raw(
+        service='foo',
+        hostport=mock_server.hostport,
+        endpoint=endpoint,
+    )
+
+    response = future.result()
+
+    assert response.headers == ""
+    assert response.body == "OK"
+
+
+@pytest.mark.integration
 def test_advertise_should_result_in_peer_connections(mock_server):
 
     body = {"hello": "world"}

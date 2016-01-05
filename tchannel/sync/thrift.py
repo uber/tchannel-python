@@ -121,6 +121,9 @@ def generate_method(method_name):
 
         :return concurrent.futures.Future:
         """
+        if not self.threadloop.is_ready():
+            self.threadloop.start()
+
         return self.threadloop.submit(
             getattr(self.async_thrift, method_name), *args, **kwargs
         )

@@ -1129,6 +1129,23 @@ def test_client_for_with_sync_tchannel(server, ThriftTest):
 
 @pytest.mark.gen_test
 @pytest.mark.call
+def test_client_for_with_sync_tchannel_and_injected_thread_loop(
+    server,
+    ThriftTest,
+    loop,
+):
+    tchannel = SyncTChannel(name='client', threadloop=loop)
+
+    client = sync_client_for('server', _ThriftTest)(
+        tchannel=tchannel,
+        hostport=server.hostport,
+    )
+
+    assert client.testString(thing='foo')
+
+
+@pytest.mark.gen_test
+@pytest.mark.call
 def test_exception_status_code_is_set(server, ThriftTest, server_ttypes):
 
     # Given this test server:
