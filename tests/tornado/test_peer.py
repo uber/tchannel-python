@@ -103,12 +103,15 @@ def test_peer_connection_failure():
     MockConnection = mock.MagicMock()
     connection = mock.MagicMock()
 
+    called = [False]
+
     with mock.patch.object(tpeer.Peer, 'connection_class', MockConnection):
 
         @gen.coroutine
         def try_connect(*args, **kwargs):
-            if MockConnection.outgoing.call_count == 1:
+            if not called[0]:
                 # If this is the first call, fail.
+                called[0] = True
                 raise ZeroDivisionError('great sadness')
             else:
                 raise gen.Return(connection)
@@ -120,6 +123,7 @@ def test_peer_connection_failure():
         future = peer.connect()
         with pytest.raises(ZeroDivisionError) as excinfo:
             yield future
+
         assert 'great sadness' in str(excinfo)
 
         got = yield peer.connect()

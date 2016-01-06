@@ -4,7 +4,10 @@ Changes by Version
 0.21.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- The synchronous client will no longer start a thread when the ``TChannel``
+  instance is initialized. This resolves an issue where an application could
+  hang indefinitely if it instantiated a synchronous ``TChannel`` at import
+  time.
 
 
 0.21.1 (2015-12-29)
