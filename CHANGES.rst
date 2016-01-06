@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.21.2 (unreleased)
+0.21.2 (2016-01-05)
 -------------------
 
 - The synchronous client will no longer start a thread when the ``TChannel``
