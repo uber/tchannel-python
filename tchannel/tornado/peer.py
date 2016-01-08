@@ -27,6 +27,8 @@ import sys
 
 from collections import deque
 from itertools import takewhile, dropwhile
+
+from tchannel.container.heap import smallest, NoMatchError
 from tornado import gen
 from tornado.iostream import StreamClosedError
 
@@ -735,19 +737,11 @@ class PeerGroup(object):
         if hostport:
             return self.get(hostport)
 
-        pop_peers = deque()
-        choose_peer = None
-        n = self.peer_heap.size()
-
-        while n > 0:
-            peer = self.peer_heap.pop_peer()
-            pop_peers.append(peer)
-            if peer.hostport not in blacklist:
-                choose_peer = peer
-                break
-            n -= 1
-
-        for p in reversed(pop_peers):
-            self.peer_heap.push_peer(p)
-
-        return choose_peer
+        try:
+            return self.peer_heap.peek(
+                smallest(
+                    self.peer_heap, (lambda p: p.hostport not in blacklist),
+                ),
+            )
+        except NoMatchError:
+            return None
