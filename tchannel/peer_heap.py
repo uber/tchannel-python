@@ -24,6 +24,8 @@ import random
 
 from .container import heap
 from .container.heap import HeapOperation
+from .container.heap import NoMatchError
+from .container.heap import smallest
 
 
 class PeerHeap(HeapOperation):
@@ -136,3 +138,20 @@ class PeerHeap(HeapOperation):
         assert peer is self.peers[peer.index], "peer is not in the heap"
 
         return heap.remove(self, peer.index)
+
+    def smallest_peer(self, predicate):
+        """Return the smallest peer in the heap that matches the given
+        predicate.
+
+        :param predicate:
+            Function that accepts an item from the heap and returns
+            true or false.
+        :returns:
+            The first peer for which ``predicate`` returned true.
+        """
+        try:
+            return self.peek(
+                smallest(self, predicate),
+            )
+        except NoMatchError:
+            return None
