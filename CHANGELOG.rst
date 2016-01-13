@@ -1,10 +1,13 @@
 Changes by Version
 ==================
 
-0.28.2 (unreleased)
+0.29.0 (unreleased)
 -------------------
 
 - Change default setting for tracing to be enabled.
+- You can now specify an override for a request's ``cn`` transport header using
+  the ``caller_name`` argument of the ``call()``, ``json()``, ``raw()``, and
+  ``thrift()`` methods of ``TChannel``.
 
 
 0.28.1 (2016-08-19)
