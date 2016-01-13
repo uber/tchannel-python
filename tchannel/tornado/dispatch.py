@@ -27,7 +27,6 @@ import tornado
 import tornado.gen
 from tornado import gen
 
-from tchannel import transport
 from tchannel.request import Request
 from tchannel.request import TransportHeaders
 from tchannel.response import response_from_mixed
@@ -179,9 +178,7 @@ class RequestDispatcher(object):
                 # convert deprecated req to new top-level req
                 b = yield request.get_body()
                 he = yield request.get_header()
-                t = request.headers
-                t = transport.to_kwargs(t)
-                t = TransportHeaders(**t)
+                t = TransportHeaders.from_dict(request.headers)
                 new_req = Request(
                     body=b,
                     headers=he,
