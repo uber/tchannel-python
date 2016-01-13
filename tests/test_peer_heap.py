@@ -53,10 +53,10 @@ def peers(request):
     return v
 
 
-def mock_peer(score=None):
+def mock_peer(rank=None):
     peer = mock.MagicMock()
     peer.index = -1
-    peer.score = score if score is not None else random.randint(0, sys.maxint)
+    peer.rank = rank if rank is not None else random.randint(0, sys.maxint)
     return peer
 
 
@@ -100,10 +100,10 @@ def test_update(peer_heap, peers):
         verify(peer_heap, 0)
 
     p = peer_heap.peers[len(peers) - 1]
-    p.score = -1
+    p.rank = -1
     peer_heap.update_peer(p)
     verify(peer_heap, 0)
-    assert peer_heap.peek_peer().score == -1
+    assert peer_heap.peek_peer().rank == -1
     assert peer_heap.peek_peer() == p
 
 
@@ -174,11 +174,11 @@ def test_heap_fuzz(peer_heap):
             if len(peer_heap) <= 0:
                 continue
             p = peer_heap.peers[random.randint(0, len(peer_heap) - 1)]
-            p.score = random.randint(0, sys.maxint)
+            p.rank = random.randint(0, sys.maxint)
             peer_heap.update_peer(p)
 
         if peer_heap.size():
-            assert smallest(peer_heap.peers) == peer_heap.peek_peer().score
+            assert smallest(peer_heap.peers) == peer_heap.peek_peer().rank
 
         verify(peer_heap, 0)
 
@@ -186,7 +186,7 @@ def test_heap_fuzz(peer_heap):
 def smallest(ps):
     m = sys.maxint
     for peer in ps:
-        if peer.score < m:
-            m = peer.score
+        if peer.rank < m:
+            m = peer.rank
 
     return m

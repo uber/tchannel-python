@@ -66,7 +66,7 @@ class Peer(object):
         'host',
         'port',
 
-        'score',
+        'rank',
         'index',
         'order',
         'chosen_count',
@@ -82,15 +82,15 @@ class Peer(object):
     # It must support a .outgoing method.
     connection_class = StreamConnection
 
-    def __init__(self, tchannel, hostport, score=None, on_conn_change=None):
+    def __init__(self, tchannel, hostport, rank=None, on_conn_change=None):
         """Initialize a Peer
 
         :param tchannel:
             TChannel through which requests will be made.
         :param hostport:
             Host-port this Peer is for.
-        :param score:
-            The score of a peer will affect the chance that the peer gets
+        :param rank:
+            The rank of a peer will affect the chance that the peer gets
             selected when the client sends outbound requests.
         :param on_conn_change:
             A callback method takes Peer object as input and is called whenever
@@ -112,12 +112,12 @@ class Peer(object):
         # helps avoid making multiple outgoing connections.
         self._connecting = None
 
-        # score is used to measure the performance of the peer.
+        # rank is used to measure the performance of the peer.
         # It will be used in the peer heap.
-        if score is not None:
-            self.score = score
+        if rank is not None:
+            self.rank = rank
         else:
-            self.score = sys.maxint
+            self.rank = sys.maxint
         # index records the position of the peer in the peer heap
         self.index = -1
         # order maintains the push order of the peer in the heap.
@@ -577,7 +577,7 @@ class PeerGroup(object):
     __slots__ = (
         'tchannel',
         'peer_heap',
-        'score_calculator',
+        'rank_calculator',
         '_peers',
         '_resetting',
         '_reset_condition',
@@ -599,7 +599,7 @@ class PeerGroup(object):
         self._resetting = False
 
         self.peer_heap = PeerHeap()
-        self.score_calculator = PreferIncomingCalculator()
+        self.rank_calculator = PreferIncomingCalculator()
 
     def __str__(self):
         return "<PeerGroup peers=%s>" % str(self._peers)
@@ -669,7 +669,7 @@ class PeerGroup(object):
                 hostport=peer,
                 on_conn_change=self.update_heap,
             )
-            peer.score = self.score_calculator.get_score(peer)
+            peer.rank = self.rank_calculator.get_rank(peer)
 
         assert peer.hostport not in self._peers, (
             "%s already has a peer" % peer.hostport
@@ -679,12 +679,12 @@ class PeerGroup(object):
         self.peer_heap.push_peer(peer)
 
     def update_heap(self, peer):
-        """Recalculate the peer's score and update itself in the peer heap."""
-        score = self.score_calculator.get_score(peer)
-        if score == peer.score:
+        """Recalculate the peer's rank and update itself in the peer heap."""
+        rank = self.rank_calculator.get_rank(peer)
+        if rank == peer.rank:
             return
 
-        peer.score = score
+        peer.rank = rank
         self.peer_heap.update_peer(peer)
 
     @property

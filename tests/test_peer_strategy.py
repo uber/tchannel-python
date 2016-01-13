@@ -31,16 +31,16 @@ from tchannel.tornado.peer import Peer
 
 
 @pytest.mark.gen_test
-def test_get_score_no_connection():
+def test_get_rank_no_connection():
     server = TChannel('server')
     server.listen()
     peer = Peer(TChannel('test'), '10.10.101.21:230')
     calculator = PreferIncomingCalculator()
-    assert sys.maxint == calculator.get_score(peer)
+    assert sys.maxint == calculator.get_rank(peer)
 
 
 @pytest.mark.gen_test
-def test_get_score_with_outgoing():
+def test_get_rank_with_outgoing():
     server = TChannel('server')
     server.listen()
     connection = yield TornadoConnection.outgoing(server.hostport)
@@ -48,11 +48,11 @@ def test_get_score_with_outgoing():
     peer = Peer(TChannel('test'), '10.10.101.21:230')
     calculator = PreferIncomingCalculator()
     peer.register_outgoing_conn(connection)
-    assert PreferIncomingCalculator.TIERS[1] == calculator.get_score(peer)
+    assert PreferIncomingCalculator.TIERS[1] == calculator.get_rank(peer)
 
 
 @pytest.mark.gen_test
-def test_get_score_with_imcoming():
+def test_get_rank_with_imcoming():
     server = TChannel('server')
     server.listen()
     connection = yield TornadoConnection.outgoing(server.hostport)
@@ -60,11 +60,11 @@ def test_get_score_with_imcoming():
     peer = Peer(TChannel('test'), '10.10.101.21:230')
     calculator = PreferIncomingCalculator()
     peer.register_incoming_conn(connection)
-    assert sys.maxint != calculator.get_score(peer)
+    assert sys.maxint != calculator.get_rank(peer)
 
 
 @pytest.mark.gen_test
-def test_get_score_ephemeral():
+def test_get_rank_ephemeral():
     server = TChannel('server')
     server.listen()
     connection = yield TornadoConnection.outgoing(server.hostport)
@@ -75,4 +75,4 @@ def test_get_score_ephemeral():
     peer.host = '0.0.0.0'
     peer.port = 0
     calculator = PreferIncomingCalculator()
-    assert sys.maxint == calculator.get_score(peer)
+    assert sys.maxint == calculator.get_rank(peer)

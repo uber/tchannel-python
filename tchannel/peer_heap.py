@@ -29,12 +29,12 @@ from .container.heap import smallest
 
 
 class PeerHeap(HeapOperation):
-    """PeerHeap maintains a min-heap of peers based on their scores.
+    """PeerHeap maintains a min-heap of peers based on their ranks.
 
-    Peer in the heap will be arranged based on the peer's score and peer's
+    Peer in the heap will be arranged based on the peer's rank and peer's
     order. Order is equal to peer heap's current order number plus random value
     within the current peer size. It solves two problems when peers are in
-    same score:
+    same rank:
 
     Dead peers: If the order is completely random, then an unlucky peer
     with a very bad assigned order may never get selected.
@@ -46,7 +46,7 @@ class PeerHeap(HeapOperation):
     between which host gets overloaded with requests.
 
     All in all, it will keep certain level randomization but at the same
-    time make the peer score not deterministic among different tchannel
+    time make the peer rank not deterministic among different tchannel
     instances.
 
     """
@@ -63,19 +63,19 @@ class PeerHeap(HeapOperation):
     def lt(self, i, j):
         """Compare the priority of two peers.
 
-        Primary comparator will be the score of each peer. If the ``score`` is
+        Primary comparator will be the rank of each peer. If the ``rank`` is
         same then compare the ``order``. The ``order`` attribute of the peer
         tracks the heap push order of the peer. This help solve the imbalance
-        problem caused by randomization when deal with same score situation.
+        problem caused by randomization when deal with same rank situation.
 
         :param i: ith peer
         :param j: jth peer
         :return: True or False
         """
-        if self.peers[i].score == self.peers[j].score:
+        if self.peers[i].rank == self.peers[j].rank:
             return self.peers[i].order < self.peers[j].order
 
-        return self.peers[i].score < self.peers[j].score
+        return self.peers[i].rank < self.peers[j].rank
 
     def peek(self, i):
         return self.peers[i]
@@ -94,7 +94,7 @@ class PeerHeap(HeapOperation):
         self.peers[j].index = j
 
     def update_peer(self, peer):
-        """Update the peer's position in the heap after peer's score changed"""
+        """Update the peer's position in the heap after peer's rank changed"""
         heap.fix(self, peer.index)
 
     def pop_peer(self):

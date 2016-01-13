@@ -23,18 +23,18 @@ from __future__ import absolute_import
 import sys
 
 
-class ScoreCalculator(object):
-    """ScoreCalculator provides interface to calculate the score of a peer."""
-    def get_score(self, peer):
+class RankCalculator(object):
+    """rankCalculator provides interface to calculate the rank of a peer."""
+    def get_rank(self, peer):
         raise NotImplementedError()
 
 
-class ZeroScoreCalculator(ScoreCalculator):
-    def get_score(self, peer):
+class ZerorankCalculator(RankCalculator):
+    def get_rank(self, peer):
         return 0
 
 
-class PreferIncomingCalculator(ScoreCalculator):
+class PreferIncomingCalculator(RankCalculator):
 
     # TIERS lists three ranges for three different kinds of peers.
     # 0: ephemeral peers or unconnected peers
@@ -42,10 +42,10 @@ class PreferIncomingCalculator(ScoreCalculator):
     # 2: peers with incoming connections
     TIERS = [sys.maxint, sys.maxint / 2, 0]
 
-    def get_score(self, peer):
-        """Calculate the peer score based on connections.
+    def get_rank(self, peer):
+        """Calculate the peer rank based on connections.
 
-        If the peer has no incoming connections, it will have largest score.
+        If the peer has no incoming connections, it will have largest rank.
         In our peer selection strategy, the largest number has least priority
         in the heap.
 
@@ -53,7 +53,7 @@ class PreferIncomingCalculator(ScoreCalculator):
         pending requests and responses.
 
         :param peer: instance of `tchannel.tornado.peer.Peer`
-        :return: score of the peer
+        :return: rank of the peer
         """
         if peer.is_ephemeral or not peer.connections:
             return self.TIERS[0]
