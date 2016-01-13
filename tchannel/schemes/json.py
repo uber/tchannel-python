@@ -51,6 +51,7 @@ class JsonArgScheme(object):
         shard_key=None,
         trace=None,
         routing_delegate=None,
+        caller_name=None,
     ):
         """Make JSON TChannel Request.
 
@@ -90,6 +91,9 @@ class JsonArgScheme(object):
         :param routing_delegate:
             Name of a service to which the request router should forward the
             request instead of the service specified in the call req.
+        :param caller_name:
+            Name of the service making the request. Defaults to the name
+            provided when the TChannel was instantiated.
 
         :rtype: Response
         """
@@ -112,6 +116,7 @@ class JsonArgScheme(object):
             shard_key=shard_key,
             trace=trace,
             routing_delegate=routing_delegate,
+            caller_name=caller_name,
         )
 
         # deserialize

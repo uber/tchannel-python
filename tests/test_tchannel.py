@@ -492,3 +492,50 @@ def test_forwarding(tmpdir):
         headers={'expect': 'success'},
     )
     assert response.body == 'world'
+
+
+@pytest.mark.gen_test
+def test_per_request_caller_name_raw():
+    server = TChannel('server')
+    server.listen()
+
+    @server.raw.register('foo')
+    def handler(request):
+        assert request.transport.caller_name == 'bar'
+        return b'success'
+
+    client = TChannel('client', known_peers=[server.hostport])
+    res = yield client.raw('service', 'foo', b'', caller_name='bar')
+    assert res.body == b'success'
+
+
+@pytest.mark.gen_test
+def test_per_request_caller_name_json():
+    server = TChannel('server')
+    server.listen()
+
+    @server.json.register('foo')
+    def handler(request):
+        assert request.transport.caller_name == 'bar'
+        return {'success': True}
+
+    client = TChannel('client', known_peers=[server.hostport])
+    res = yield client.json('service', 'foo', {}, caller_name='bar')
+    assert res.body == {'success': True}
+
+
+@pytest.mark.gen_test
+def test_per_request_caller_name_thrift(thrift_module):
+    server = TChannel('server')
+    server.listen()
+
+    @server.thrift.register(thrift_module.Service)
+    def healthy(request):
+        assert request.transport.caller_name == 'bar'
+        return True
+
+    client = TChannel('client', known_peers=[server.hostport])
+    res = yield client.thrift(
+        thrift_module.Service.healthy(), caller_name='bar',
+    )
+    assert res.body is True
