@@ -30,12 +30,6 @@ class RankCalculator(object):
         raise NotImplementedError()
 
 
-class ZerorankCalculator(RankCalculator):
-
-    def get_rank(self, peer):
-        return 0
-
-
 class PreferIncomingCalculator(RankCalculator):
 
     # TIERS lists three ranges for three different kinds of peers.
