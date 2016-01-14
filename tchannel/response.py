@@ -23,6 +23,7 @@ from __future__ import (
 )
 
 from . import schemes
+from . import transport as t
 from .status import OK
 
 __all__ = ['Response']
@@ -74,16 +75,30 @@ class TransportHeaders(object):
         'scheme',
     )
 
-    def __init__(self,
-                 failure_domain=None,
-                 scheme=None,
-                 **kwargs):
-
+    def __init__(self, failure_domain=None, scheme=None):
         if scheme is None:
             scheme = schemes.RAW
 
         self.failure_domain = failure_domain
         self.scheme = scheme
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            failure_domain=data.get(t.FAILURE_DOMAIN),
+            scheme=data.get(t.SCHEME),
+        )
+
+    def to_dict(self):
+        m = {}
+
+        if self.failure_domain is not None:
+            m[t.FAILURE_DOMAIN] = self.failure_domain
+
+        if self.scheme is not None:
+            m[t.SCHEME] = self.scheme
+
+        return m
 
 
 def response_from_mixed(mixed):

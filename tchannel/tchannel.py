@@ -207,12 +207,11 @@ class TChannel(object):
         # unwrap response
         body = yield response.get_body()
         headers = yield response.get_header()
-        t = transport.to_kwargs(response.headers)
-        t = TransportHeaders(**t)
+        t = TransportHeaders.from_dict(response.headers)
         result = Response(
             body=body,
             headers=headers,
-            transport=t
+            transport=t,
         )
 
         raise gen.Return(result)

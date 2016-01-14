@@ -23,6 +23,7 @@ from __future__ import (
 )
 
 from . import schemes
+from . import transport as t
 
 __all__ = ['Request']
 
@@ -114,8 +115,7 @@ class TransportHeaders(object):
                  scheme=None,
                  speculative_exe=None,
                  shard_key=None,
-                 routing_delegate=None,
-                 **kwargs):
+                 routing_delegate=None):
 
         if scheme is None:
             scheme = schemes.RAW
@@ -129,3 +129,49 @@ class TransportHeaders(object):
         self.scheme = scheme
         self.speculative_exe = speculative_exe
         self.shard_key = shard_key
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            caller_name=data.get(t.CALLER_NAME),
+            claim_at_finish=data.get(t.CLAIM_AT_FINISH),
+            claim_at_start=data.get(t.CLAIM_AT_START),
+            failure_domain=data.get(t.FAILURE_DOMAIN),
+            retry_flags=data.get(t.RETRY_FLAGS),
+            routing_delegate=data.get(t.ROUTING_DELEGATE),
+            scheme=data.get(t.SCHEME),
+            shard_key=data.get(t.SHARD_KEY),
+            speculative_exe=data.get(t.SPECULATIVE_EXE),
+        )
+
+    def to_dict(self):
+        m = {}
+
+        if self.caller_name is not None:
+            m[t.CALLER_NAME] = self.caller_name
+
+        if self.claim_at_start is not None:
+            m[t.CLAIM_AT_START] = self.claim_at_start
+
+        if self.claim_at_finish is not None:
+            m[t.CLAIM_AT_FINISH] = self.claim_at_finish
+
+        if self.failure_domain is not None:
+            m[t.FAILURE_DOMAIN] = self.failure_domain
+
+        if self.retry_flags is not None:
+            m[t.RETRY_FLAGS] = self.retry_flags
+
+        if self.routing_delegate is not None:
+            m[t.ROUTING_DELEGATE] = self.routing_delegate
+
+        if self.scheme is not None:
+            m[t.SCHEME] = self.scheme
+
+        if self.shard_key is not None:
+            m[t.SHARD_KEY] = self.shard_key
+
+        if self.speculative_exe is not None:
+            m[t.SPECULATIVE_EXE] = self.speculative_exe
+
+        return m
