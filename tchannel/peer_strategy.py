@@ -24,12 +24,14 @@ import sys
 
 
 class RankCalculator(object):
-    """rankCalculator provides interface to calculate the rank of a peer."""
+    """RankCalculator calculates the rank of a peer."""
+
     def get_rank(self, peer):
         raise NotImplementedError()
 
 
 class ZerorankCalculator(RankCalculator):
+
     def get_rank(self, peer):
         return 0
 
