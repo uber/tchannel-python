@@ -22,78 +22,81 @@ from __future__ import (
     absolute_import, unicode_literals, print_function, division
 )
 
-from tornado import gen, ioloop
-from tchannel import TChannel
+import mock
+import random
+
+from tchannel.tornado.peer import (
+    Peer as _Peer,
+    PeerGroup as _PeerGroup,
+)
 
 
-servers = None
-client = None
+NUM_PEERS = 1000
 
 
-def setUpServer(num):
-    servers = []
-    for i in xrange(num):
-        server = TChannel('server' + str(i))
+class FakeConnection(object):
 
-        @server.raw.register
-        def hello(request):
-            return 'hello'
-        server.listen()
-        servers.append(server)
-     
-    return servers
+    def __init__(self, hostport):
+        self.hostport = hostport
+        self.closed = False
 
+    @classmethod
+    def outgoing(cls, hostport, process_name=None, serve_hostport=None,
+                 handler=None, tchannel=None):
+        return FakeConnection(hostport)
 
-@gen.coroutine
-def setUpClient(servers):
-    router = []
-    for i in xrange(1000):
-        router.append('1.1.1.1:'+str(i))
-    client = TChannel('client', known_peers=router)
+    def add_done_callback(self, cb):
+        return cb(self)
 
-    @client.raw.register
-    def hello(request):
-        return 'hello'
-        
-    client.listen()
+    def exception(self):
+        return None
 
-    for i in xrange(100):
-        server = servers[i]
-        yield server.raw(
-            service='server',
-            endpoint='hello',
-            body='hi',
-            hostport=client.hostport,
-        )
+    def result(self):
+        return self
 
-    raise gen.Return(client)
+    def set_close_callback(self, cb):
+        pass
 
 
-@gen.coroutine
-def peer_test():
-    global servers, client
-    fs = []
-    for _ in xrange(100):
-        fs.append(client.raw(
-            service='server',
-            endpoint='hello',
-            body='hi',
-            timeout=1000
-        ))
-    yield fs
+class Peer(_Peer):
+    connection_class = FakeConnection
 
 
-def stress_test():
-    ioloop.IOLoop.current().run_sync(peer_test)
+class PeerGroup(_PeerGroup):
+    peer_class = Peer
 
 
-@gen.coroutine
-def setup():
-    global servers, client
-    servers = setUpServer(100)
-    client = yield setUpClient(servers)
+def hostport():
+    host = b'.'.join(bytes(random.randint(0, 255)) for i in xrange(4))
+    port = random.randint(1000, 30000)
+    return b'%s:%d' % (host, port)
 
 
-def test_peer_heap(benchmark):
-    ioloop.IOLoop.current().run_sync(setup)
-    benchmark(stress_test)
+def peer(tchannel, hostport):
+    return Peer(tchannel, hostport)
+
+
+def test_choose(benchmark):
+    tchannel = mock.MagicMock()
+    group = PeerGroup(tchannel)
+
+    # Register 1000 random peers
+    for i in xrange(NUM_PEERS):
+        peer = group.get(hostport())
+
+    connected_peers = set()
+
+    # Add one outgoing connection to a random peer.
+    peer = group.peers[random.randint(0, NUM_PEERS-1)]
+    peer.connect()
+    connected_peers.add(peer.hostport)
+
+    # Add incoming connections from 50 random peers.
+    while len(connected_peers) < 50:
+        peer = group.peers[random.randint(0, NUM_PEERS-1)]
+        if peer.hostport in connected_peers:
+            continue
+        peer.register_incoming(FakeConnection(peer.hostport))
+        connected_peers.add(peer.hostport)
+
+    benchmark(group.choose)

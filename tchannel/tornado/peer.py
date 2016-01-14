@@ -630,7 +630,6 @@ class PeerGroup(object):
         assert hostport, "hostport is required"
         if hostport not in self._peers:
             self.add(hostport)
-            return self._peers[hostport]
 
         return self._peers[hostport]
 
@@ -667,18 +666,17 @@ class PeerGroup(object):
             peer = self.peer_class(
                 tchannel=self.tchannel,
                 hostport=peer,
-                on_conn_change=self.update_heap,
+                on_conn_change=self._update_heap,
             )
-            peer.rank = self.rank_calculator.get_rank(peer)
 
         assert peer.hostport not in self._peers, (
             "%s already has a peer" % peer.hostport
         )
-
+        peer.rank = self.rank_calculator.get_rank(peer)
         self._peers[peer.hostport] = peer
         self.peer_heap.push_peer(peer)
 
-    def update_heap(self, peer):
+    def _update_heap(self, peer):
         """Recalculate the peer's rank and update itself in the peer heap."""
         rank = self.rank_calculator.get_rank(peer)
         if rank == peer.rank:
