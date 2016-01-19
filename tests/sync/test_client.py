@@ -21,9 +21,9 @@
 from __future__ import absolute_import
 
 import pytest
-
+from tchannel import thrift
 from tchannel.sync import TChannel
-from tchannel.errors import TimeoutError
+from tchannel.errors import TimeoutError, BadRequestError
 
 
 @pytest.mark.integration
@@ -88,7 +88,6 @@ def test_advertise_should_result_in_peer_connections(mock_server):
 
     client = TChannel('test-client')
     future = client.advertise(routers)
-
     result = future.result()
 
     assert result.body == body
@@ -115,3 +114,96 @@ def test_should_discover_ip():
     hostport = client.hostport
 
     assert '0.0.0.0:0' != hostport
+
+
+@pytest.mark.gen_test
+def test_sync_register_json():
+    sync_client = TChannel('test-client')
+
+    @sync_client.json.register
+    def hello(request):
+        return {}
+
+    sync_client.listen()
+
+    from tchannel import TChannel as AsyncTchannel
+    async_client = AsyncTchannel('s')
+    with pytest.raises(BadRequestError):
+        yield async_client.json(
+            service='test-client',
+            endpoint='hello',
+            hostport=sync_client.hostport
+        )
+
+    sync_client.json.register(hello)
+    with pytest.raises(BadRequestError):
+        yield async_client.json(
+            service='test-client',
+            endpoint='hello',
+            hostport=sync_client.hostport
+        )
+
+
+@pytest.mark.gen_test
+def test_sync_register_raw():
+    sync_client = TChannel('test-client')
+
+    @sync_client.json.register
+    def hello(request):
+        return ""
+
+    sync_client.listen()
+
+    from tchannel import TChannel as AsyncTchannel
+    async_client = AsyncTchannel('s')
+    with pytest.raises(BadRequestError):
+        yield async_client.json(
+            service='test-client',
+            endpoint='hello',
+            hostport=sync_client.hostport
+        )
+
+    sync_client.json.register(hello)
+    with pytest.raises(BadRequestError):
+        yield async_client.json(
+            service='test-client',
+            endpoint='hello',
+            hostport=sync_client.hostport
+        )
+
+
+@pytest.mark.gen_test
+def test_sync_register_thrift():
+    sync_client = TChannel('test-client')
+
+    ThriftTest = thrift.load(
+        path='tests/data/idls/ThriftTest.thrift'
+    ).SecondService
+
+    @sync_client.json.register(ThriftTest)
+    def blahBlah(request):
+        pass
+
+    sync_client.listen()
+
+    from tchannel import TChannel as AsyncTchannel
+
+    ThriftTest = thrift.load(
+        path='tests/data/idls/ThriftTest.thrift',
+        service='test-client',
+        hostport=sync_client.hostport,
+    ).SecondService
+
+    async_client = AsyncTchannel('s')
+    with pytest.raises(BadRequestError):
+        yield async_client.thrift(
+            ThriftTest.blahBlah(),
+            hostport=sync_client.hostport
+        )
+
+    sync_client.json.register(blahBlah, ThriftTest)
+    with pytest.raises(BadRequestError):
+        yield async_client.thrift(
+            ThriftTest.blahBlah(),
+            hostport=sync_client.hostport,
+        )
