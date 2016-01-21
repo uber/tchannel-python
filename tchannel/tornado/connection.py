@@ -139,6 +139,9 @@ class TornadoConnection(object):
 
         self.tchannel = tchannel
         self._close_cb = None
+        # callback that will be called when there is a change in the outbound
+        # pending request/response lists.
+        self._outbound_pending_change_cb = None
 
         self.reader = Reader(self.connection)
         self.writer = Writer(self.connection)
@@ -151,6 +154,12 @@ class TornadoConnection(object):
         responses."""
         return (len(self._outbound_pending_res) +
                 len(self._outbound_pending_req))
+
+    def set_outbound_pending_change_callback(self, cb):
+        """Specify a function to be called when outbound pending request or
+        response list changed.
+        """
+        self._outbound_pending_change_cb = cb
 
     def set_close_callback(self, cb):
         """Specify a function to be called when this connection is closed.
@@ -485,6 +494,27 @@ class TornadoConnection(object):
     def pong(self):
         return self.writer.put(messages.PingResponseMessage())
 
+    def _outbound_pending_change(self):
+        """Called when there is a change in the outbound pending list."""
+        if self._outbound_pending_change_cb:
+            self._outbound_pending_change_cb()
+
+    def add_outbound_pending_res(self, res):
+        self._outbound_pending_res[res.id] = res
+        self._outbound_pending_change()
+
+    def add_outbound_pending_req(self, req):
+        self._outbound_pending_req[req.id] = req
+        self._outbound_pending_change()
+
+    def remove_outbound_pending_res(self, res):
+        self._outbound_pending_res.pop(res.id, None)
+        self._outbound_pending_change()
+
+    def remove_outbound_pending_req(self, req):
+        self._outbound_pending_req.pop(req.id, None)
+        self._outbound_pending_change()
+
 
 class StreamConnection(TornadoConnection):
     """Streaming request/response into protocol messages and sent by tornado
@@ -557,7 +587,7 @@ class StreamConnection(TornadoConnection):
     @tornado.gen.coroutine
     def post_response(self, response):
         try:
-            self._outbound_pending_res[response.id] = response
+            self.add_outbound_pending_res(response)
             # TODO: before_send_response
             yield self._stream(response, self.response_message_factory)
 
@@ -567,7 +597,7 @@ class StreamConnection(TornadoConnection):
                 response,
             )
         finally:
-            self._outbound_pending_res.pop(response.id, None)
+            self.remove_outbound_pending_res(response)
             response.close_argstreams(force=True)
 
     def stream_request(self, request):
@@ -600,9 +630,9 @@ class StreamConnection(TornadoConnection):
 
         future = tornado.gen.Future()
         self._outbound_pending_call[request.id] = future
-        self._outbound_pending_req[request.id] = request
+        self.add_outbound_pending_req(request)
         self.stream_request(request).add_done_callback(
-            lambda f: self._outbound_pending_req.pop(request.id, None)
+            lambda f: self.remove_outbound_pending_req(request)
         )
 
         if request.ttl:
