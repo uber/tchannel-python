@@ -39,6 +39,12 @@ class _MockConnection(object):
     def getvalue(self):
         return self.buff
 
+    def set_outbound_pending_change_callback(self, cb):
+        pass
+
+    def set_close_callback(self, cb):
+        pass
+
 
 @pytest.fixture
 def connection():

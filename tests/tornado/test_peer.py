@@ -25,12 +25,16 @@ from __future__ import absolute_import
 
 import mock
 import pytest
+
 from tornado import gen
 
 from tchannel import TChannel
 from tchannel.errors import NoAvailablePeerError
-
 from tchannel.tornado import peer as tpeer
+from tchannel.tornado import Request
+from tchannel.tornado import Response
+from tchannel.tornado.connection import TornadoConnection
+from tchannel.tornado.peer import Peer
 from tchannel.tornado.stream import InMemStream
 from tchannel.tornado.stream import read_full
 
@@ -204,5 +208,121 @@ def test_peer_incoming_connections_are_preferred(request):
 
     assert (yield peer.connect()) is outgoing
 
-    peer.register_incoming(incoming)
+    peer.register_incoming_conn(incoming)
     assert (yield peer.connect()) is incoming
+
+
+@pytest.fixture
+def peer():
+    return Peer(
+        tchannel=TChannel('peer'),
+        hostport='127.0.0.1:21300',
+    )
+
+
+def test_on_conn_change(peer, connection):
+    c = [0]
+
+    def conn_change_db(peer):
+        c[0] += 1
+
+    peer.set_on_conn_change_callback(conn_change_db)
+    peer.register_incoming_conn(connection)
+    assert c[0] == 1
+
+    peer.register_outgoing_conn(connection)
+    assert c[0] == 2
+
+
+@pytest.mark.gen_test
+def test_outbound_pending_change():
+    server = TChannel('server')
+    server.listen()
+    connection = yield TornadoConnection.outgoing(server.hostport)
+    c = [0]
+
+    def outbound_pending_change_callback():
+        c[0] += 1
+
+    connection.set_outbound_pending_change_callback(
+        outbound_pending_change_callback
+    )
+
+    connection.add_outbound_pending_req(Request())
+    assert c[0] == 1
+    connection.add_outbound_pending_res(Response())
+    assert c[0] == 2
+    connection.remove_outbound_pending_req(Request())
+    assert c[0] == 3
+    connection.remove_outbound_pending_res(Response())
+    assert c[0] == 4
+
+
+@pytest.mark.gen_test
+def test_outbound_pending_change_propagate(peer):
+    server = TChannel('server')
+    server.listen()
+    connection = yield TornadoConnection.outgoing(server.hostport)
+
+    peer.register_incoming_conn(connection)
+    b = [0]
+
+    def conn_change_db(peer):
+        b[0] += 1
+
+    peer.set_on_conn_change_callback(conn_change_db)
+
+    connection.add_outbound_pending_req(Request())
+    assert b[0] == 1
+    connection.add_outbound_pending_res(Response())
+    assert b[0] == 2
+    connection.remove_outbound_pending_req(Request())
+    assert b[0] == 3
+    connection.remove_outbound_pending_res(Response())
+    assert b[0] == 4
+
+
+@pytest.fixture
+def hostports():
+    return ['127.0.0.1:' + str(i) for i in range(100)]
+
+
+def test_choose(hostports):
+    tchannel = TChannel('test')
+    peer_group = tchannel._dep_tchannel.peers
+    for hp in hostports:
+        peer_group.get(hp)
+
+    n = len(hostports)
+    for _ in hostports:
+        peer_group.choose()
+        assert peer_group.peer_heap.size() == n
+
+
+def test_choose_with_blacklist(hostports):
+    tchannel = TChannel('test')
+    peer_group = tchannel._dep_tchannel.peers
+    for hp in hostports:
+        peer_group.get(hp)
+
+    n = len(hostports)
+    blacklist = set()
+    for _ in hostports:
+        peer = peer_group.choose(blacklist=blacklist)
+        assert peer not in blacklist
+        blacklist.add(peer.hostport)
+        assert peer_group.peer_heap.size() == n
+
+
+def test_choose_with_target_hostport(hostports):
+    tchannel = TChannel('test')
+    peer_group = tchannel._dep_tchannel.peers
+    for hp in hostports:
+        peer_group.get(hp)
+
+    n = len(hostports) + 1
+    target = '1.0.0.1:9000'
+    for _ in hostports:
+        peer = peer_group.choose(hostport=target)
+        assert target == peer.hostport
+        assert peer_group.peer_heap.size() == n

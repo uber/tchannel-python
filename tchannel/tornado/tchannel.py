@@ -238,7 +238,7 @@ class TChannel(object):
             Defaults to 'c'.
         """
         # TODO disallow certain parameters or don't propagate them backwards.
-        # For example, blacklist and score threshold aren't really
+        # For example, blacklist and rank threshold aren't really
         # user-configurable right now.
         return self.peers.request(hostport=hostport,
                                   service=service,
@@ -430,7 +430,7 @@ class TChannelServer(tornado.tcpserver.TCPServer):
         self.tchannel.peers.get(
             "%s:%s" % (conn.remote_host,
                        conn.remote_host_port)
-        ).register_incoming(conn)
+        ).register_incoming_conn(conn)
 
         yield conn.serve(handler=self._handle)
 

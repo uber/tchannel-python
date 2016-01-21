@@ -151,10 +151,7 @@ class RequestDispatcher(object):
         request.tracing.name = request.endpoint
         tchannel.event_emitter.fire(EventType.before_receive_request, request)
 
-        handler = self.handlers.get(request.endpoint)
-
-        if handler is None:
-            handler = self.handlers[self.FALLBACK]
+        handler = self.get_endpoint(request.endpoint)
 
         requested_as = request.headers.get('as', None)
         expected_as = handler.req_serializer.name
@@ -252,6 +249,14 @@ class RequestDispatcher(object):
             log.exception(error.description)
 
         raise gen.Return(response)
+
+    def get_endpoint(self, name):
+        handler = self.handlers.get(name)
+
+        if handler is None:
+            handler = self.handlers[self.FALLBACK]
+
+        return handler
 
     def register(
             self,

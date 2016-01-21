@@ -80,7 +80,7 @@ def test_after_send_error_event_called():
                 service='test',
                 arg1='endpoint',
                 hostport=tchannel.hostport,
-                timeout=0.02,
+                timeout=0.3,
             )
         mock_fire.assert_any_call(
             mock.ANY, EventType.after_send_error, mock.ANY,
