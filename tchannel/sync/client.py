@@ -20,9 +20,14 @@
 
 from __future__ import absolute_import
 
+import logging
+
 from threadloop import ThreadLoop
 
 from tchannel import TChannel as AsyncTChannel
+
+
+log = logging.getLogger('tchannel')
 
 
 class TChannel(AsyncTChannel):
@@ -106,25 +111,45 @@ class TChannel(AsyncTChannel):
 
         self.advertise = self._wrap(self.advertise)
 
-        self.raw = self._wrap(self.raw)
-        self.thrift = self._wrap(self.thrift)
-        self.json = self._wrap(self.json)
+        self.raw = _SyncScheme(self.raw, self._threadloop)
+        self.thrift = _SyncScheme(self.thrift, self._threadloop)
+        self.json = _SyncScheme(self.json, self._threadloop)
+
+    def register(self, *args, **kwargs):
+        _register(*args, **kwargs)
 
     def _wrap(self, f):
         assert callable(f)
 
         def wrapper(*a, **kw):
-            if not self._threadloop.is_ready():
-                self._threadloop.start()
-
-            future = self._threadloop.submit(
-                lambda: f(*a, **kw)
-            )
-            return future
+            return _submit(self._threadloop, f, *a, **kw)
 
         return wrapper
 
-    def register(self, *a, **kw):
-        raise NotImplementedError(
-            "Registration not yet supported for sync clients",
-        )
+
+class _SyncScheme(object):
+    """Wrapper for the API that in the async TChannel class."""
+    def __init__(self, scheme, threadloop):
+        self.scheme = scheme
+        self._threadloop = threadloop
+
+    def __call__(self, *args, **kwargs):
+        return _submit(self._threadloop, self.scheme, *args, **kwargs)
+
+    def register(self, *args, **kwargs):
+        return _register(*args, **kwargs)
+
+
+def _register(*args, **kwargs):
+    log.warning("Registration not yet supported for sync tchannel.")
+
+    def decorator(fn):
+        return fn
+
+    return decorator
+
+
+def _submit(threadloop, func, *args, **kwargs):
+    if not threadloop.is_ready():
+        threadloop.start()
+    return threadloop.submit(func, *args, **kwargs)
