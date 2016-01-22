@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.21.3 (unreleased)
+0.21.3 (2016-01-22)
 -------------------
 
 - Attempting to register endpoints against a synchronous TChannel is now a no-op instead of a crash.
