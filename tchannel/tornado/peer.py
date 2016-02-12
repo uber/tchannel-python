@@ -47,7 +47,6 @@ from .request import Request
 from .stream import InMemStream
 from .stream import read_full
 from .stream import maybe_stream
-from .timeout import timeout
 
 log = logging.getLogger('tchannel')
 
@@ -399,26 +398,25 @@ class PeerClientOperation(object):
         self.tchannel.event_emitter.fire(EventType.before_send_request, req)
         response_future = connection.send_request(req)
 
-        with timeout(response_future, req.ttl):
-            try:
-                response = yield response_future
-            except StreamClosedError as error:
-                network_error = NetworkError(
-                    id=req.id,
-                    description=error.message,
-                    tracing=req.tracing,
-                )
-                # event: after_receive_error
-                self.tchannel.event_emitter.fire(
-                    EventType.after_receive_error, req, error,
-                )
-                raise network_error
-            except TChannelError as error:
-                # event: after_receive_error
-                self.tchannel.event_emitter.fire(
-                    EventType.after_receive_error, req, error,
-                )
-                raise
+        try:
+            response = yield response_future
+        except StreamClosedError as error:
+            network_error = NetworkError(
+                id=req.id,
+                description=error.message,
+                tracing=req.tracing,
+            )
+            # event: after_receive_error
+            self.tchannel.event_emitter.fire(
+                EventType.after_receive_error, req, error,
+            )
+            raise network_error
+        except TChannelError as error:
+            # event: after_receive_error
+            self.tchannel.event_emitter.fire(
+                EventType.after_receive_error, req, error,
+            )
+            raise
         # event: after_receive_response
         self.tchannel.event_emitter.fire(
             EventType.after_receive_response, req, response,
