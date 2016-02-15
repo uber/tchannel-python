@@ -24,10 +24,12 @@ import mock
 import pytest
 import tornado.ioloop
 import tornado.testing
+from tornado import gen
 
-from tchannel.messages import Types
 from tchannel import TChannel
-from tchannel.tornado.connection import StreamConnection
+from tchannel.errors import TimeoutError
+from tchannel.tornado import connection
+from tchannel.messages import Types
 
 
 def dummy_headers():
@@ -73,7 +75,7 @@ def test_close_callback_is_called():
 
     cb_future = tornado.gen.Future()
 
-    conn = yield StreamConnection.outgoing(
+    conn = yield connection.StreamConnection.outgoing(
         server.hostport, tchannel=mock.MagicMock()
     )
     conn.set_close_callback(lambda: cb_future.set_result(True))
@@ -81,3 +83,36 @@ def test_close_callback_is_called():
     conn.close()
 
     assert (yield cb_future)
+
+
+@pytest.mark.gen_test
+def test_local_timeout_unconsumed_message():
+    """Verify that if the client has a local timeout and the server eventually
+    sends the message, the client does not log an "Unconsumed message"
+    warning.
+    """
+
+    server = TChannel('server')
+
+    @server.raw.register('hello')
+    @gen.coroutine
+    def hello(request):
+        yield gen.sleep(0.07)
+        raise gen.Return('eventual response')
+
+    server.listen()
+
+    client = TChannel('client')
+    with pytest.raises(TimeoutError):
+        yield client.raw(
+            'server', 'hello', 'world',
+            timeout=0.05, hostport=server.hostport,
+            # The server will take 70 milliseconds but we allow at most 50.
+        )
+
+    # Wait for the server to send the late response and make sure it doesn't
+    # log a warning.
+    with mock.patch.object(connection.log, 'warn') as mock_warn:  # :(
+        yield gen.sleep(0.03)
+
+    assert mock_warn.call_count == 0
