@@ -4,7 +4,7 @@ Changes by Version
 0.21.4 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed noisy logging of late responses for requests that timed out locally.
 
 
 0.21.3 (2016-01-22)
