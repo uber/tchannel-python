@@ -4,7 +4,8 @@ Changes by Version
 0.21.5 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Tornado 4.2 was listed as a requirement but this was corrected to be 4.3
+  which introduced the locks module.
 
 
 0.21.4 (2016-02-15)
