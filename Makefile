@@ -80,3 +80,20 @@ vcr-thrift:
 .PHONY: gen_thrift
 gen_thrift:
     thrift --gen py:new_style,slots,dynamic -out tests/data/generated tests/data/idls/ThriftTest.thrift
+
+.PHONY: deps
+deps: requirements.txt requirements-docs.txt requirements-test.txt
+	pip-sync requirements.txt requirements-docs.txt requirements-test.txt
+
+requirements.txt: requirements.in
+	pip-compile --no-index requirements.in
+	# Workaround for https://github.com/nvie/pip-tools/issues/325
+	sed -i .txt '/-e /c\ ' requirements.txt
+
+requirements-test.txt: requirements-test.in
+	pip-compile --no-index requirements-test.in
+	# Workaround for pypy C incompatibilities
+	sed -i .txt '/gnureadline/c\ ' requirements-test.txt
+
+requirements-docs.txt: requirements-docs.in
+	pip-compile --no-index requirements-docs.in

@@ -1,0 +1,52 @@
+# Testing and coverage
+pytest>=2,<3
+pytest-cov
+pytest-timeout
+pytest-tornado
+pytest-benchmark[histogram]>=3,<4
+
+# Property based tests
+hypothesis>=1.14,<2
+
+# Integration test utilities
+sh
+psutil
+
+# Test all the pythons
+tox
+
+#
+# futures is installed implicitly through threadloop,
+# but tox has an issue where it doesn't pick that up,
+# causing tests to fail. This can be reproduced locally
+# by removing futures from this file and running:
+#
+#     tox -e py27 tests
+#
+# @see https://travis-ci.org/uber/tchannel-python/jobs/86710564
+#
+futures
+
+# Syntax checker
+flake8==2.2.5
+
+# Optional dependency, but must be tested er'ry time
+thrift==0.9.2
+
+# Smarter decorators
+wrapt>=1.10,<1.11
+
+# Mocks
+mock==1.0.1
+doubles
+
+# for releases
+pip-tools
+zest.releaser[recommended]
+twine
+
+# for debugging
+ipdb
+coveralls
+
+PyYAML
