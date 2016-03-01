@@ -53,7 +53,6 @@ from ..messages.common import StreamState
 from ..messages.types import Types
 from .message_factory import build_raw_error_message
 from .message_factory import MessageFactory
-from .util import chain
 from .tombstone import Cemetery
 
 log = logging.getLogger('tchannel')
@@ -137,6 +136,9 @@ class TornadoConnection(object):
 
         self.tchannel = tchannel
         self._close_cb = None
+
+        self._write_queue = tornado.queues.Queue()
+        self._drain_write_queue()
 
         connection.set_close_callback(self._on_close)
 
@@ -337,7 +339,12 @@ class TornadoConnection(object):
 
         fragments = message_factory.fragment(message)
 
-        return chain(fragments, self._write)
+        for fragment in fragments:
+            future = self._write(fragment)
+
+        # We're done writing the message once our last future
+        # resolves.
+        return future
 
     def _write(self, message):
         """Writes the given message up the wire.
@@ -358,8 +365,15 @@ class TornadoConnection(object):
             payload=payload
         )
         body = frame.frame_rw.write(f, BytesIO()).getvalue()
+        return self._write_queue.put(body)
 
-        return self.connection.write(body)
+    @tornado.gen.coroutine
+    def _drain_write_queue(self):
+        """Ensures ordering of our writes."""
+
+        while not self.closed:
+            body = yield self._write_queue.get()
+            yield self.connection.write(body)
 
     def close(self):
         if not self.closed:
