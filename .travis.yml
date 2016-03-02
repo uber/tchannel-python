@@ -14,10 +14,8 @@ sudo: false
 #
 language: python
 env:
-    - TOX_ENV=py27-thriftrw05
-    - TOX_ENV=py27-thriftrw10
-    - TOX_ENV=pypy-thriftrw05
-    - TOX_ENV=pypy-thriftrw10
+    - TOX_ENV=py27
+    - TOX_ENV=pypy
     - TOX_ENV=cover
     - TOX_ENV=flake8
     - TOX_ENV=docs
