@@ -23,7 +23,6 @@ from __future__ import absolute_import
 import mock
 import pytest
 import tornado.ioloop
-import tornado.testing
 from tornado import gen
 
 from tchannel import TChannel
@@ -39,33 +38,33 @@ def dummy_headers():
     }
 
 
-class ConnectionTestCase(tornado.testing.AsyncTestCase):
-    @pytest.fixture(autouse=True)
-    def make_server_client(self, tornado_pair):
-        self.server, self.client = tornado_pair
+@pytest.mark.gen_test
+def test_handshake(tornado_pair):
+    """Verify we handshake in an async manner."""
+    server, client = tornado_pair
+    headers = dummy_headers()
 
-    @tornado.testing.gen_test
-    def test_handshake(self):
-        """Verify we handshake in an async manner."""
-        headers = dummy_headers()
+    print 'IOLOOP from test is', tornado.ioloop.IOLoop.current()
 
-        self.client.initiate_handshake(headers=headers)
-        yield self.server.expect_handshake(headers=headers)
+    client.initiate_handshake(headers=headers)
+    yield server.expect_handshake(headers=headers)
 
-        assert self.client.requested_version == self.server.requested_version
+    assert client.requested_version == server.requested_version
 
-    @tornado.testing.gen_test
-    def test_pings(self):
-        """Verify calls are sent to handler properly."""
-        self.client.ping()
 
-        ping = yield self.server.await()
-        assert ping.message_type == Types.PING_REQ
+@pytest.mark.gen_test
+def test_pings(tornado_pair):
+    """Verify calls are sent to handler properly."""
+    server, client = tornado_pair
+    client.ping()
 
-        self.server.pong()
+    ping = yield server.await()
+    assert ping.message_type == Types.PING_REQ
 
-        pong = yield self.client.await()
-        assert pong.message_type == Types.PING_RES
+    server.pong()
+
+    pong = yield client.await()
+    assert pong.message_type == Types.PING_RES
 
 
 @pytest.mark.gen_test

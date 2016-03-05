@@ -47,7 +47,7 @@ def connection():
 
 
 @pytest.yield_fixture
-def mock_server():
+def mock_server(io_loop):
     with MockServer() as server:
         yield server
 

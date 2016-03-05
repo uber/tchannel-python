@@ -357,7 +357,7 @@ class PeerClientOperation(object):
         request = Request(
             service=self.service,
             argstreams=[InMemStream(endpoint), arg2, arg3],
-            id=connection.next_message_id(),
+            id=connection.writer.next_message_id(),
             headers=headers,
             endpoint=endpoint,
             ttl=ttl,
@@ -475,7 +475,7 @@ class PeerClientOperation(object):
 
         connection = yield peer.connect()
         # roll back request
-        request.rewind(connection.next_message_id())
+        request.rewind(connection.writer.next_message_id())
 
         raise gen.Return((peer, connection))
 

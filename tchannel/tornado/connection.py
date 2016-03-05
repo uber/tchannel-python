@@ -111,9 +111,6 @@ class TornadoConnection(object):
         self.remote_process_name = None
         self.requested_version = PROTOCOL_VERSION
 
-        # Tracks message IDs for this connection.
-        self._id_sequence = 0
-
         # We need to use two separate message factories to avoid message ID
         # collision while assembling fragmented messages.
         self.request_message_factory = MessageFactory(self.remote_host,
@@ -137,8 +134,8 @@ class TornadoConnection(object):
         self.tchannel = tchannel
         self._close_cb = None
 
-        self._write_queue = tornado.queues.Queue()
-        self._draining = False
+        self.reader = Reader(self.connection)
+        self.writer = Writer(self.connection)
 
         connection.set_close_callback(self._on_close)
 
@@ -153,10 +150,6 @@ class TornadoConnection(object):
             'A close_callback has already been set for this connection.'
         )
         self._close_cb = stack_context.wrap(cb)
-
-    def next_message_id(self):
-        self._id_sequence = (self._id_sequence + 1) % MAX_MESSAGE_ID
-        return self._id_sequence
 
     def _on_close(self):
         self.closed = True
@@ -188,53 +181,7 @@ class TornadoConnection(object):
         if self._loop_running:
             return self._messages.get()
         else:
-            return self._recv()
-
-    def _recv(self):
-        """Receive the next message off the wire.
-
-        :returns:
-            A Future that produces a Context object containing the next
-            message off the wire.
-        """
-
-        # This is the message_future we'll return for any inbound messages.
-        message_future = tornado.gen.Future()
-        io_loop = IOLoop.current()
-
-        def on_body(read_body_future, size):
-            if read_body_future.exception():
-                return on_error(read_body_future)
-
-            body = read_body_future.result()
-            f = frame.frame_rw.read(BytesIO(body), size=size)
-            message_rw = messages.RW[f.header.message_type]
-            message = message_rw.read(BytesIO(f.payload))
-            message.id = f.header.message_id
-            message_future.set_result(message)
-
-        def on_read_size(read_size_future):
-            if read_size_future.exception():
-                return on_error(read_size_future)
-
-            size_bytes = read_size_future.result()
-            size = frame.frame_rw.size_rw.read(BytesIO(size_bytes))
-            read_body_future = self.connection.read_bytes(size - size_width)
-
-            io_loop.add_future(
-                read_body_future,
-                lambda future: on_body(future, size)
-            )
-
-            return read_body_future
-
-        def on_error(future):
-            log.info("Failed to read data: %s", future.exception())
-
-        size_width = frame.frame_rw.size_rw.width()
-        read_bytes_future = self.connection.read_bytes(size_width)
-        io_loop.add_future(read_bytes_future, on_read_size)
-        return message_future
+            return self.reader.get()
 
     @tornado.gen.coroutine
     def _loop(self):
@@ -245,7 +192,7 @@ class TornadoConnection(object):
         self._loop_running = True
 
         while not self.closed:
-            message = yield self._recv()
+            message = yield self.reader.get()
 
             # TODO: There should probably be a try-catch on the yield.
             if message.message_type in self.CALL_REQ_TYPES:
@@ -313,7 +260,7 @@ class TornadoConnection(object):
             "Message '%s' can't use send" % repr(message)
         )
 
-        message.id = message.id or self.next_message_id()
+        message.id = message.id or self.writer.next_message_id()
         assert message.id not in self._outstanding, (
             "Message ID '%d' already being used" % message.id
         )
@@ -331,7 +278,7 @@ class TornadoConnection(object):
         :param message:
             Message to write.
         """
-        message.id = message.id or self.next_message_id()
+        message.id = message.id or self.writer.next_message_id()
 
         if message.message_type in self.CALL_REQ_TYPES:
             message_factory = self.request_message_factory
@@ -341,49 +288,11 @@ class TornadoConnection(object):
         fragments = message_factory.fragment(message)
 
         for fragment in fragments:
-            future = self._write(fragment)
+            future = self.writer.put(fragment)
 
         # We're done writing the message once our last future
         # resolves.
         return future
-
-    def _write(self, message):
-        """Writes the given message up the wire.
-
-        The message must be small enough to fit in a single frame.
-        """
-        message.id = message.id or self.next_message_id()
-
-        payload = messages.RW[message.message_type].write(
-            message, BytesIO()
-        ).getvalue()
-
-        f = frame.Frame(
-            header=frame.FrameHeader(
-                message_type=message.message_type,
-                message_id=message.id,
-            ),
-            payload=payload
-        )
-        body = frame.frame_rw.write(f, BytesIO()).getvalue()
-        done_writing_future = tornado.gen.Future()
-
-        self._write_queue.put((body, done_writing_future))
-
-        if not self._draining:
-            self._drain_write_queue()
-
-        return done_writing_future
-
-    @tornado.gen.coroutine
-    def _drain_write_queue(self):
-        """Ensures ordering of our writes."""
-        self._draining = True
-
-        while not self.closed:
-            body, done = yield self._write_queue.get()
-            result = yield self.connection.write(body)
-            done.set_result(result)
 
     def close(self):
         if not self.closed:
@@ -399,11 +308,11 @@ class TornadoConnection(object):
             A future that resolves (with a value of None) when the handshake
             is complete.
         """
-        yield self._write(messages.InitRequestMessage(
+        self.writer.put(messages.InitRequestMessage(
             version=PROTOCOL_VERSION,
             headers=headers
         ))
-        init_res = yield self._recv()
+        init_res = yield self.reader.get()
         if init_res.message_type != Types.INIT_RES:
             raise errors.InvalidMessageError(
                 "Expected handshake response, got %s" % repr(init_res)
@@ -426,14 +335,14 @@ class TornadoConnection(object):
             A future that resolves (with a value of None) when the handshake
             is complete.
         """
-        init_req = yield self._recv()
+        init_req = yield self.reader.get()
         if init_req.message_type != Types.INIT_REQ:
             raise errors.InvalidMessageError(
                 "You need to shake my hand first. Got %s" % repr(init_req)
             )
         self._extract_handshake_headers(init_req)
 
-        yield self._write(
+        self.writer.put(
             messages.InitResponseMessage(
                 PROTOCOL_VERSION, headers, init_req.id),
         )
@@ -544,7 +453,7 @@ class TornadoConnection(object):
         """
 
         error_message = build_raw_error_message(error)
-        write_future = self._write(error_message)
+        write_future = self.writer.put(error_message)
         write_future.add_done_callback(
             lambda f: self.tchannel.event_emitter.fire(
                 EventType.after_send_error,
@@ -554,10 +463,10 @@ class TornadoConnection(object):
         return write_future
 
     def ping(self):
-        return self._write(messages.PingRequestMessage())
+        return self.writer.put(messages.PingRequestMessage())
 
     def pong(self):
-        return self._write(messages.PingResponseMessage())
+        return self.writer.put(messages.PingResponseMessage())
 
 
 class StreamConnection(TornadoConnection):
@@ -725,3 +634,156 @@ class StreamConnection(TornadoConnection):
         # while.
         future.set_exception(errors.TimeoutError())
         self._request_tombstones.add(req_id, req_ttl)
+
+
+class Reader(object):
+
+    def __init__(self, io_stream):
+        self.queue = tornado.queues.Queue()
+        self.filling = False
+        self.io_stream = io_stream
+
+    def fill(self):
+        self.filling = True
+
+        io_loop = IOLoop.current()
+
+        def keep_reading(f):
+            if f.exception():
+                return log(f.exception())
+            # connect these two in the case when put blocks
+            self.queue.put(f.result())
+            io_loop.spawn_callback(self.fill)
+
+        io_loop.add_future(self._dequeue(), keep_reading)
+
+    def get(self):
+        """Receive the next message off the wire.
+
+        :returns:
+            A Future that produces a Context object containing the next
+            message off the wire.
+        """
+        if self.filling is False:
+            self.fill()
+
+        return self.queue.get()
+
+    def _dequeue(self):
+        # This is the message_future we'll return for any inbound messages.
+        message_future = tornado.gen.Future()
+        io_loop = IOLoop.current()
+
+        def on_body(read_body_future, size):
+            if read_body_future.exception():
+                return on_error(read_body_future)
+
+            body = read_body_future.result()
+            f = frame.frame_rw.read(BytesIO(body), size=size)
+            message_rw = messages.RW[f.header.message_type]
+            message = message_rw.read(BytesIO(f.payload))
+            message.id = f.header.message_id
+            message_future.set_result(message)
+
+        def on_read_size(read_size_future):
+            if read_size_future.exception():
+                return on_error(read_size_future)
+
+            size_bytes = read_size_future.result()
+            size = frame.frame_rw.size_rw.read(BytesIO(size_bytes))
+            read_body_future = self.io_stream.read_bytes(size - size_width)
+
+            io_loop.add_future(
+                read_body_future,
+                lambda future: on_body(future, size)
+            )
+
+            return read_body_future
+
+        def on_error(future):
+            log.info("Failed to read data: %s", future.exception())
+
+        size_width = frame.frame_rw.size_rw.width()
+        read_bytes_future = self.io_stream.read_bytes(size_width)
+        io_loop.add_future(read_bytes_future, on_read_size)
+
+        return message_future
+
+
+class Writer(object):
+
+    def __init__(self, io_stream):
+        self.queue = tornado.queues.Queue()
+        self.draining = False
+        self.io_stream = io_stream
+        # Tracks message IDs for this connection.
+        self._id_sequence = 0
+
+    def drain(self):
+        self.draining = True
+
+        io_loop = IOLoop.current()
+
+        def on_write(f, done):
+            if f.exception():
+                log.error(f.exception())
+                done.set_exception(f.exception())
+            else:
+                done.set_result(f.result())
+
+            io_loop.spawn_callback(next_write)
+
+        def on_message(f):
+            if f.exception():
+                io_loop.spawn_callback(next_write)
+                log.error(f.exception())
+                return
+            message, done = f.result()
+            io_loop.add_future(
+                self.io_stream.write(message),
+                lambda f: on_write(f, done),
+            )
+
+        def next_write():
+            if self.io_stream.closed():
+                return
+
+            io_loop.add_future(self.queue.get(), on_message)
+
+        io_loop.spawn_callback(next_write)
+
+    def put(self, message):
+        """Enqueues the given message for writing to the wire.
+
+        The message must be small enough to fit in a single frame.
+        """
+        if self.draining is False:
+            self.drain()
+
+        return self._enqueue(message)
+
+    def next_message_id(self):
+        self._id_sequence = (self._id_sequence + 1) % MAX_MESSAGE_ID
+        return self._id_sequence
+
+    def _enqueue(self, message):
+        message.id = message.id or self.next_message_id()
+
+        payload = messages.RW[message.message_type].write(
+            message, BytesIO()
+        ).getvalue()
+
+        f = frame.Frame(
+            header=frame.FrameHeader(
+                message_type=message.message_type,
+                message_id=message.id,
+            ),
+            payload=payload
+        )
+        body = frame.frame_rw.write(f, BytesIO()).getvalue()
+
+        done_writing_future = tornado.gen.Future()
+
+        self.queue.put((body, done_writing_future))
+
+        return done_writing_future
