@@ -138,7 +138,7 @@ class TornadoConnection(object):
         self._close_cb = None
 
         self._write_queue = tornado.queues.Queue()
-        self._drain_write_queue()
+        self._draining = False
 
         connection.set_close_callback(self._on_close)
 
@@ -243,6 +243,7 @@ class TornadoConnection(object):
         #
         # Must be started only after the handshake has been performed.
         self._loop_running = True
+
         while not self.closed:
             message = yield self._recv()
 
@@ -365,15 +366,24 @@ class TornadoConnection(object):
             payload=payload
         )
         body = frame.frame_rw.write(f, BytesIO()).getvalue()
-        return self._write_queue.put(body)
+        done_writing_future = tornado.gen.Future()
+
+        self._write_queue.put((body, done_writing_future))
+
+        if not self._draining:
+            self._drain_write_queue()
+
+        return done_writing_future
 
     @tornado.gen.coroutine
     def _drain_write_queue(self):
         """Ensures ordering of our writes."""
+        self._draining = True
 
         while not self.closed:
-            body = yield self._write_queue.get()
-            yield self.connection.write(body)
+            body, done = yield self._write_queue.get()
+            result = yield self.connection.write(body)
+            done.set_result(result)
 
     def close(self):
         if not self.closed:
@@ -389,7 +399,7 @@ class TornadoConnection(object):
             A future that resolves (with a value of None) when the handshake
             is complete.
         """
-        self._write(messages.InitRequestMessage(
+        yield self._write(messages.InitRequestMessage(
             version=PROTOCOL_VERSION,
             headers=headers
         ))
@@ -423,7 +433,7 @@ class TornadoConnection(object):
             )
         self._extract_handshake_headers(init_req)
 
-        self._write(
+        yield self._write(
             messages.InitResponseMessage(
                 PROTOCOL_VERSION, headers, init_req.id),
         )
