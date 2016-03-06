@@ -290,8 +290,7 @@ class TornadoConnection(object):
         for fragment in fragments:
             future = self.writer.put(fragment)
 
-        # We're done writing the message once our last future
-        # resolves.
+        # We're done writing the message once our last future resolves.
         return future
 
     def close(self):
@@ -784,6 +783,12 @@ class Writer(object):
 
         done_writing_future = tornado.gen.Future()
 
-        self.queue.put((body, done_writing_future))
+        def on_queue_error(f):
+            if f.exception():
+                done_writing_future.set_exception(f.exception())
+
+        self.queue.put(
+            (body, done_writing_future)
+        ).add_done_callback(on_queue_error)
 
         return done_writing_future
