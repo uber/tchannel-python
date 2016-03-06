@@ -19,6 +19,7 @@ env:
     - TOX_ENV=cover
     - TOX_ENV=flake8
     - TOX_ENV=docs
+    - TOX_ENV=benchmark
 
 install:
   - make install
