@@ -637,8 +637,8 @@ class StreamConnection(TornadoConnection):
 
 class Reader(object):
 
-    def __init__(self, io_stream):
-        self.queue = tornado.queues.Queue()
+    def __init__(self, io_stream, capacity=64):
+        self.queue = tornado.queues.Queue(capacity)
         self.filling = False
         self.io_stream = io_stream
 
@@ -711,8 +711,8 @@ class Reader(object):
 
 class Writer(object):
 
-    def __init__(self, io_stream):
-        self.queue = tornado.queues.Queue()
+    def __init__(self, io_stream, capacity=64):
+        self.queue = tornado.queues.Queue(capacity)
         self.draining = False
         self.io_stream = io_stream
         # Tracks message IDs for this connection.
