@@ -31,6 +31,7 @@ import tornado.iostream
 import tornado.queues as queues
 
 from tornado import stack_context
+from tornado.ioloop import IOLoop
 from tornado.iostream import StreamClosedError
 
 from .. import errors
@@ -53,6 +54,7 @@ from ..messages.types import Types
 from .message_factory import build_raw_error_message
 from .message_factory import MessageFactory
 from .util import chain
+from .tombstone import Cemetery
 
 log = logging.getLogger('tchannel')
 
@@ -132,6 +134,9 @@ class TornadoConnection(object):
         # Map from message ID to outgoing response that is being sent.
         self._outbound_pending_res = {}
 
+        # Collection of request IDs known to have timed out.
+        self._request_tombstones = Cemetery()
+
         # Whether _loop is running. The loop doesn't run until after the
         # handshake has been performed.
         self._loop_running = False
@@ -175,6 +180,7 @@ class TornadoConnection(object):
 
     def _on_close(self):
         self.closed = True
+        self._request_tombstones.clear()
 
         for message_id, future in self._outbound_pending_call.iteritems():
             future.set_exception(
@@ -187,7 +193,10 @@ class TornadoConnection(object):
         try:
             while True:
                 message = self._messages.get_nowait()
-                log.warn("Unconsumed message %s", message)
+                log.warn(
+                    "Unconsumed message %s while closing connection %s",
+                    message, self,
+                )
         except queues.QueueEmpty:
             pass
 
@@ -211,6 +220,7 @@ class TornadoConnection(object):
 
         # This is the message_future we'll return for any inbound messages.
         message_future = tornado.gen.Future()
+        io_loop = IOLoop.current()
 
         def on_body(read_body_future, size):
             if read_body_future.exception():
@@ -231,7 +241,7 @@ class TornadoConnection(object):
             size = frame.frame_rw.size_rw.read(BytesIO(size_bytes))
             read_body_future = self.connection.read_bytes(size - size_width)
 
-            tornado.ioloop.IOLoop.current().add_future(
+            io_loop.add_future(
                 read_body_future,
                 lambda future: on_body(future, size)
             )
@@ -243,12 +253,7 @@ class TornadoConnection(object):
 
         size_width = frame.frame_rw.size_rw.width()
         read_bytes_future = self.connection.read_bytes(size_width)
-
-        tornado.ioloop.IOLoop.current().add_future(
-            read_bytes_future,
-            on_read_size,
-        )
-
+        io_loop.add_future(read_bytes_future, on_read_size)
         return message_future
 
     @tornado.gen.coroutine
@@ -302,6 +307,10 @@ class TornadoConnection(object):
 
                 if response and future.running():
                     future.set_result(response)
+                continue
+
+            elif message.id in self._request_tombstones:
+                # Recently timed out. Safe to ignore.
                 continue
 
             log.warn('Unconsumed message %s', message)
@@ -659,7 +668,7 @@ class StreamConnection(TornadoConnection):
 
         stream_future = self._stream(request, self.request_message_factory)
 
-        tornado.ioloop.IOLoop.current().add_future(
+        IOLoop.current().add_future(
             stream_future,
             lambda f: request.close_argstreams(force=True)
         )
@@ -689,11 +698,14 @@ class StreamConnection(TornadoConnection):
             lambda f: self.remove_outbound_pending_req(request)
         )
 
+        if request.ttl:
+            self._add_timeout(request, future)
+
         # the actual future that caller will yield
         response_future = tornado.gen.Future()
         # TODO: fire before_receive_response
 
-        tornado.ioloop.IOLoop.current().add_future(
+        IOLoop.current().add_future(
             future,
             lambda f: self.adapt_result(f, request, response_future),
         )
@@ -716,3 +728,24 @@ class StreamConnection(TornadoConnection):
     def remove_outstanding_request(self, request):
         """Remove request from pending request list"""
         self._outbound_pending_call.pop(request.id, None)
+
+    def _add_timeout(self, request, future):
+        """Adds a timeout for the given request to the given future."""
+        io_loop = IOLoop.current()
+        t = io_loop.call_later(
+            request.ttl,
+            self._request_timed_out, request.id, request.ttl, future,
+        )
+        io_loop.add_future(future, lambda f: io_loop.remove_timeout(t))
+        # If the future finished before the timeout, we want the IOLoop to
+        # forget about it, especially because we want to avoid memory
+        # leaks with very large timeouts.
+
+    def _request_timed_out(self, req_id, req_ttl, future):
+        if not future.running():  # Already done.
+            return
+
+        # Fail the ongoing request and leave a tombstone behind for a short
+        # while.
+        future.set_exception(errors.TimeoutError())
+        self._request_tombstones.add(req_id, req_ttl)

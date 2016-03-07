@@ -19,6 +19,34 @@ Changes by Version
   connection was previously terminated.
 
 
+0.21.5 (unreleased)
+-------------------
+
+- Tornado 4.2 was listed as a requirement but this was corrected to be 4.3
+  which introduced the locks module.
+
+
+0.21.4 (2016-02-15)
+-------------------
+
+- Fixed noisy logging of late responses for requests that timed out locally.
+
+
+0.21.3 (2016-01-22)
+-------------------
+
+- Attempting to register endpoints against a synchronous TChannel is now a no-op instead of a crash.
+
+
+0.21.2 (2016-01-05)
+-------------------
+
+- The synchronous client will no longer start a thread when the ``TChannel``
+  instance is initialized. This resolves an issue where an application could
+  hang indefinitely if it instantiated a synchronous ``TChannel`` at import
+  time.
+
+
 0.21.1 (2015-12-29)
 -------------------
 

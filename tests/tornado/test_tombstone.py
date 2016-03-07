@@ -18,27 +18,63 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from __future__ import absolute_import
+from __future__ import (
+    absolute_import, unicode_literals, print_function, division
+)
 
 import pytest
-import tornado.gen
+from tornado import gen
 
-from tchannel.errors import TimeoutError
-from tchannel.tornado.timeout import timeout
+from tchannel.tornado.tombstone import Cemetery
 
 
 @pytest.mark.gen_test
-def test_timeout(io_loop):
+def test_add_and_forget():
+    cem = Cemetery(ttl_offset_secs=0.01)
+    cem.add(1, 0.01)
+    cem.add(2, 0.05)
 
-    sleep_time = 0.01
+    assert 1 in cem
+    assert 2 in cem
 
-    @tornado.gen.coroutine
-    def slow_method():
-        yield tornado.gen.sleep(sleep_time * 10)
-        raise tornado.gen.Return('foo')
+    yield gen.sleep(0.020)
 
-    slow_future = slow_method()
+    assert 1 not in cem
+    assert 2 in cem
 
-    with pytest.raises(TimeoutError):
-        with timeout(slow_future, sleep_time, io_loop):
-            yield slow_future
+
+@pytest.mark.gen_test
+def test_add_and_explicit_forget():
+    cem = Cemetery(ttl_offset_secs=0.01)
+    cem.add(1, 0.05)
+
+    yield gen.sleep(0.04)
+
+    assert 1 in cem
+    cem.forget(1)
+    assert 1 not in cem
+
+
+@pytest.mark.gen_test
+def test_max_ttl():
+    cem = Cemetery(max_ttl_secs=0.05)
+    cem.add(1, 0.2)
+
+    assert 1 in cem
+    yield gen.sleep(0.05)
+    assert 1 not in cem
+
+
+@pytest.mark.gen_test
+def test_clear():
+    cem = Cemetery()
+    cem.add(1, 0.1)
+    cem.add(2, 0.2)
+
+    assert 1 in cem
+    assert 2 in cem
+
+    cem.clear()
+
+    assert 1 not in cem
+    assert 2 not in cem
