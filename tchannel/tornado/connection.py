@@ -24,7 +24,7 @@ import logging
 import os
 import socket
 import sys
-
+from functools import partial
 
 import tornado.gen
 import tornado.iostream
@@ -37,6 +37,7 @@ from tornado.iostream import StreamClosedError
 from .. import errors
 from .. import frame
 from .. import messages
+from .._future import fail_to
 from ..errors import NetworkError
 from ..errors import TChannelError
 from ..event import EventType
@@ -654,7 +655,7 @@ class Reader(object):
             self.queue.put(f.result())
             io_loop.spawn_callback(self.fill)
 
-        io_loop.add_future(self._dequeue(), keep_reading)
+        io_loop.add_future(read_message(self.io_stream), keep_reading)
 
     def get(self):
         """Receive the next message off the wire.
@@ -667,46 +668,6 @@ class Reader(object):
             self.fill()
 
         return self.queue.get()
-
-    def _dequeue(self):
-        # This is the message_future we'll return for any inbound messages.
-        message_future = tornado.gen.Future()
-        io_loop = IOLoop.current()
-
-        def on_body(read_body_future, size):
-            if read_body_future.exception():
-                return on_error(read_body_future)
-
-            body = read_body_future.result()
-            f = frame.frame_rw.read(BytesIO(body), size=size)
-            message_rw = messages.RW[f.header.message_type]
-            message = message_rw.read(BytesIO(f.payload))
-            message.id = f.header.message_id
-            message_future.set_result(message)
-
-        def on_read_size(read_size_future):
-            if read_size_future.exception():
-                return on_error(read_size_future)
-
-            size_bytes = read_size_future.result()
-            size = frame.frame_rw.size_rw.read(BytesIO(size_bytes))
-            read_body_future = self.io_stream.read_bytes(size - size_width)
-
-            io_loop.add_future(
-                read_body_future,
-                lambda future: on_body(future, size)
-            )
-
-            return read_body_future
-
-        def on_error(future):
-            log.info("Failed to read data: %s", future.exception())
-
-        size_width = frame.frame_rw.size_rw.width()
-        read_bytes_future = self.io_stream.read_bytes(size_width)
-        io_loop.add_future(read_bytes_future, on_read_size)
-
-        return message_future
 
 
 class Writer(object):
@@ -792,3 +753,56 @@ class Writer(object):
         ).add_done_callback(on_queue_error)
 
         return done_writing_future
+
+##############################################################################
+
+
+FRAME_SIZE_WIDTH = frame.frame_rw.size_rw.width()
+
+
+def read_message(stream):
+    """Reads a message from the given IOStream.
+
+    :param IOStream stream:
+        IOStream to read from.
+    """
+    answer = tornado.gen.Future()
+    io_loop = IOLoop.current()
+
+    def on_error(future):
+        log.info('Failed to read data: %s', future.exception())
+        return answer.set_exc_info(future.exc_info())
+
+    @fail_to(answer)
+    def on_body(size, future):
+        if future.exception():
+            return on_error(future)
+
+        body = future.result()
+        f = frame.frame_rw.read(BytesIO(body), size=size)
+        message_type = f.header.message_type
+        message_rw = messages.RW.get(message_type)
+        if not message_rw:
+            exc = errors.FatalProtocolError(
+                'Unknown message type %s', str(message_type)
+            )
+            return answer.set_exception(exc)
+
+        message = message_rw.read(BytesIO(f.payload))
+        message.id = f.header.message_id
+        answer.set_result(message)
+
+    @fail_to(answer)
+    def on_read_size(future):
+        if future.exception():
+            return answer.set_exc_info(future.exc_info())
+
+        size_bytes = future.result()
+        size = frame.frame_rw.size_rw.read(BytesIO(size_bytes))
+        io_loop.add_future(
+            stream.read_bytes(size - FRAME_SIZE_WIDTH),
+            partial(on_body, size),
+        )
+
+    io_loop.add_future(stream.read_bytes(FRAME_SIZE_WIDTH), on_read_size)
+    return answer
