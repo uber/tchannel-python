@@ -1,0 +1,2 @@
+# High-level dependencies are read from setup.py.
+-e .

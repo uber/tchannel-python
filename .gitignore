@@ -13,3 +13,4 @@ htmlcov
 .hypothesis/
 .DS_Store
 .idea/
+.cache/

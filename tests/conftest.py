@@ -21,6 +21,7 @@
 from __future__ import absolute_import
 
 import pytest
+import threadloop
 
 from tchannel import thrift
 
@@ -61,5 +62,13 @@ def mock_server():
 @pytest.fixture
 def thrift_module(request):
     return thrift.load(
-        'tests/data/idls//ThriftTest2.thrift', request.node.name
+        'tests/data/idls/ThriftTest2.thrift', request.node.name
     )
+
+
+@pytest.yield_fixture
+def loop():
+    tl = threadloop.ThreadLoop()
+    tl.start()
+    yield tl
+    tl.stop()

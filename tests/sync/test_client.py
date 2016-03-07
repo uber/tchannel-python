@@ -21,9 +21,10 @@
 from __future__ import absolute_import
 
 import pytest
-
+from tchannel import thrift
+from tchannel import TChannel as AsyncTchannel
 from tchannel.sync import TChannel
-from tchannel.errors import TimeoutError
+from tchannel.errors import TimeoutError, BadRequestError
 
 
 @pytest.mark.integration
@@ -36,6 +37,29 @@ def test_sync_client_should_get_raw_response(mock_server):
     )
 
     client = TChannel('test-client')
+
+    future = client.raw(
+        service='foo',
+        hostport=mock_server.hostport,
+        endpoint=endpoint,
+    )
+
+    response = future.result()
+
+    assert response.headers == ""
+    assert response.body == "OK"
+
+
+@pytest.mark.integration
+def test_sync_client_with_injected_threadloop(mock_server, loop):
+
+    endpoint = 'health'
+    mock_server.expect_call(endpoint).and_write(
+        headers="",
+        body="OK"
+    )
+
+    client = TChannel('test-client', threadloop=loop)
 
     future = client.raw(
         service='foo',
@@ -65,7 +89,6 @@ def test_advertise_should_result_in_peer_connections(mock_server):
 
     client = TChannel('test-client')
     future = client.advertise(routers)
-
     result = future.result()
 
     assert result.body == body
@@ -92,3 +115,85 @@ def test_should_discover_ip():
     hostport = client.hostport
 
     assert '0.0.0.0:0' != hostport
+
+
+def register_json(tchannel):
+
+    @tchannel.json.register
+    def hello(request):
+        return {}
+
+
+def register_thrift(tchannel):
+
+    ThriftTest = thrift.load(
+        path='tests/data/idls/ThriftTest.thrift',
+        service='server',
+    ).SecondService
+
+    @tchannel.thrift.register(ThriftTest)
+    def hello(request):
+        return
+
+
+def register_from_top(tchannel):
+
+    def hello(request):
+        pass
+
+    tchannel.register('raw', 'hello', hello)
+
+
+def register_raw(tchannel):
+
+    @tchannel.raw.register
+    def hello(request):
+        return ""
+
+
+def request_json(tchannel, hostport):
+    return tchannel.json(
+        service='test-client',
+        endpoint='hello',
+        hostport=hostport,
+    )
+
+
+def request_raw(tchannel, hostport):
+    return tchannel.raw(
+        service='test-client',
+        endpoint='hello',
+        hostport=hostport,
+    )
+
+
+def request_thrift(tchannel, hostport):
+    ThriftTest = thrift.load(
+        path='tests/data/idls/ThriftTest.thrift',
+        service='server',
+    ).SecondService
+
+    return tchannel.thrift(
+        ThriftTest.blahBlah(),
+        hostport=hostport,
+    )
+
+
+@pytest.mark.gen_test
+@pytest.mark.parametrize('register_endpoint, make_request', [
+    (register_json, request_json),
+    (register_raw, request_raw),
+    (register_thrift, request_thrift),
+    (register_from_top, request_raw),
+])
+def test_sync_register(register_endpoint, make_request):
+    sync_client = TChannel('test-client')
+    register_endpoint(sync_client)
+    sync_client.listen()
+
+    async_client = AsyncTchannel('async')
+    with pytest.raises(BadRequestError):
+        yield make_request(async_client, sync_client.hostport)
+
+    with pytest.raises(BadRequestError):
+        yield make_request(sync_client, sync_client.hostport)
