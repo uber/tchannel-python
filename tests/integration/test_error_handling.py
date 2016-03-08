@@ -114,7 +114,7 @@ def test_invalid_message_during_streaming(mock_server):
     # bypass the default checksum calculation
     # set a wrong checksum
     callreqcontinue.checksum = (ChecksumType.crc32c, 1)
-    yield connection._write(callreqcontinue)
+    yield connection.writer.put(callreqcontinue)
 
     with pytest.raises(FatalProtocolError) as e:
         resp = yield resp_future

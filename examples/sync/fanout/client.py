@@ -18,49 +18,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from __future__ import absolute_import
+import json
 
-import pytest
-import threadloop
+from tchannel import thrift
+from tchannel.sync import TChannel
 
-from .mock_server import MockServer
-from .util import get_thrift_service_module
-
-
-class _MockConnection(object):
-    def __init__(self):
-        self.buff = bytearray()
-        self.remote_host = "0.0.0.0"
-        self.remote_host_port = "0"
-
-    def write(self, payload, callback=None):
-        self.buff.extend(payload)
-
-    def getvalue(self):
-        return self.buff
+tchannel = TChannel('thrift-client')
+service = thrift.load(
+    path='tests/data/idls/ThriftTest.thrift',
+    service='thrift-server',
+    hostport='localhost:54498',
+)
 
 
-@pytest.fixture
-def connection():
-    """Make a mock connection."""
-    return _MockConnection()
+def make_requests():
+
+    # Fan-out
+    futures = [tchannel.thrift(
+        request=service.ThriftTest.testString(thing="req"),
+        headers={
+            'req': 'header',
+        },
+    ) for _ in xrange(20)]
+
+    # Fan-in
+    for future in futures:
+        response = future.result()
+
+    return response
 
 
-@pytest.yield_fixture
-def mock_server(io_loop):
-    with MockServer() as server:
-        yield server
+resp = make_requests()
 
+assert resp.headers == {
+    'resp': 'header',
+}
+assert resp.body == 'resp' * 100000
 
-@pytest.yield_fixture
-def thrift_service(tmpdir):
-    with get_thrift_service_module(tmpdir, True) as m:
-        yield m
-
-
-@pytest.yield_fixture
-def loop():
-    tl = threadloop.ThreadLoop()
-    tl.start()
-    yield tl
-    tl.stop()
+print resp.body[:4]
+print json.dumps(resp.headers)

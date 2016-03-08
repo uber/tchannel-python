@@ -18,49 +18,55 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from __future__ import absolute_import
+from __future__ import (
+    absolute_import, unicode_literals, division, print_function
+)
+
+from tornado import gen
 
 import pytest
-import threadloop
 
-from .mock_server import MockServer
-from .util import get_thrift_service_module
+from tchannel._future import fail_to
 
 
-class _MockConnection(object):
-    def __init__(self):
-        self.buff = bytearray()
-        self.remote_host = "0.0.0.0"
-        self.remote_host_port = "0"
+def test_fail_to_no_failure():
+    answer = gen.Future()
 
-    def write(self, payload, callback=None):
-        self.buff.extend(payload)
+    @fail_to(answer)
+    def f():
+        return 42
 
-    def getvalue(self):
-        return self.buff
+    assert f() == 42
+    assert answer.running()
 
 
-@pytest.fixture
-def connection():
-    """Make a mock connection."""
-    return _MockConnection()
+@pytest.mark.gen_test
+def test_fail_to_failure():
+    answer = gen.Future()
+
+    @fail_to(answer)
+    def f():
+        raise GreatSadness
+
+    assert f() is None
+    with pytest.raises(GreatSadness):
+        yield answer
 
 
-@pytest.yield_fixture
-def mock_server(io_loop):
-    with MockServer() as server:
-        yield server
+@pytest.mark.gen_test
+@pytest.mark.gen_test
+def test_fail_to_failure_in_coroutine():
+    answer = gen.Future()
+
+    @fail_to(answer)
+    @gen.coroutine
+    def f():
+        raise GreatSadness
+
+    with pytest.raises(GreatSadness):
+        yield f()
+    assert answer.running()
 
 
-@pytest.yield_fixture
-def thrift_service(tmpdir):
-    with get_thrift_service_module(tmpdir, True) as m:
-        yield m
-
-
-@pytest.yield_fixture
-def loop():
-    tl = threadloop.ThreadLoop()
-    tl.start()
-    yield tl
-    tl.stop()
+class GreatSadness(Exception):
+    pass
