@@ -638,7 +638,9 @@ class StreamConnection(TornadoConnection):
 
 class Reader(object):
 
-    def __init__(self, io_stream, capacity=64):
+    def __init__(self, io_stream, capacity=None):
+        capacity = capacity or 64
+
         self.queue = tornado.queues.Queue(capacity)
         self.filling = False
         self.io_stream = io_stream
@@ -653,8 +655,9 @@ class Reader(object):
                 self.filling = False
                 return log(f.exception())
             # connect these two in the case when put blocks
-            self.queue.put(f.result())
-            io_loop.spawn_callback(self.fill)
+            self.queue.put(f.result()).add_done_callback(
+                lambda f: io_loop.spawn_callback(self.fill),
+            )
 
         io_loop.add_future(read_message(self.io_stream), keep_reading)
 
@@ -662,10 +665,9 @@ class Reader(object):
         """Receive the next message off the wire.
 
         :returns:
-            A Future that produces a Context object containing the next
-            message off the wire.
+            A Future that resolves to the next message off the wire.
         """
-        if self.filling is False:
+        if not self.filling:
             self.fill()
 
         return self.queue.get()
@@ -673,7 +675,9 @@ class Reader(object):
 
 class Writer(object):
 
-    def __init__(self, io_stream, capacity=64):
+    def __init__(self, io_stream, capacity=None):
+        capacity = capacity or 64
+
         self.queue = tornado.queues.Queue(capacity)
         self.draining = False
         self.io_stream = io_stream
@@ -748,6 +752,8 @@ class Writer(object):
         def on_queue_error(f):
             if f.exception():
                 done_writing_future.set_exc_info(f.exc_info())
+            else:
+                done_writing_future.set_result(None)
 
         self.queue.put(
             (body, done_writing_future)
