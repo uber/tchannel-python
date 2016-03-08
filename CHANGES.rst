@@ -7,7 +7,8 @@ Changes by Version
 - Tornado 4.2 was listed as a requirement but this was corrected to be 4.3
   which introduced the locks module.
 - Fixed in issue where clients could incorrectly time out when reading large
-  response bodies.
+  response bodies. This was due to response fragments being dropped due to
+  out-of-order writes; writes are now serialized on a per-connection basis.
 
 
 0.21.4 (2016-02-15)
