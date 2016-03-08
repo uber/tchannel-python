@@ -23,6 +23,12 @@ from tornado import ioloop, gen
 from tchannel import TChannel, thrift
 
 
+service = thrift.load(
+    path='examples/guide/keyvalue/service.thrift',
+    service='benchmark-server',
+)
+
+
 def test_roundtrip(benchmark):
     loop = ioloop.IOLoop.current()
 
@@ -31,12 +37,6 @@ def test_roundtrip(benchmark):
 
     clients = [TChannel('benchmark-client') for _ in range(10)]
 
-    service = thrift.load(
-        path='examples/guide/keyvalue/service.thrift',
-        service='benchmark-server',
-    )
-    service.hostport = server.hostport
-
     @server.thrift.register(service.KeyValue)
     def getValue(request):
         return 'bar'
@@ -44,10 +44,17 @@ def test_roundtrip(benchmark):
     def roundtrip():
         @gen.coroutine
         def doit():
-            yield [
-                client.thrift(service.KeyValue.getValue("foo"))
-                for client in clients
-            ]
+            futures = []
+            # 10 clients send 10 requests concurrently
+            for client in clients:
+                for _ in range(10):
+                    futures.append(
+                        client.thrift(
+                            service.KeyValue.getValue("foo"),
+                            hostport=server.hostport,
+                        )
+                    )
+            yield futures
 
         return loop.run_sync(doit)
 
