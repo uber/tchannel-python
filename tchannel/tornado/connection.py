@@ -601,9 +601,9 @@ class StreamConnection(TornadoConnection):
             return
 
         if f.exception():
-            protocol_exception = f.exception()
+            cls, protocol_exception, tb = f.exc_info()
             protocol_exception.tracing = request.tracing
-            response_future.set_exception(protocol_exception)
+            response_future.set_exc_info((cls, protocol_exception, tb))
 
         else:
             response = f.result()
@@ -650,6 +650,7 @@ class Reader(object):
 
         def keep_reading(f):
             if f.exception():
+                self.filling = False
                 return log(f.exception())
             # connect these two in the case when put blocks
             self.queue.put(f.result())
@@ -687,7 +688,7 @@ class Writer(object):
         def on_write(f, done):
             if f.exception():
                 log.error(f.exception())
-                done.set_exception(f.exception())
+                done.set_exc_info(f.exc_info())
             else:
                 done.set_result(f.result())
 
@@ -746,7 +747,7 @@ class Writer(object):
 
         def on_queue_error(f):
             if f.exception():
-                done_writing_future.set_exception(f.exception())
+                done_writing_future.set_exc_info(f.exc_info())
 
         self.queue.put(
             (body, done_writing_future)
