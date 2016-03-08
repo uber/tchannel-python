@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.21.5 (unreleased)
+0.21.5 (2016-03-08)
 -------------------
 
 - Tornado 4.2 was listed as a requirement but this was corrected to be 4.3
