@@ -6,6 +6,8 @@ Changes by Version
 
 - Tornado 4.2 was listed as a requirement but this was corrected to be 4.3
   which introduced the locks module.
+- Fixed in issue where clients could incorrectly time out when reading large
+  response bodies.
 
 
 0.21.4 (2016-02-15)
