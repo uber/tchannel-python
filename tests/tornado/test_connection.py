@@ -44,8 +44,6 @@ def test_handshake(tornado_pair):
     server, client = tornado_pair
     headers = dummy_headers()
 
-    print 'IOLOOP from test is', tornado.ioloop.IOLoop.current()
-
     client.initiate_handshake(headers=headers)
     yield server.expect_handshake(headers=headers)
 
