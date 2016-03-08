@@ -752,8 +752,6 @@ class Writer(object):
         def on_queue_error(f):
             if f.exception():
                 done_writing_future.set_exc_info(f.exc_info())
-            else:
-                done_writing_future.set_result(None)
 
         self.queue.put(
             (body, done_writing_future)
