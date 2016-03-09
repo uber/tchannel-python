@@ -4,7 +4,7 @@ Changes by Version
 0.21.6 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed a logging error on failed reads.
 
 
 0.21.5 (2016-03-08)
