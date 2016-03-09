@@ -4,7 +4,7 @@ Changes by Version
 0.21.7 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed an unhelpful stack trace on failed reads.
 
 
 0.21.6 (2016-03-08)
