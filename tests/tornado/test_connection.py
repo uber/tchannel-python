@@ -24,6 +24,7 @@ import mock
 import pytest
 import tornado.ioloop
 from tornado import gen
+from datetime import timedelta
 
 from tchannel import TChannel
 from tchannel.errors import TimeoutError
@@ -113,3 +114,35 @@ def test_local_timeout_unconsumed_message():
         yield gen.sleep(0.03)
 
     assert mock_warn.call_count == 0
+
+
+@pytest.mark.gen_test
+def test_stream_closed_error_on_read(tornado_pair):
+    # Test that we don't log an error for StreamClosedErrors while reading.
+    server, client = tornado_pair
+    future = server.await()
+    client.close()
+
+    with mock.patch.object(connection, 'log') as mock_log:  # :(
+        with pytest.raises(gen.TimeoutError):
+            yield gen.with_timeout(timedelta(milliseconds=100), future)
+
+    assert mock_log.error.call_count == 0
+    assert mock_log.info.call_count == 1
+
+
+@pytest.mark.gen_test
+def test_other_error_on_read(tornado_pair):
+    # Test that we do log errors for non-StreamClosedError failures while
+    # reading.
+    server, client = tornado_pair
+
+    future = server.await()
+    yield client.connection.write(b'\x00\x02\x00\x00')  # bad payload
+
+    with mock.patch.object(connection, 'log') as mock_log:  # :(
+        with pytest.raises(gen.TimeoutError):
+            yield gen.with_timeout(timedelta(milliseconds=100), future)
+
+    assert mock_log.error.call_count == 1
+    assert mock_log.info.call_count == 0

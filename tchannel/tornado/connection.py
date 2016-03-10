@@ -654,7 +654,10 @@ class Reader(object):
             if f.exception():
                 self.filling = False
                 # This is usually StreamClosed due to a client disconnecting.
-                return log.info("read error", exc_info=f.exc_info())
+                if isinstance(f.exception(), StreamClosedError):
+                    return log.info("read error", exc_info=f.exc_info())
+                else:
+                    return log.error("read error", exc_info=f.exc_info())
             # connect these two in the case when put blocks
             self.queue.put(f.result()).add_done_callback(
                 lambda f: io_loop.spawn_callback(self.fill),
