@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.21.8 (unreleased)
+0.21.8 (2016-03-10)
 -------------------
 
 - Reduce read errors due to clients disconnecting to INFO from ERROR.
