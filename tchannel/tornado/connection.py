@@ -532,9 +532,10 @@ class StreamConnection(TornadoConnection):
             yield self.write(message)
             context.state = StreamState.completed
         # Stop streamming immediately if exception occurs on the handler side
-        except TChannelError as e:
+        except TChannelError:
             # raise by tchannel intentionally
-            log.info("Stop Outgoing Streams because of error: %s", e.message)
+            log.info("Stopped outgoing streams because of an error",
+                     exc_info=sys.exc_info())
 
     @tornado.gen.coroutine
     def post_response(self, response):

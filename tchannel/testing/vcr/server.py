@@ -53,7 +53,7 @@ def wrap_uncaught(func=None, reraise=None):
                     # TODO maybe use traceback.format_exc to also send a
                     # traceback?
                     raise e
-                raise proxy.VCRServiceError(e.message)
+                raise proxy.VCRServiceError(str(e))
             else:
                 raise gen.Return(result)
 
@@ -150,7 +150,7 @@ class VCRProxyService(object):
         except TChannelError as e:
             raise proxy.RemoteServiceError(
                 code=e.code,
-                message=e.message,
+                message=str(e),
             )
         response_headers = yield response.get_header()
         response_body = yield response.get_body()
