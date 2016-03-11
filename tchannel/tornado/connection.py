@@ -663,7 +663,7 @@ class Reader(object):
                 lambda f: io_loop.spawn_callback(self.fill),
             )
 
-        io_loop.add_future(read_message(self.io_stream), keep_reading)
+        read_message(self.io_stream).add_done_callback(keep_reading)
 
     def get(self):
         """Receive the next message off the wire.
