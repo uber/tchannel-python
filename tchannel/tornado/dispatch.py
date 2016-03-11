@@ -225,7 +225,7 @@ class RequestDispatcher(object):
             connection.send_error(e)
         except Exception as e:
             error = UnexpectedError(
-                description="Unexpected Error: '%s'" % e.message,
+                description="Unexpected Error: '%s'" % e,
                 id=request.id,
                 tracing=request.tracing,
             )

@@ -532,9 +532,10 @@ class StreamConnection(TornadoConnection):
             yield self.write(message)
             context.state = StreamState.completed
         # Stop streamming immediately if exception occurs on the handler side
-        except TChannelError as e:
+        except TChannelError:
             # raise by tchannel intentionally
-            log.info("Stop Outgoing Streams because of error: %s", e.message)
+            log.info("Stopped outgoing streams because of an error",
+                     exc_info=sys.exc_info())
 
     @tornado.gen.coroutine
     def post_response(self, response):
@@ -695,7 +696,7 @@ class Writer(object):
 
         def on_write(f, done):
             if f.exception():
-                log.error(f.exception())
+                log.error("write failed", exc_info=f.exc_info())
                 done.set_exc_info(f.exc_info())
             else:
                 done.set_result(f.result())
@@ -705,13 +706,19 @@ class Writer(object):
         def on_message(f):
             if f.exception():
                 io_loop.spawn_callback(next_write)
-                log.error(f.exception())
+                log.error("queue get failed", exc_info=f.exc_info())
                 return
+
             message, done = f.result()
-            io_loop.add_future(
-                self.io_stream.write(message),
-                lambda f: on_write(f, done),
-            )
+            try:
+                # write() may raise if the stream was closed while we were
+                # waiting for an entry in the queue.
+                write_future = self.io_stream.write(message)
+            except Exception:
+                io_loop.spawn_callback(next_write)
+                done.set_exc_info(sys.exc_info())
+            else:
+                io_loop.add_future(write_future, lambda f: on_write(f, done))
 
         def next_write():
             if self.io_stream.closed():

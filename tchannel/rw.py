@@ -496,9 +496,7 @@ class NamedChainReadWriter(ReadWriter):
                 if name != skip:
                     result[name] = value
             except ReadError as e:
-                raise ReadError(
-                    "Failed to read %s: %s" % (name, e.message)
-                )
+                raise ReadError("Failed to read %s: %s" % (name, e))
         return result
 
     def write(self, obj, stream):
@@ -538,9 +536,7 @@ class InstanceReadWriter(ReadWriter):
                 if attr != skip:
                     kwargs[attr] = value
         except ReadError as e:
-            raise ReadError(
-                "Failed to read %s: %s" % (self._cls, e.message)
-            )
+            raise ReadError("Failed to read %s: %s" % (self._cls, e))
 
         return self._cls(**kwargs)
 

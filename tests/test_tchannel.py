@@ -325,6 +325,7 @@ def test_event_hook_register():
 
 @pytest.mark.gen_test
 def test_advertise_should_take_a_router_file():
+    from tchannel.tornado.response import Response as TornadoResponse
 
     host_path = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
@@ -343,7 +344,7 @@ def test_advertise_should_take_a_router_file():
     ) as mock_advertise:
         f = gen.Future()
         mock_advertise.return_value = f
-        f.set_result(Response())
+        f.set_result(TornadoResponse())
         tchannel.advertise(router_file=host_path)
 
         mock_advertise.assert_called_once_with(ANY, routers=routers,
