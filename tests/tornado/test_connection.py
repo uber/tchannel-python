@@ -22,14 +22,16 @@ from __future__ import absolute_import
 
 import mock
 import pytest
+import socket
 import tornado.ioloop
 from tornado import gen
 from datetime import timedelta
+from tornado.iostream import IOStream, StreamClosedError
 
 from tchannel import TChannel
+from tchannel import messages
 from tchannel.errors import TimeoutError
 from tchannel.tornado import connection
-from tchannel.messages import Types
 
 
 def dummy_headers():
@@ -58,12 +60,12 @@ def test_pings(tornado_pair):
     client.ping()
 
     ping = yield server.await()
-    assert ping.message_type == Types.PING_REQ
+    assert ping.message_type == messages.Types.PING_REQ
 
     server.pong()
 
     pong = yield client.await()
-    assert pong.message_type == Types.PING_RES
+    assert pong.message_type == messages.Types.PING_RES
 
 
 @pytest.mark.gen_test
@@ -146,3 +148,19 @@ def test_other_error_on_read(tornado_pair):
 
     assert mock_log.error.call_count == 1
     assert mock_log.info.call_count == 0
+
+
+@pytest.mark.gen_test
+def test_writer_write_error():
+    server, client = socket.socketpair()
+    reader = connection.Reader(IOStream(server))
+    writer = connection.Writer(IOStream(client))
+
+    # one successful message first
+    yield writer.put(messages.PingRequestMessage())
+    ping = yield reader.get()
+    assert isinstance(ping, messages.PingRequestMessage)
+
+    writer.io_stream.close()
+    with pytest.raises(StreamClosedError):
+        yield writer.put(messages.PingResponseMessage())

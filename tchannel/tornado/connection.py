@@ -708,11 +708,17 @@ class Writer(object):
                 io_loop.spawn_callback(next_write)
                 log.error("queue get failed", exc_info=f.exc_info())
                 return
+
             message, done = f.result()
-            io_loop.add_future(
-                self.io_stream.write(message),
-                lambda f: on_write(f, done),
-            )
+            try:
+                # write() may raise if the stream was closed while we were
+                # waiting for an entry in the queue.
+                write_future = self.io_stream.write(message)
+            except Exception:
+                io_loop.spawn_callback(next_write)
+                done.set_exc_info(sys.exc_info())
+            else:
+                io_loop.add_future(write_future, lambda f: on_write(f, done))
 
         def next_write():
             if self.io_stream.closed():
