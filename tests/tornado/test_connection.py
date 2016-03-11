@@ -164,3 +164,23 @@ def test_writer_write_error():
     writer.io_stream.close()
     with pytest.raises(StreamClosedError):
         yield writer.put(messages.PingResponseMessage())
+
+
+@pytest.mark.gen_test
+def test_reader_read_error():
+    server, client = socket.socketpair()
+    reader = connection.Reader(IOStream(server))
+    writer = connection.Writer(IOStream(client))
+
+    yield writer.put(messages.PingRequestMessage())
+    ping = yield reader.get()
+    assert isinstance(ping, messages.PingRequestMessage)
+
+    reader.io_stream.close()
+    future = reader.get()
+    with pytest.raises(gen.TimeoutError):
+        yield gen.with_timeout(timedelta(milliseconds=100), future)
+
+    # TODO(abg): Need to fix Reader.get to actually raise StreamClosedError
+    # rather than freezing forever. Then this can be changed to assert that a
+    # StreamClosedError is raised.
