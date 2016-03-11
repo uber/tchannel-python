@@ -555,13 +555,12 @@ class StreamConnection(TornadoConnection):
         """send the given request and response is not required"""
         request.close_argstreams()
 
+        def on_done(future):
+            future.exception()  # < to avoid "unconsumed exception" logs
+            request.close_argstreams(force=True)
+
         stream_future = self._stream(request, self.request_message_factory)
-
-        IOLoop.current().add_future(
-            stream_future,
-            lambda f: request.close_argstreams(force=True)
-        )
-
+        stream_future.add_done_callback(on_done)
         return stream_future
 
     def send_request(self, request):
@@ -664,7 +663,7 @@ class Reader(object):
                 lambda f: io_loop.spawn_callback(self.fill),
             )
 
-        io_loop.add_future(read_message(self.io_stream), keep_reading)
+        read_message(self.io_stream).add_done_callback(keep_reading)
 
     def get(self):
         """Receive the next message off the wire.
