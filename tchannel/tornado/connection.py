@@ -695,7 +695,7 @@ class Writer(object):
 
         def on_write(f, done):
             if f.exception():
-                log.error(f.exception())
+                log.error("write failed", exc_info=f.exc_info())
                 done.set_exc_info(f.exc_info())
             else:
                 done.set_result(f.result())
@@ -705,7 +705,7 @@ class Writer(object):
         def on_message(f):
             if f.exception():
                 io_loop.spawn_callback(next_write)
-                log.error(f.exception())
+                log.error("queue get failed", exc_info=f.exc_info())
                 return
             message, done = f.result()
             io_loop.add_future(
