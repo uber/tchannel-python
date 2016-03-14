@@ -7,6 +7,7 @@ Changes by Version
 - Fixed a bug that caused silent failures when a write attempt was made to a
   closed connection.
 - Reduce ``StreamClosedError`` log noisiness for certain scenarios.
+- Make ``TChannel.advertise`` idempotent and thread-safe.
 
 
 0.21.8 (2016-03-10)
