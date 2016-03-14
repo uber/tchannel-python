@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.21.9 (unreleased)
+0.21.9 (2016-03-14)
 -------------------
 
 - Fixed a bug that caused silent failures when a write attempt was made to a
