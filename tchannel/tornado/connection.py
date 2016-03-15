@@ -24,7 +24,6 @@ import logging
 import os
 import socket
 import sys
-from functools import partial
 
 import tornado.gen
 import tornado.iostream
@@ -816,8 +815,14 @@ def read_message(stream):
         size = frame.frame_rw.size_rw.read(BytesIO(size_bytes))
         io_loop.add_future(
             stream.read_bytes(size - FRAME_SIZE_WIDTH),
-            partial(on_body, size),
+            lambda f: on_body(size, f)
         )
 
-    io_loop.add_future(stream.read_bytes(FRAME_SIZE_WIDTH), on_read_size)
+    try:
+        # read_bytes may fail if the stream has already been closed
+        read_size_future = stream.read_bytes(FRAME_SIZE_WIDTH)
+    except Exception:
+        answer.set_exc_info(sys.exc_info())
+    else:
+        read_size_future.add_done_callback(on_read_size)
     return answer
