@@ -27,7 +27,6 @@ import sys
 
 import tornado.gen
 import tornado.iostream
-import tornado.queues as queues
 
 from tornado import stack_context
 from tornado.ioloop import IOLoop
@@ -36,6 +35,7 @@ from tornado.iostream import StreamClosedError
 from .. import errors
 from .. import frame
 from .. import messages
+from .. import _queue as queues
 from .._future import fail_to
 from ..errors import NetworkError
 from ..errors import TChannelError
@@ -192,7 +192,10 @@ class TornadoConnection(object):
         self._loop_running = True
 
         while not self.closed:
-            message = yield self.reader.get()
+            try:
+                message = yield self.reader.get()
+            except StreamClosedError:
+                break
 
             # TODO: There should probably be a try-catch on the yield.
             if message.message_type in self.CALL_REQ_TYPES:
@@ -642,7 +645,7 @@ class Reader(object):
     def __init__(self, io_stream, capacity=None):
         capacity = capacity or 64
 
-        self.queue = tornado.queues.Queue(capacity)
+        self.queue = queues.Queue(capacity)
         self.filling = False
         self.io_stream = io_stream
 
@@ -654,7 +657,7 @@ class Reader(object):
         def keep_reading(f):
             if f.exception():
                 self.filling = False
-                # This is usually StreamClosed due to a client disconnecting.
+                self.queue.terminate(f.exc_info())
                 if isinstance(f.exception(), StreamClosedError):
                     return log.info("read error", exc_info=f.exc_info())
                 else:
@@ -683,7 +686,7 @@ class Writer(object):
     def __init__(self, io_stream, capacity=None):
         capacity = capacity or 64
 
-        self.queue = tornado.queues.Queue(capacity)
+        self.queue = queues.Queue(capacity)
         self.draining = False
         self.io_stream = io_stream
         # Tracks message IDs for this connection.
