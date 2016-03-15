@@ -25,12 +25,11 @@ import pytest
 import socket
 import tornado.ioloop
 from tornado import gen
-from datetime import timedelta
 from tornado.iostream import IOStream, StreamClosedError
 
 from tchannel import TChannel
 from tchannel import messages
-from tchannel.errors import TimeoutError
+from tchannel.errors import TimeoutError, ReadError
 from tchannel.tornado import connection
 
 
@@ -126,8 +125,8 @@ def test_stream_closed_error_on_read(tornado_pair):
     client.close()
 
     with mock.patch.object(connection, 'log') as mock_log:  # :(
-        with pytest.raises(gen.TimeoutError):
-            yield gen.with_timeout(timedelta(milliseconds=100), future)
+        with pytest.raises(StreamClosedError):
+            yield future
 
     assert mock_log.error.call_count == 0
     assert mock_log.info.call_count == 1
@@ -143,8 +142,8 @@ def test_other_error_on_read(tornado_pair):
     yield client.connection.write(b'\x00\x02\x00\x00')  # bad payload
 
     with mock.patch.object(connection, 'log') as mock_log:  # :(
-        with pytest.raises(gen.TimeoutError):
-            yield gen.with_timeout(timedelta(milliseconds=100), future)
+        with pytest.raises(ReadError):
+            yield future
 
     assert mock_log.error.call_count == 1
     assert mock_log.info.call_count == 0
@@ -178,9 +177,5 @@ def test_reader_read_error():
 
     reader.io_stream.close()
     future = reader.get()
-    with pytest.raises(gen.TimeoutError):
-        yield gen.with_timeout(timedelta(milliseconds=100), future)
-
-    # TODO(abg): Need to fix Reader.get to actually raise StreamClosedError
-    # rather than freezing forever. Then this can be changed to assert that a
-    # StreamClosedError is raised.
+    with pytest.raises(StreamClosedError):
+        yield future

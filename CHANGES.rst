@@ -4,7 +4,8 @@ Changes by Version
 0.21.10 (unreleased)
 --------------------
 
-- Nothing changed yet.
+- Fixed a bug where certain errors while reading requests would propagate as
+  TimeoutErrors.
 
 
 0.21.9 (2016-03-14)
