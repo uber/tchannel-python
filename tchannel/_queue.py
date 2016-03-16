@@ -22,116 +22,105 @@ from __future__ import (
     absolute_import, unicode_literals, division, print_function
 )
 
-from collections import deque
+import threading
+from collections import namedtuple
 
-from tornado.gen import TimeoutError
 from tornado.ioloop import IOLoop
 from tornado.queues import QueueEmpty
 from tornado.concurrent import Future
 
-__all__ = ['Queue', 'QueueEmpty', 'TimeoutError']
+__all__ = ['Queue', 'QueueEmpty']
+
+
+Node = namedtuple('Node', 'value next')
 
 
 class Queue(object):
-    """A specialized version of Tornado's Queue class.
+    """An unbounded, thread-safe asynchronous queue."""
 
-    This class is an almost drop-in replacement for Tornado's Queue class. It
-    behaves similar to Tornado's Queue except it provides a ``terminate()``
-    function to fail all outstanding operations.
-
-    :param int maxsize:
-        If specified, this is the buffer size for the queue. Once the capacity
-        is reached, we will start applying backpressure on putters. If
-        unspecified or None, the queue is unbuffered.
-    """
-
-    __slots__ = ('_getters', '_putters', '_surplus', 'maxsize')
+    __slots__ = ('_get', '_put', '_lock')
 
     # How this works:
     #
-    # Reads:
-    # - Check if we have a value sitting in surplus. If yes, use that.
-    #   Otherwise,
-    # - Check if we have a putter waiting to provide a value. If yes, use
-    #   that. Otherwise,
-    # - Store the future in getters for later.
+    # _get and _put are futures maintaining pointers to a linked list of
+    # futures. The linked list is implemented as Node objects holding the
+    # value and the next future.
     #
-    # Writes:
-    # - Check if we have a future waiting for a value in getters. If yes, use
-    #   that. Othrewise,
-    # - Check if we have room in surplus. If yes, use that. Otherwise,
-    # - Store the value and future in putters for later.
+    #     Node
+    #   +---+---+   +---+---+  E: Empty future
+    #   | 1 | F-|-->| 2 | E |  F: Filled future
+    #   +---+---+   +---+---+
+    #         ^           ^
+    #   +---+ |     +---+ |
+    #   | F-|-+     | F-|-+
+    #   +---+       +---+
+    #    _get        _put
     #
-    # Invariants:
-    # - Either getters is empty or both, surplus and putters are empty.
-    # - If putters is non-empty, surplus is maxsize (which is more than 0).
+    # When there's a put, we fill the current empty future with a Node
+    # containing the value and a pointer to the next, newly created empty
+    # future.
+    #
+    #   +---+---+   +---+---+   +---+---+
+    #   | 1 | F-|-->| 2 | F-|-->| 3 | E |
+    #   +---+---+   +---+---+   +---+---+
+    #         ^                       ^
+    #   +---+ |                 +---+ |
+    #   | F-|-+                 | F-|-+
+    #   +---+                   +---+
+    #    _get                    _put
+    #
+    # When there's a get, we read the value from the current Node, and move
+    # _get to the next future.
+    #
+    #   +---+---+   +---+---+
+    #   | 2 | F-|-->| 3 | E |
+    #   +---+---+   +---+---+
+    #         ^           ^
+    #   +---+ |     +---+ |
+    #   | F-|-+     | F-|-+
+    #   +---+       +---+
+    #    _get        _put
 
-    def __init__(self, maxsize=None):
-        if maxsize is None:
-            maxsize = 0
-        self.maxsize = maxsize
+    def __init__(self):
+        self._lock = threading.Lock()
 
-        # collection of futures waiting for values
-        self._getters = deque()
+        # Space for the next Node.
+        hole = Future()
 
-        # collection of (value, future) pairs waiting to put values.
-        self._putters = deque()
+        # Pointer to the Future that will contain the next Node.
+        self._get = Future()
+        self._get.set_result(hole)
 
-        # collection of values that have not yet been consumed
-        self._surplus = deque()
+        # Pointer to the next empty Future that should be filled with a Node.
+        self._put = Future()
+        self._put.set_result(hole)
 
-    def terminate(self, exc):
-        """Terminate all outstanding get requests with the given exception.
+    def put(self, value):
+        """Puts an item into the queue.
 
-        :param exc:
-            An exception or an exc_info triple.
+        Returns a Future that resolves to None once the value has been
+        accepted by the queue.
         """
-        if isinstance(exc, tuple):
-            fail = (lambda f: f.set_exc_info(exc))
-        else:
-            fail = (lambda f: f.set_exception(exc))
+        io_loop = IOLoop.current()
+        new_hole = Future()
 
-        while self._putters:
-            _, future = self._putters.popleft()
-            if future.running():
-                fail(future)
+        new_put = Future()
+        new_put.set_result(new_hole)
 
-        while self._getters:
-            future = self._getters.popleft()
-            if future.running():
-                fail(future)
-
-    def __receive_put(self):
-        """Receive a value from a waiting putter."""
-        while self._putters:
-            value, future = self._putters.popleft()
-            if future.running():
-                self._surplus.append(value)
-                future.set_result(None)
-                return
-
-    def get(self, timeout=None):
-        """Get the next item from the queue.
-
-        Returns a future that resolves to the next item.
-
-        :param timeout:
-            If set, the future will resolve to a TimeoutError if a value is
-            not received within the given time. The value for ``timeout`` may
-            be anything accepted by ``IOLoop.add_timeout`` (a ``timedelta`` or
-            an **absolute** time relative to ``IOLoop.time``).
-        """
-        self.__receive_put()
+        with self._lock:
+            self._put, put = new_put, self._put
 
         answer = Future()
-        if self._surplus:
-            answer.set_result(self._surplus.popleft())
-            return answer
 
-        # Wait for a value
-        if timeout is not None:
-            _add_timeout(timeout, answer)
-        self._getters.append(answer)
+        def _on_put(future):
+            if future.exception():  # pragma: no cover (never happens)
+                return answer.set_exc_info(future.exc_info())
+
+            old_hole = put.result()
+            old_hole.set_result(Node(value, new_hole))
+            answer.set_result(None)
+
+        io_loop.add_future(put, _on_put)
         return answer
 
     def get_nowait(self):
@@ -139,57 +128,50 @@ class Queue(object):
 
         Raises ``QueueEmpty`` if no values are available right now.
         """
-        self.__receive_put()
+        new_get = Future()
 
-        if self._surplus:
-            return self._surplus.popleft()
-        raise QueueEmpty()
+        with self._lock:
+            if not self._get.done():
+                raise QueueEmpty
+            get, self._get = self._get, new_get
 
-    def put(self, value, timeout=None):
-        """Puts an item into the queue.
+        hole = get.result()
+        if not hole.done():
+            # Restore the unfinished hole.
+            new_get.set_result(hole)
+            raise QueueEmpty
 
-        Returns a future that resolves to None once the value has been
-        accepted by the queue.
+        value, new_hole = hole.result()
+        new_get.set_result(new_hole)
+        return value
 
-        The value is accepted immediately if there is room in the queue or
-        maxsize was not specified.
+    def get(self):
+        """Gets the next item from the queue.
 
-        :param timeout:
-            If set, the future will resolve to a TimeoutError if a value is
-            not accepted within the given time. The value for ``timeout`` may
-            be anything accepted by ``IOLoop.add_timeout`` (a ``timedelta`` or
-            an **absolute** time relative to ``IOLoop.time``).
+        Returns a Future that resolves to the next item once it is available.
         """
+        io_loop = IOLoop.current()
+        new_get = Future()
+
+        with self._lock:
+            get, self._get = self._get, new_get
 
         answer = Future()
 
-        # If there's a getter waiting, send it the result.
-        while self._getters:
-            future = self._getters.popleft()
-            if future.running():
-                future.set_result(value)
-                answer.set_result(None)
-                return answer
+        def _on_node(future):
+            if future.exception():  # pragma: no cover (never happens)
+                return answer.set_exc_info(future.exc_info())
 
-        # We have room. Put the value into surplus.
-        if self.maxsize < 1 or len(self._surplus) < self.maxsize:
-            self._surplus.append(value)
-            answer.set_result(None)
-            return answer
+            value, new_hole = future.result()
+            new_get.set_result(new_hole)
+            answer.set_result(value)
 
-        # Wait until there is room.
-        if timeout is not None:
-            _add_timeout(timeout, answer)
-        self._putters.append((value, answer))
+        def _on_get(future):
+            if future.exception():  # pragma: no cover (never happens)
+                return answer.set_exc_info(future.exc_info())
+
+            hole = future.result()
+            io_loop.add_future(hole, _on_node)
+
+        io_loop.add_future(get, _on_get)
         return answer
-
-
-def _add_timeout(timeout, future):
-    io_loop = IOLoop.current()
-
-    def on_timeout():
-        if future.running():
-            future.set_exception(TimeoutError("timed out"))
-
-    t = io_loop.add_timeout(timeout, on_timeout)
-    future.add_done_callback(lambda _: io_loop.remove_timeout(t))

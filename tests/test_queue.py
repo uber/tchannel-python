@@ -22,18 +22,13 @@ from __future__ import (
     absolute_import, unicode_literals, division, print_function
 )
 
-import sys
 import pytest
-from datetime import timedelta
-from six.moves import range
+import threading
+from collections import deque, defaultdict
 from tornado import gen
+from tornado.ioloop import IOLoop
 
-from tchannel._queue import Queue, QueueEmpty, TimeoutError
-
-
-def assert_invariant(q):
-    assert not (q._getters and (q._surplus or q._putters))
-    assert (not q._putters or len(q._surplus) == q.maxsize)
+from tchannel._queue import Queue, QueueEmpty
 
 
 @pytest.fixture
@@ -42,241 +37,176 @@ def items():
 
 
 @pytest.mark.gen_test
-def test_unbounded_put_then_get(items):
+def test_put_then_get(items):
     queue = Queue()
-    assert_invariant(queue)
 
     for item in items:
         yield queue.put(item)
-        assert_invariant(queue)
 
     got_futures = []
     for i in range(len(items)):
         got_futures.append(queue.get())
-        assert_invariant(queue)
 
     got = yield got_futures
     assert got == items
 
-    with pytest.raises(TimeoutError):
-        yield queue.get(timedelta(seconds=0.1))
-
 
 @pytest.mark.gen_test
-def test_bounded_put_then_get(items):
-    queue = Queue(5)
-    assert_invariant(queue)
-
-    for item in items[:5]:
-        yield queue.put(item)
-        assert_invariant(queue)
-
-    put_futures = []
-    for item in items[5:]:
-        put_futures.append(queue.put(item))
-
-    got = []
-    for i in range(len(items)):
-        item = yield queue.get()
-        assert_invariant(queue)
-        got.append(item)
-
-    assert got == items
-    yield put_futures
-
-
-@pytest.mark.gen_test
-def test_bounded_put_timeout_then_get(items):
-    queue = Queue(1)
-    assert_invariant(queue)
-
-    yield queue.put(items[0])
-
-    put_futures = []
-    for item in range(len(items)):
-        put_futures.append(queue.put(item, timedelta(seconds=0.001)))
-
-    yield gen.sleep(0.01)
-
-    get_futures = []
-    for item in range(len(items)):
-        get_futures.append(queue.get())
-
-    for future in put_futures:
-        with pytest.raises(TimeoutError):
-            yield future
-
-    for item in items[1:]:
-        yield queue.put(item)
-
-    got = yield get_futures
-    assert got == items
-
-
-@pytest.mark.gen_test
-def test_unbounded_put_then_get_nowait(items):
+def test_put_then_get_nowait(items):
     queue = Queue()
 
     for item in items:
         yield queue.put(item)
-        assert_invariant(queue)
 
     got = []
     for i in range(len(items)):
         got.append(queue.get_nowait())
-        assert_invariant(queue)
 
     assert got == items
 
     with pytest.raises(QueueEmpty):
         queue.get_nowait()
 
+    future = queue.get()
+    yield queue.put(42)
+    assert 42 == (yield future)
+
 
 @pytest.mark.gen_test
-def test_unbounded_get_then_put(items):
+def test_get_then_put(items):
     queue = Queue()
 
     got_futures = []
     for i in range(len(items)):
         got_futures.append(queue.get())
-        assert_invariant(queue)
 
     for item in items:
         yield queue.put(item)
-        assert_invariant(queue)
 
     got = yield got_futures
     assert got == items
 
 
 @pytest.mark.gen_test
-def test_unbounded_expired_gets_then_get_first():
-    queue = Queue()
+@pytest.mark.concurrency_test
+def test_concurrent_producers_single_consumer():
+    num_threads = 1000
+    num_items = 10
+    q = Queue()
 
-    expired_gets = []
-    for i in range(99):
-        expired_gets.append(queue.get(timedelta(seconds=0.001)))
-        assert_invariant(queue)
+    def producer(i):
 
-    yield gen.sleep(0.01)  # 99 * 0.001 = 0.099
+        @gen.coroutine
+        def run():
+            for j in range(num_items):
+                yield q.put((i, j))
 
-    # get the value before putting it
-    real_get = queue.get()
-    yield queue.put(42)
-    assert 42 == (yield real_get)
-    assert_invariant(queue)
+        IOLoop(make_current=False).run_sync(run)
 
-    for future in expired_gets:
-        with pytest.raises(TimeoutError):
-            yield future
+    producers = [
+        threading.Thread(target=producer, args=(i,))
+        for i in range(num_threads)
+    ]
 
+    for p in producers:
+        p.start()
 
-@pytest.mark.gen_test
-def test_unbounded_expired_gets_then_put_first():
-    queue = Queue()
+    items = defaultdict(lambda: [])
+    for x in range(num_items * num_threads):
+        i, j = yield q.get()
+        items[i].append(j)
 
-    expired_gets = []
-    for i in range(99):
-        expired_gets.append(queue.get(timedelta(seconds=0.001)))
-        assert_invariant(queue)
+    for v in items.values():
+        assert v == list(range(num_items))
 
-    yield gen.sleep(0.01)
-
-    # put the value first, get afterwards
-    yield queue.put(42)
-    assert 42 == (yield queue.get())
-    assert_invariant(queue)
-
-    for future in expired_gets:
-        with pytest.raises(TimeoutError):
-            yield future
+    for p in producers:
+        p.join()
 
 
 @pytest.mark.gen_test
-def test_terminate_get_with_exception():
+@pytest.mark.concurrency_test
+def test_concurrent_consumers_single_producer():
+    num_threads = 1000
+    num_items = 10
 
-    class GreatSadness(Exception):
-        pass
+    q = Queue()
+    items = deque()
 
-    queue = Queue()
-    expired_gets = []
-    terminated_gets = []
+    def consumer():
 
-    flag = True
-    for i in range(99):
-        if flag:
-            expired_gets.append(queue.get(timedelta(seconds=0.001)))
-        else:
-            terminated_gets.append(queue.get(timedelta(seconds=1)))
-        flag = not flag
+        @gen.coroutine
+        def run():
+            for i in range(num_items):
+                x = yield q.get()
+                items.append(x)
 
-    yield gen.sleep(0.01)
+        IOLoop(make_current=False).run_sync(run)
 
-    queue.terminate(GreatSadness())
+    consumers = [
+        threading.Thread(target=consumer) for i in range(num_threads)
+    ]
 
-    for future in expired_gets:
-        with pytest.raises(TimeoutError):
-            yield future
+    for c in consumers:
+        c.start()
 
-    for future in terminated_gets:
-        with pytest.raises(GreatSadness):
-            yield future
+    for x in range(num_items * num_threads):
+        yield q.put(x)
 
+    for c in consumers:
+        c.join()
 
-@pytest.mark.gen_test
-def test_terminate_put_with_exception():
-
-    class GreatSadness(Exception):
-        pass
-
-    queue = Queue(10)
-    expired_puts = []
-    terminated_puts = []
-
-    for i in range(10):
-        yield queue.put(i)
-
-    flag = True
-    for i in range(99):
-        if flag:
-            expired_puts.append(queue.put(i, timedelta(seconds=0.001)))
-        else:
-            terminated_puts.append(queue.put(i, timedelta(seconds=1)))
-        flag = not flag
-
-    yield gen.sleep(0.01)
-
-    try:
-        raise GreatSadness()
-    except GreatSadness:
-        queue.terminate(sys.exc_info())
-    else:
-        assert False, "expected failure"
-
-    for future in expired_puts:
-        with pytest.raises(TimeoutError):
-            yield future
-
-    for future in terminated_puts:
-        with pytest.raises(GreatSadness):
-            yield future
+    assert len(items) == num_items * num_threads
+    assert set(items) == set(range(num_items * num_threads))
+    # Order for concurrent consumers cannot be guaranteed because we don't
+    # know in which order consumers will wake up. The only guarantee we have
+    # is that none of the items were lost.
 
 
 @pytest.mark.gen_test
-def test_get_timeout_too_late():
-    queue = Queue()
-    future = queue.get(timedelta(seconds=0.01))
-    yield queue.put(42)
-    yield gen.sleep(0.01)
-    assert 42 == (yield future)
+@pytest.mark.concurrency_test
+def test_concurrent_producers_and_consumers():
+    num_threads = 1000
+    num_items = 10
 
+    q = Queue()
+    items = defaultdict(lambda: [])
 
-@pytest.mark.gen_test
-def test_put_timeout_too_late():
-    queue = Queue(1)
-    yield queue.put(1)
-    future = queue.put(2, timedelta(seconds=0.01))
-    assert (yield queue.get()) == 1
-    assert (yield queue.get()) == 2
-    yield gen.sleep(0.01)
-    yield future
+    def producer(i):
+
+        @gen.coroutine
+        def run():
+            for j in range(num_items):
+                yield q.put((i, j))
+
+        IOLoop(make_current=False).run_sync(run)
+
+    def consumer():
+
+        @gen.coroutine
+        def run():
+            for x in range(num_items):
+                i, j = yield q.get()
+                items[i].append(j)
+
+        IOLoop(make_current=False).run_sync(run)
+
+    num_producers = int(num_threads / 2)
+    threads = [
+        threading.Thread(target=producer, args=(i,))
+        for i in range(num_producers)
+    ] + [
+        threading.Thread(target=consumer)
+        for i in range(num_threads - num_producers)
+    ]
+
+    for t in threads:
+        t.start()
+
+    for t in threads:
+        t.join()
+
+    for i in range(num_producers):
+        assert len(items[i]) == num_items
+        assert set(items[i]) == set(range(num_items))
+        # As with the previous concurrent consumers case, we cannot guarantee
+        # ordering, only that the items are all present.

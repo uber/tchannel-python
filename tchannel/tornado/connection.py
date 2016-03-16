@@ -645,7 +645,7 @@ class Reader(object):
     def __init__(self, io_stream, capacity=None):
         capacity = capacity or 64
 
-        self.queue = queues.Queue(capacity)
+        self.queue = queues.Queue()
         self.filling = False
         self.io_stream = io_stream
 
@@ -701,7 +701,7 @@ class Writer(object):
     def __init__(self, io_stream, capacity=None):
         capacity = capacity or 64
 
-        self.queue = queues.Queue(capacity)
+        self.queue = queues.Queue()
         self.draining = False
         self.io_stream = io_stream
         # Tracks message IDs for this connection.
