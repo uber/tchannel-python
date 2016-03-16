@@ -82,8 +82,13 @@ class ZipkinTraceHook(EventHook):
         if not request.tracing.traceflags:
             return
 
-        ann = annotation.server_recv()
-        request.tracing.annotations.append(ann)
+        request.tracing.annotations.append(annotation.server_recv())
+
+        caller_name = request.headers.get('cn')
+        if caller_name:
+            request.tracing.annotations.append(
+                annotation.string('cn', caller_name),
+            )
 
     def after_send_response(self, response):
         if not response.tracing.traceflags:
