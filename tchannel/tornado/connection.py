@@ -241,7 +241,7 @@ class TornadoConnection(object):
                 # Recently timed out. Safe to ignore.
                 continue
 
-            log.warn('Unconsumed message %s', message)
+            log.info('Unconsumed message %s', message)
 
     # Basically, the only difference between send and write is that send
     # sets up a Future to get the response. That's ideal for peers making
