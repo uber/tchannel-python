@@ -655,15 +655,17 @@ class Reader(object):
         io_loop = IOLoop.current()
 
         def keep_reading(f):
+            put_future = self.queue.put(f)
+
             if f.exception():
                 self.filling = False
-                self.queue.terminate(f.exc_info())
                 if isinstance(f.exception(), StreamClosedError):
                     return log.info("read error", exc_info=f.exc_info())
                 else:
                     return log.error("read error", exc_info=f.exc_info())
+
             # connect these two in the case when put blocks
-            self.queue.put(f.result()).add_done_callback(
+            put_future.add_done_callback(
                 lambda f: io_loop.spawn_callback(self.fill),
             )
 
@@ -678,7 +680,20 @@ class Reader(object):
         if not self.filling:
             self.fill()
 
-        return self.queue.get()
+        answer = tornado.gen.Future()
+
+        def _on_result(future):
+            if future.exception():
+                return answer.set_exc_info(future.exc_info())
+            answer.set_result(future.result())
+
+        def _on_item(future):
+            if future.exception():
+                return answer.set_exc_info(future.exc_info())
+            future.result().add_done_callback(_on_result)
+
+        self.queue.get().add_done_callback(_on_item)
+        return answer
 
 
 class Writer(object):
