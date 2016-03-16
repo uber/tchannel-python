@@ -5,6 +5,9 @@ Changes by Version
 --------------------
 
 - Zipkin traces now include a server-side 'cn' annotation to identify callers.
+- Reduced "unconsumed message" warnings to INFO. These are typically generated
+  when Hyperbahn garbage collects your process due to a timed-out
+  advertisement.
 
 
 0.21.9 (2016-03-14)
