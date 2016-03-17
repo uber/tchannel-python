@@ -399,21 +399,23 @@ class TornadoConnection(object):
         log.debug("Connecting to %s", hostport)
         try:
             yield stream.connect((host, int(port)))
+
+            connection = cls(stream, tchannel, direction=OUTGOING)
+
+            log.debug("Performing handshake with %s", hostport)
+
+            yield connection.initiate_handshake(headers={
+                'host_port': serve_hostport,
+                'process_name': process_name,
+                'tchannel_language': TCHANNEL_LANGUAGE,
+                'tchannel_language_version': TCHANNEL_LANGUAGE_VERSION,
+                'tchannel_version': TCHANNEL_VERSION,
+            })
         except (StreamClosedError, socket.error) as e:
             log.warn("Couldn't connect to %s", hostport)
             raise NetworkError(
                 "Couldn't connect to %s" % hostport, e
             )
-
-        connection = cls(stream, tchannel, direction=OUTGOING)
-        log.debug("Performing handshake with %s", hostport)
-        yield connection.initiate_handshake(headers={
-            'host_port': serve_hostport,
-            'process_name': process_name,
-            'tchannel_language': TCHANNEL_LANGUAGE,
-            'tchannel_language_version': TCHANNEL_LANGUAGE_VERSION,
-            'tchannel_version': TCHANNEL_VERSION,
-        })
 
         if handler:
             connection.serve(handler)

@@ -8,6 +8,8 @@ Changes by Version
 - Reduced "unconsumed message" warnings to INFO. These are typically generated
   when Hyperbahn garbage collects your process due to a timed-out
   advertisement.
+- Handshake timeouts were incorrectly being surfaced as StreamClosedError but
+  are now raised as NetworkError.
 
 
 0.21.9 (2016-03-14)
