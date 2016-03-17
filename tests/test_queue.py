@@ -90,7 +90,7 @@ def test_get_then_put(items):
 @pytest.mark.gen_test
 @pytest.mark.concurrency_test
 def test_concurrent_producers_single_consumer():
-    num_threads = 1000
+    num_threads = 100
     num_items = 10
     q = Queue()
 
@@ -126,7 +126,7 @@ def test_concurrent_producers_single_consumer():
 @pytest.mark.gen_test
 @pytest.mark.concurrency_test
 def test_concurrent_consumers_single_producer():
-    num_threads = 1000
+    num_threads = 100
     num_items = 10
 
     q = Queue()
@@ -165,7 +165,7 @@ def test_concurrent_consumers_single_producer():
 @pytest.mark.gen_test
 @pytest.mark.concurrency_test
 def test_concurrent_producers_and_consumers():
-    num_threads = 1000
+    num_threads = 100
     num_items = 10
 
     q = Queue()
