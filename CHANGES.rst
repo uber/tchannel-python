@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.21.10 (unreleased)
+0.21.10 (2016-03-17)
 --------------------
 
 - Zipkin traces now include a server-side 'cn' annotation to identify callers.
