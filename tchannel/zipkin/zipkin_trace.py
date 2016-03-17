@@ -29,7 +29,7 @@ from tchannel.zipkin.tracers import TChannelZipkinTracer
 class ZipkinTraceHook(EventHook):
     """generate zipkin-style span for tracing"""
 
-    DEFAULT_RATE = 1.0
+    DEFAULT_RATE = 0.01
 
     def __init__(self, tchannel=None, dst=None, sample_rate=None):
         """Log zipkin style trace.
