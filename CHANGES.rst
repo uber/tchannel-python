@@ -10,6 +10,7 @@ Changes by Version
   advertisement.
 - Handshake timeouts were incorrectly being surfaced as StreamClosedError but
   are now raised as NetworkError.
+- Reduced default tracing sample rate from 100% to 1%.
 
 
 0.21.9 (2016-03-14)
