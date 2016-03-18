@@ -4,7 +4,8 @@ Changes by Version
 0.21.11 (unreleased)
 --------------------
 
-- Nothing changed yet.
+- Attempting to register endpoints against a synchronous TChannel now logs an
+  INFO level message.
 
 
 0.21.10 (2016-03-17)
