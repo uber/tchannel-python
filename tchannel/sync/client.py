@@ -141,7 +141,7 @@ class _SyncScheme(object):
 
 
 def _register(*args, **kwargs):
-    log.warning("Registration not yet supported for sync tchannel.")
+    log.info("Registration not yet supported for sync tchannel.")
 
     def decorator(fn):
         return fn
