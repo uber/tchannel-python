@@ -22,6 +22,7 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals
 )
 
+import sys
 import logging
 import random
 from collections import deque
@@ -431,19 +432,23 @@ class PeerClientOperation(object):
             try:
                 response = yield self._send(connection, request)
                 raise gen.Return(response)
-            except TChannelError as error:
-                blacklist.add(peer.hostport)
-                (peer, connection) = yield self._prepare_for_retry(
-                    request=request,
-                    connection=connection,
-                    protocol_error=error,
-                    blacklist=blacklist,
-                    num_of_attempt=num_of_attempt,
-                    max_retry_limit=retry_limit,
-                )
+            except TChannelError:
+                (typ, error, tb) = sys.exc_info()
+                try:
+                    blacklist.add(peer.hostport)
+                    (peer, connection) = yield self._prepare_for_retry(
+                        request=request,
+                        connection=connection,
+                        protocol_error=error,
+                        blacklist=blacklist,
+                        num_of_attempt=num_of_attempt,
+                        max_retry_limit=retry_limit,
+                    )
 
-                if not connection:
-                    raise error
+                    if not connection:
+                        raise typ, error, tb
+                finally:
+                    del tb  # for GC
 
     @gen.coroutine
     def _prepare_for_retry(
