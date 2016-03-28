@@ -24,7 +24,6 @@ from __future__ import (
 
 import sys
 import logging
-import sys
 
 from collections import deque
 from itertools import takewhile, dropwhile
