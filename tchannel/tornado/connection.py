@@ -27,7 +27,6 @@ import sys
 
 import tornado.gen
 import tornado.iostream
-import tornado.queues as queues
 
 from tornado import stack_context
 from tornado.ioloop import IOLoop
@@ -36,6 +35,7 @@ from tornado.iostream import StreamClosedError
 from .. import errors
 from .. import frame
 from .. import messages
+from .. import _queue as queues
 from .._future import fail_to
 from ..errors import NetworkError
 from ..errors import TChannelError
@@ -192,7 +192,10 @@ class TornadoConnection(object):
         self._loop_running = True
 
         while not self.closed:
-            message = yield self.reader.get()
+            try:
+                message = yield self.reader.get()
+            except StreamClosedError:
+                break
 
             # TODO: There should probably be a try-catch on the yield.
             if message.message_type in self.CALL_REQ_TYPES:
@@ -642,7 +645,7 @@ class Reader(object):
     def __init__(self, io_stream, capacity=None):
         capacity = capacity or 64
 
-        self.queue = tornado.queues.Queue(capacity)
+        self.queue = queues.Queue()
         self.filling = False
         self.io_stream = io_stream
 
@@ -652,15 +655,17 @@ class Reader(object):
         io_loop = IOLoop.current()
 
         def keep_reading(f):
+            put_future = self.queue.put(f)
+
             if f.exception():
                 self.filling = False
-                # This is usually StreamClosed due to a client disconnecting.
                 if isinstance(f.exception(), StreamClosedError):
                     return log.info("read error", exc_info=f.exc_info())
                 else:
                     return log.error("read error", exc_info=f.exc_info())
+
             # connect these two in the case when put blocks
-            self.queue.put(f.result()).add_done_callback(
+            put_future.add_done_callback(
                 lambda f: io_loop.spawn_callback(self.fill),
             )
 
@@ -675,7 +680,20 @@ class Reader(object):
         if not self.filling:
             self.fill()
 
-        return self.queue.get()
+        answer = tornado.gen.Future()
+
+        def _on_result(future):
+            if future.exception():
+                return answer.set_exc_info(future.exc_info())
+            answer.set_result(future.result())
+
+        def _on_item(future):
+            if future.exception():
+                return answer.set_exc_info(future.exc_info())
+            future.result().add_done_callback(_on_result)
+
+        self.queue.get().add_done_callback(_on_item)
+        return answer
 
 
 class Writer(object):
@@ -683,7 +701,7 @@ class Writer(object):
     def __init__(self, io_stream, capacity=None):
         capacity = capacity or 64
 
-        self.queue = tornado.queues.Queue(capacity)
+        self.queue = queues.Queue()
         self.draining = False
         self.io_stream = io_stream
         # Tracks message IDs for this connection.

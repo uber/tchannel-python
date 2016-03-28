@@ -4,6 +4,8 @@ Changes by Version
 0.21.11 (unreleased)
 --------------------
 
+- Fixed a bug where certain errors while reading requests would propagate as
+  TimeoutErrors.
 - Attempting to register endpoints against a synchronous TChannel now logs an
   INFO level message.
 
