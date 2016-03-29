@@ -8,6 +8,7 @@ Changes by Version
   TimeoutErrors.
 - Attempting to register endpoints against a synchronous TChannel now logs an
   INFO level message.
+- Reduced default advertisement interval to 3 minutes.
 
 
 0.21.10 (2016-03-17)

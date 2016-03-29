@@ -34,7 +34,7 @@ from .response import StatusCode
 EXPO_BASE = 1.4  # try this first
 MAX_DELAY = 10  # sec
 MAX_ATTEMPT = 7  # pow(1.4, 8) > 10
-DELAY = 60 * 1000  # ms delay time for successful advertise
+DELAY = 3 * 60 * 1000  # ms delay time for successful advertise
 FIRST_ADVERTISE_TIME = 30  # sec
 
 log = logging.getLogger('tchannel')
