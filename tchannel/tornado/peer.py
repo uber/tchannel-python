@@ -668,7 +668,7 @@ class PeerGroup(object):
         )
         peer.rank = self.rank_calculator.get_rank(peer)
         self._peers[peer.hostport] = peer
-        self.peer_heap.push_peer(peer)
+        self.peer_heap.add_and_shuffle(peer)
 
     def _update_heap(self, peer):
         """Recalculate the peer's rank and update itself in the peer heap."""
