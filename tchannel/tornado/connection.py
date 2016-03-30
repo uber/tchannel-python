@@ -122,7 +122,10 @@ class TornadoConnection(object):
         self._messages = queues.Queue()
 
         # Map from message ID to futures for responses of outgoing calls.
-        self._outstanding = {}
+        self._outbound_pending_call = {}
+
+        # Total number of pending outbound requests and responses.
+        self.total_outbound_pendings = 0
 
         # Collection of request IDs known to have timed out.
         self._request_tombstones = Cemetery()
@@ -133,11 +136,20 @@ class TornadoConnection(object):
 
         self.tchannel = tchannel
         self._close_cb = None
+        # callback that will be called when there is a change in the outbound
+        # pending request/response lists.
+        self._outbound_pending_change_cb = None
 
         self.reader = Reader(self.connection)
         self.writer = Writer(self.connection)
 
         connection.set_close_callback(self._on_close)
+
+    def set_outbound_pending_change_callback(self, cb):
+        """Specify a function to be called when outbound pending request or
+        response list changed.
+        """
+        self._outbound_pending_change_cb = cb
 
     def set_close_callback(self, cb):
         """Specify a function to be called when this connection is closed.
@@ -155,13 +167,13 @@ class TornadoConnection(object):
         self.closed = True
         self._request_tombstones.clear()
 
-        for message_id, future in self._outstanding.iteritems():
+        for message_id, future in self._outbound_pending_call.iteritems():
             future.set_exception(
                 NetworkError(
                     "canceling outstanding request %d" % message_id
                 )
             )
-        self._outstanding = {}
+        self._outbound_pending_call = {}
 
         try:
             while True:
@@ -202,10 +214,10 @@ class TornadoConnection(object):
                 self._messages.put(message)
                 continue
 
-            elif message.id in self._outstanding:
+            elif message.id in self._outbound_pending_call:
                 # set exception if receive error message
                 if message.message_type == Types.ERROR:
-                    future = self._outstanding.pop(message.id)
+                    future = self._outbound_pending_call.pop(message.id)
                     if future.running():
                         error = TChannelError.from_code(
                             message.code,
@@ -232,9 +244,9 @@ class TornadoConnection(object):
                 if (message.message_type in self.CALL_RES_TYPES and
                         message.flags == FlagsType.fragment):
                     # still streaming, keep it for record
-                    future = self._outstanding.get(message.id)
+                    future = self._outbound_pending_call.get(message.id)
                 else:
-                    future = self._outstanding.pop(message.id)
+                    future = self._outbound_pending_call.pop(message.id)
 
                 if response and future.running():
                     future.set_result(response)
@@ -264,12 +276,12 @@ class TornadoConnection(object):
         )
 
         message.id = message.id or self.writer.next_message_id()
-        assert message.id not in self._outstanding, (
+        assert message.id not in self._outbound_pending_call, (
             "Message ID '%d' already being used" % message.id
         )
 
         future = tornado.gen.Future()
-        self._outstanding[message.id] = future
+        self._outbound_pending_call[message.id] = future
         self.write(message)
         return future
 
@@ -472,6 +484,16 @@ class TornadoConnection(object):
     def pong(self):
         return self.writer.put(messages.PingResponseMessage())
 
+    def add_pending_outbound(self):
+        self.total_outbound_pendings += 1
+        if self._outbound_pending_change_cb:
+            self._outbound_pending_change_cb()
+
+    def remove_pending_outbound(self):
+        self.total_outbound_pendings -= 1
+        if self._outbound_pending_change_cb:
+            self._outbound_pending_change_cb()
+
 
 class StreamConnection(TornadoConnection):
     """Streaming request/response into protocol messages and sent by tornado
@@ -544,6 +566,7 @@ class StreamConnection(TornadoConnection):
     @tornado.gen.coroutine
     def post_response(self, response):
         try:
+            self.add_pending_outbound()
             # TODO: before_send_response
             yield self._stream(response, self.response_message_factory)
 
@@ -553,6 +576,7 @@ class StreamConnection(TornadoConnection):
                 response,
             )
         finally:
+            self.remove_pending_outbound()
             response.close_argstreams(force=True)
 
     def stream_request(self, request):
@@ -579,13 +603,16 @@ class StreamConnection(TornadoConnection):
         """
         assert self._loop_running, "Perform a handshake first."
 
-        assert request.id not in self._outstanding, (
+        assert request.id not in self._outbound_pending_call, (
             "Message ID '%d' already being used" % request.id
         )
 
         future = tornado.gen.Future()
-        self._outstanding[request.id] = future
-        self.stream_request(request)
+        self._outbound_pending_call[request.id] = future
+        self.add_pending_outbound()
+        self.stream_request(request).add_done_callback(
+            lambda f: self.remove_pending_outbound()
+        )
 
         if request.ttl:
             self._add_timeout(request, future)
@@ -616,7 +643,7 @@ class StreamConnection(TornadoConnection):
 
     def remove_outstanding_request(self, request):
         """Remove request from pending request list"""
-        self._outstanding.pop(request.id, None)
+        self._outbound_pending_call.pop(request.id, None)
 
     def _add_timeout(self, request, future):
         """Adds a timeout for the given request to the given future."""

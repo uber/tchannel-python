@@ -4,6 +4,8 @@ Changes by Version
 0.21.11 (unreleased)
 --------------------
 
+- Peer selection is now constant time instead of linear time. This should
+  significantly reduce CPU load per request.
 - Fixed a bug where certain errors while reading requests would propagate as
   TimeoutErrors.
 - Attempting to register endpoints against a synchronous TChannel now logs an

@@ -24,9 +24,10 @@ from __future__ import (
 
 import sys
 import logging
-import random
+
 from collections import deque
 from itertools import takewhile, dropwhile
+
 from tornado import gen
 from tornado.iostream import StreamClosedError
 
@@ -40,6 +41,8 @@ from ..errors import TChannelError
 from ..errors import NetworkError
 from ..event import EventType
 from ..glossary import DEFAULT_TIMEOUT
+from ..peer_heap import PeerHeap
+from ..peer_strategy import PreferIncomingCalculator
 from ..zipkin.annotation import Endpoint
 from ..zipkin.trace import Trace
 from .connection import StreamConnection
@@ -60,8 +63,15 @@ class Peer(object):
         'host',
         'port',
 
-        '_connections',
+        'rank',
+        'index',
+        'order',
+        'chosen_count',
+        'on_conn_change',
+        'connections',
+
         '_connecting',
+        '_on_conn_change_cb',
     )
 
     # Class used to create new outgoing connections.
@@ -69,13 +79,20 @@ class Peer(object):
     # It must support a .outgoing method.
     connection_class = StreamConnection
 
-    def __init__(self, tchannel, hostport):
+    def __init__(self, tchannel, hostport, rank=None, on_conn_change=None):
         """Initialize a Peer
 
         :param tchannel:
             TChannel through which requests will be made.
         :param hostport:
             Host-port this Peer is for.
+        :param rank:
+            The rank of a peer will affect the chance that the peer gets
+            selected when the client sends outbound requests. Lower rank is
+            better.
+        :param on_conn_change:
+            A callback method takes Peer object as input and is called whenever
+            there are connection changes in the peer.
         """
         assert hostport, "hostport is required"
 
@@ -86,12 +103,31 @@ class Peer(object):
         #: Collection of all connections for this Peer. Incoming connections
         #: are added to the left side of the deque and outgoing connections to
         #: the right side.
-        self._connections = deque()
+        self.connections = deque()
 
         # This contains a future to the TornadoConnection if we're already in
         # the process of making an outgoing connection to the peer. This
         # helps avoid making multiple outgoing connections.
         self._connecting = None
+
+        # rank is used to measure the performance of the peer.
+        # It will be used in the peer heap.
+        if rank is not None:
+            self.rank = rank
+        else:
+            self.rank = sys.maxint
+        # index records the position of the peer in the peer heap
+        self.index = -1
+        # order maintains the push order of the peer in the heap.
+        self.order = 0
+        # for debug purpose, count the number of times the peer gets selected.
+        self.chosen_count = 0
+
+        # callback is called when there is a change in connections.
+        self._on_conn_change_cb = on_conn_change
+
+    def set_on_conn_change_callback(self, cb):
+        self._on_conn_change_cb = cb
 
     def connect(self):
         """Get a connection to this peer.
@@ -104,10 +140,10 @@ class Peer(object):
             A future containing a connection to this host.
         """
         # Prefer incoming connections over outgoing connections.
-        if self._connections:
+        if self.connections:
             # First value is an incoming connection
             future = gen.Future()
-            future.set_result(self._connections[0])
+            future.set_result(self.connections[0])
             return future
 
         if self._connecting:
@@ -128,8 +164,7 @@ class Peer(object):
                 # We don't actually need to handle the exception. That's on
                 # the caller.
                 connection = conn_future.result()
-                self._connections.append(connection)
-                self._set_on_close_cb(connection)
+                self.register_outgoing_conn(connection)
             self._connecting = None
 
         conn_future.add_done_callback(on_connect)
@@ -138,14 +173,35 @@ class Peer(object):
     def _set_on_close_cb(self, conn):
 
         def on_close():
-            self._connections.remove(conn)
+            self.connections.remove(conn)
+            self._on_conn_change()
 
         conn.set_close_callback(on_close)
 
-    def register_incoming(self, conn):
+    @property
+    def has_incoming_connections(self):
+        return self.connections and self.connections[0].direction == INCOMING
+
+    def register_outgoing_conn(self, conn):
+        """Add outgoing connection into the heap."""
         assert conn, "conn is required"
-        self._connections.appendleft(conn)
+        conn.set_outbound_pending_change_callback(self._on_conn_change)
+        self.connections.append(conn)
         self._set_on_close_cb(conn)
+        self._on_conn_change()
+
+    def register_incoming_conn(self, conn):
+        """Add incoming connection into the heap."""
+        assert conn, "conn is required"
+        conn.set_outbound_pending_change_callback(self._on_conn_change)
+        self.connections.appendleft(conn)
+        self._set_on_close_cb(conn)
+        self._on_conn_change()
+
+    def _on_conn_change(self):
+        """Function will be called any time there is connection changes."""
+        if self._on_conn_change_cb:
+            self._on_conn_change_cb(self)
 
     @property
     def hostport(self):
@@ -153,19 +209,12 @@ class Peer(object):
         return "%s:%d" % (self.host, self.port)
 
     @property
-    def connections(self):
-        """Returns an iterator over all connections for this peer.
-
-        Incoming connections are listed first."""
-        return list(self._connections)
-
-    @property
     def outgoing_connections(self):
         """Returns a list of all outgoing connections for this peer."""
 
         # Outgoing connections are on the right
         return list(
-            dropwhile(lambda c: c.direction != OUTGOING, self._connections)
+            dropwhile(lambda c: c.direction != OUTGOING, self.connections)
         )
 
     @property
@@ -174,8 +223,13 @@ class Peer(object):
 
         # Incoming connections are on the left.
         return list(
-            takewhile(lambda c: c.direction == INCOMING, self._connections)
+            takewhile(lambda c: c.direction == INCOMING, self.connections)
         )
+
+    @property
+    def total_outbound_pendings(self):
+        """Return the total number of out pending req/res among connections"""
+        return sum(c.total_outbound_pendings for c in self.connections)
 
     @property
     def is_ephemeral(self):
@@ -186,10 +240,10 @@ class Peer(object):
     def connected(self):
         """Return True if this Peer is connected."""
 
-        return len(self._connections) > 0
+        return len(self.connections) > 0
 
     def close(self):
-        for connection in list(self._connections):
+        for connection in list(self.connections):
             # closing the connection will mutate the deque so create a copy
             connection.close()
 
@@ -510,6 +564,8 @@ class PeerGroup(object):
 
     __slots__ = (
         'tchannel',
+        'peer_heap',
+        'rank_calculator',
         '_peers',
         '_resetting',
         '_reset_condition',
@@ -530,10 +586,8 @@ class PeerGroup(object):
         # to block on the same reset.
         self._resetting = False
 
-        # We'll create a Condition here later. We want to avoid it right now
-        # because it has a side-effect of scheduling some dummy work on the
-        # ioloop, which prevents us from forking (if you're into that).
-        self._reset_condition = None
+        self.peer_heap = PeerHeap()
+        self.rank_calculator = PreferIncomingCalculator()
 
     def __str__(self):
         return "<PeerGroup peers=%s>" % str(self._peers)
@@ -563,7 +617,8 @@ class PeerGroup(object):
         """
         assert hostport, "hostport is required"
         if hostport not in self._peers:
-            self._peers[hostport] = self.peer_class(self.tchannel, hostport)
+            self.add(hostport)
+
         return self._peers[hostport]
 
     def lookup(self, hostport):
@@ -582,7 +637,10 @@ class PeerGroup(object):
         :returns: The removed Peer
         """
         assert hostport, "hostport is required"
-        return self._peers.pop(hostport, None)
+        peer = self._peers.pop(hostport, None)
+        if peer:
+            self.peer_heap.remove_peer(peer)
+        return peer
 
     def add(self, peer):
         """Add an existing Peer to this group.
@@ -593,13 +651,27 @@ class PeerGroup(object):
 
         if isinstance(peer, basestring):
             # Assume strings are host-ports
-            peer = self.peer_class(self.tchannel, peer)
+            peer = self.peer_class(
+                tchannel=self.tchannel,
+                hostport=peer,
+                on_conn_change=self._update_heap,
+            )
 
         assert peer.hostport not in self._peers, (
             "%s already has a peer" % peer.hostport
         )
-
+        peer.rank = self.rank_calculator.get_rank(peer)
         self._peers[peer.hostport] = peer
+        self.peer_heap.add_and_shuffle(peer)
+
+    def _update_heap(self, peer):
+        """Recalculate the peer's rank and update itself in the peer heap."""
+        rank = self.rank_calculator.get_rank(peer)
+        if rank == peer.rank:
+            return
+
+        peer.rank = rank
+        self.peer_heap.update_peer(peer)
 
     @property
     def hosts(self):
@@ -650,14 +722,6 @@ class PeerGroup(object):
         if hostport:
             return self.get(hostport)
 
-        hosts = self._peers.viewkeys() - blacklist
-        if not hosts:
-            return None
-
-        peers = list(self._connected_peers(hosts))
-        if peers:
-            return peers[random.randint(0, len(peers)-1)]
-        else:
-            hosts = list(hosts)
-            host = hosts[random.randint(0, len(hosts)-1)]
-            return self.get(host)
+        return self.peer_heap.smallest_peer(
+            (lambda p: p.hostport not in blacklist),
+        )

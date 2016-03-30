@@ -25,6 +25,7 @@ from __future__ import (
 import mock
 import random
 
+from tchannel.tornado.connection import INCOMING
 from tchannel.tornado.peer import (
     Peer as _Peer,
     PeerGroup as _PeerGroup,
@@ -39,6 +40,8 @@ class FakeConnection(object):
     def __init__(self, hostport):
         self.hostport = hostport
         self.closed = False
+        self.direction = INCOMING
+        self.total_outbound_pendings = 0
 
     @classmethod
     def outgoing(cls, hostport, process_name=None, serve_hostport=None,
@@ -55,6 +58,9 @@ class FakeConnection(object):
         return self
 
     def set_close_callback(self, cb):
+        pass
+
+    def set_outbound_pending_change_callback(self, cb):
         pass
 
 
@@ -96,7 +102,7 @@ def test_choose(benchmark):
         peer = group.peers[random.randint(0, NUM_PEERS-1)]
         if peer.hostport in connected_peers:
             continue
-        peer.register_incoming(FakeConnection(peer.hostport))
+        peer.register_incoming_conn(FakeConnection(peer.hostport))
         connected_peers.add(peer.hostport)
 
     benchmark(group.choose)
