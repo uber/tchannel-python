@@ -70,8 +70,8 @@ class Peer(object):
         'order',
         'chosen_count',
         'on_conn_change',
+        'connections',
 
-        '_connections',
         '_connecting',
         '_on_conn_change_cb',
     )
@@ -90,7 +90,8 @@ class Peer(object):
             Host-port this Peer is for.
         :param rank:
             The rank of a peer will affect the chance that the peer gets
-            selected when the client sends outbound requests.
+            selected when the client sends outbound requests. Lower rank is
+            better.
         :param on_conn_change:
             A callback method takes Peer object as input and is called whenever
             there are connection changes in the peer.
@@ -104,7 +105,7 @@ class Peer(object):
         #: Collection of all connections for this Peer. Incoming connections
         #: are added to the left side of the deque and outgoing connections to
         #: the right side.
-        self._connections = deque()
+        self.connections = deque()
 
         # This contains a future to the TornadoConnection if we're already in
         # the process of making an outgoing connection to the peer. This
@@ -141,10 +142,10 @@ class Peer(object):
             A future containing a connection to this host.
         """
         # Prefer incoming connections over outgoing connections.
-        if self._connections:
+        if self.connections:
             # First value is an incoming connection
             future = gen.Future()
-            future.set_result(self._connections[0])
+            future.set_result(self.connections[0])
             return future
 
         if self._connecting:
@@ -174,16 +175,20 @@ class Peer(object):
     def _set_on_close_cb(self, conn):
 
         def on_close():
-            self._connections.remove(conn)
+            self.connections.remove(conn)
             self._on_conn_change()
 
         conn.set_close_callback(on_close)
+
+    @property
+    def has_incoming_connections(self):
+        return self.connections and self.connections[0].direction == INCOMING
 
     def register_outgoing_conn(self, conn):
         """Add outgoing connection into the heap."""
         assert conn, "conn is required"
         conn.set_outbound_pending_change_callback(self._on_conn_change)
-        self._connections.append(conn)
+        self.connections.append(conn)
         self._set_on_close_cb(conn)
         self._on_conn_change()
 
@@ -191,7 +196,7 @@ class Peer(object):
         """Add incoming connection into the heap."""
         assert conn, "conn is required"
         conn.set_outbound_pending_change_callback(self._on_conn_change)
-        self._connections.appendleft(conn)
+        self.connections.appendleft(conn)
         self._set_on_close_cb(conn)
         self._on_conn_change()
 
@@ -206,19 +211,12 @@ class Peer(object):
         return "%s:%d" % (self.host, self.port)
 
     @property
-    def connections(self):
-        """Returns an iterator over all connections for this peer.
-
-        Incoming connections are listed first."""
-        return list(self._connections)
-
-    @property
     def outgoing_connections(self):
         """Returns a list of all outgoing connections for this peer."""
 
         # Outgoing connections are on the right
         return list(
-            dropwhile(lambda c: c.direction != OUTGOING, self._connections)
+            dropwhile(lambda c: c.direction != OUTGOING, self.connections)
         )
 
     @property
@@ -227,17 +225,13 @@ class Peer(object):
 
         # Incoming connections are on the left.
         return list(
-            takewhile(lambda c: c.direction == INCOMING, self._connections)
+            takewhile(lambda c: c.direction == INCOMING, self.connections)
         )
 
     @property
     def total_outbound_pendings(self):
         """Return the total number of out pending req/res among connections"""
-        num = 0
-        for con in self.connections:
-            num += con.total_outbound_pendings
-
-        return num
+        return sum(c.total_outbound_pendings for c in self.connections)
 
     @property
     def is_ephemeral(self):
@@ -248,10 +242,10 @@ class Peer(object):
     def connected(self):
         """Return True if this Peer is connected."""
 
-        return len(self._connections) > 0
+        return len(self.connections) > 0
 
     def close(self):
-        for connection in list(self._connections):
+        for connection in list(self.connections):
             # closing the connection will mutate the deque so create a copy
             connection.close()
 

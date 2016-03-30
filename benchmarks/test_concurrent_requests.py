@@ -22,43 +22,43 @@ from __future__ import (
     absolute_import, unicode_literals, print_function, division
 )
 
-from tornado import gen, ioloop
+from tornado import gen
+from tornado.ioloop import IOLoop
+
 from tchannel import TChannel
 
 
-servers = None
-client = None
-
-
-def setUpServer(num):
+def setup_servers(num):
     servers = []
+
     for i in xrange(num):
         server = TChannel('server' + str(i))
 
         @server.raw.register
         def hello(request):
             return 'hello'
+
         server.listen()
         servers.append(server)
-     
     return servers
 
 
 @gen.coroutine
-def setUpClient(servers):
-    router = []
+def setup_client(servers):
+    known_peers = []
     for i in xrange(1000):
-        router.append('1.1.1.1:'+str(i))
-    client = TChannel('client', known_peers=router)
+        known_peers.append('1.1.1.1:'+str(i))
+    client = TChannel('client', known_peers=known_peers)
+    # Add a bunch of unconnected peers
 
     @client.raw.register
     def hello(request):
         return 'hello'
-        
+
     client.listen()
 
-    for i in xrange(100):
-        server = servers[i]
+    # Open incoming connection from the server to the client.
+    for server in servers:
         yield server.raw(
             service='server',
             endpoint='hello',
@@ -70,8 +70,7 @@ def setUpClient(servers):
 
 
 @gen.coroutine
-def peer_test():
-    global servers, client
+def peer_test(client):
     fs = []
     for _ in xrange(100):
         fs.append(client.raw(
@@ -83,17 +82,12 @@ def peer_test():
     yield fs
 
 
-def stress_test():
-    ioloop.IOLoop.current().run_sync(peer_test)
-
-
-@gen.coroutine
-def setup():
-    global servers, client
-    servers = setUpServer(100)
-    client = yield setUpClient(servers)
+def stress_test(client):
+    IOLoop.current().run_sync(lambda: peer_test(client))
 
 
 def test_peer_heap(benchmark):
-    ioloop.IOLoop.current().run_sync(setup)
-    benchmark(stress_test)
+    servers = setup_servers(100)
+    client = IOLoop.current().run_sync(lambda: setup_client(servers))
+
+    benchmark(stress_test, client)
