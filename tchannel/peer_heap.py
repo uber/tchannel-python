@@ -163,12 +163,12 @@ class PeerHeap(HeapOperation):
         except NoMatchError:
             return None
 
-    def swap_order(self, index, r):
-        if index == r:
+    def swap_order(self, index1, index2):
+        if index1 == index2:
             return
 
-        p1 = self.peers[index]
-        p2 = self.peers[r]
+        p1 = self.peers[index1]
+        p2 = self.peers[index2]
 
         (p1.order, p2.order) = (p2.order, p1.order)
 

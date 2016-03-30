@@ -30,7 +30,7 @@ servers = None
 client = None
 
 
-def setUpServer(num):
+def setup_server(num):
     servers = []
     for i in xrange(num):
         server = TChannel('server' + str(i))
@@ -40,12 +40,11 @@ def setUpServer(num):
             return 'hello'
         server.listen()
         servers.append(server)
-     
     return servers
 
 
 @gen.coroutine
-def setUpClient(servers):
+def setup_client(servers):
     router = []
     for i in xrange(1000):
         router.append('1.1.1.1:'+str(i))
@@ -54,7 +53,6 @@ def setUpClient(servers):
     @client.raw.register
     def hello(request):
         return 'hello'
-        
     client.listen()
 
     for i in xrange(100):
@@ -71,7 +69,7 @@ def setUpClient(servers):
 
 @gen.coroutine
 def peer_test():
-    global servers, client
+    global client
     fs = []
     for _ in xrange(100):
         fs.append(client.raw(
@@ -90,8 +88,8 @@ def stress_test():
 @gen.coroutine
 def setup():
     global servers, client
-    servers = setUpServer(100)
-    client = yield setUpClient(servers)
+    servers = setup_server(100)
+    client = yield setup_client(servers)
 
 
 def test_peer_heap(benchmark):
