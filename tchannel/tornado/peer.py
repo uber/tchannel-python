@@ -243,7 +243,7 @@ class Peer(object):
         return len(self.connections) > 0
 
     def close(self):
-        for connection in self.connections:
+        for connection in list(self.connections):
             # closing the connection will mutate the deque so create a copy
             connection.close()
 
