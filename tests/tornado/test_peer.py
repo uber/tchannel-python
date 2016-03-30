@@ -31,8 +31,6 @@ from tornado import gen
 from tchannel import TChannel
 from tchannel.errors import NoAvailablePeerError
 from tchannel.tornado import peer as tpeer
-from tchannel.tornado import Request
-from tchannel.tornado import Response
 from tchannel.tornado.connection import TornadoConnection
 from tchannel.tornado.peer import Peer
 from tchannel.tornado.stream import InMemStream
@@ -252,13 +250,13 @@ def test_outbound_pending_change():
         outbound_pending_change_callback
     )
 
-    connection.add_outbound_pending_req(Request())
+    connection.add_pending_outbound()
     assert c[0] == 1
-    connection.add_outbound_pending_res(Response())
+    connection.add_pending_outbound()
     assert c[0] == 2
-    connection.remove_outbound_pending_req(Request())
+    connection.remove_pending_outbound()
     assert c[0] == 3
-    connection.remove_outbound_pending_res(Response())
+    connection.remove_pending_outbound()
     assert c[0] == 4
 
 
@@ -276,13 +274,13 @@ def test_outbound_pending_change_propagate(peer):
 
     peer.set_on_conn_change_callback(conn_change_db)
 
-    connection.add_outbound_pending_req(Request())
+    connection.add_pending_outbound()
     assert b[0] == 1
-    connection.add_outbound_pending_res(Response())
+    connection.add_pending_outbound()
     assert b[0] == 2
-    connection.remove_outbound_pending_req(Request())
+    connection.remove_pending_outbound()
     assert b[0] == 3
-    connection.remove_outbound_pending_res(Response())
+    connection.remove_pending_outbound()
     assert b[0] == 4
 
 
