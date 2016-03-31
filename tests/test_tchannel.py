@@ -34,6 +34,7 @@ import pytest
 
 from tornado import gen
 
+from tchannel.tornado.stream import InMemStream
 from tchannel import TChannel, Request, Response, schemes, errors, thrift
 from tchannel.errors import AlreadyListeningError
 from tchannel.errors import BadRequestError
@@ -328,16 +329,18 @@ def test_event_hook_register():
         mock_register.called
 
 
-@pytest.mark.gen_test
-def test_advertise_should_take_a_router_file():
+@pytest.fixture
+def router_file():
+    return os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                        'data/hosts.json')
 
-    host_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        'data/hosts.json',
-    )
+
+@pytest.mark.gen_test
+def test_advertise_should_take_a_router_file(router_file):
+    from tchannel.tornado.response import Response as TornadoResponse
 
     tchannel = TChannel(name='client')
-    with open(host_path, 'r') as json_data:
+    with open(router_file, 'r') as json_data:
         routers = json.load(json_data)
 
     with (
@@ -348,8 +351,8 @@ def test_advertise_should_take_a_router_file():
     ) as mock_advertise:
         f = gen.Future()
         mock_advertise.return_value = f
-        f.set_result(Response())
-        tchannel.advertise(router_file=host_path)
+        f.set_result(TornadoResponse())
+        tchannel.advertise(router_file=router_file)
 
         mock_advertise.assert_called_once_with(ANY, routers=routers,
                                                name=ANY, timeout=ANY)
@@ -364,6 +367,69 @@ def test_advertise_should_raise_on_invalid_router_file():
 
     with pytest.raises(ValueError):
         yield tchannel.advertise(routers='lala', router_file='?~~lala')
+
+
+@pytest.mark.gen_test
+def test_advertise_is_idempotent(router_file):
+    from tchannel.tornado.response import Response as TornadoResponse
+
+    def new_advertise(*args, **kwargs):
+        f = gen.Future()
+        f.set_result(TornadoResponse(
+            argstreams=[closed_stream(b'{}') for i in range(3)],
+        ))
+        return f
+
+    tchannel = TChannel(name='client')
+    with patch(
+        'tchannel.tornado.TChannel.advertise', autospec=True
+    ) as mock_advertise:
+        mock_advertise.side_effect = new_advertise
+
+        yield tchannel.advertise(router_file=router_file)
+        yield tchannel.advertise(router_file=router_file)
+        yield tchannel.advertise(router_file=router_file)
+
+        assert mock_advertise.call_count == 1
+
+
+@pytest.mark.gen_test
+def test_advertise_is_retryable(router_file):
+    from tchannel.tornado.response import Response as TornadoResponse
+
+    def new_advertise(*args, **kwargs):
+        f = gen.Future()
+        f.set_result(TornadoResponse(
+            argstreams=[closed_stream(b'{}') for i in range(3)],
+        ))
+        return f
+
+    tchannel = TChannel(name='client')
+    with patch(
+        'tchannel.tornado.TChannel.advertise', autospec=True
+    ) as mock_advertise:
+        f = gen.Future()
+        f.set_exception(Exception('great sadness'))
+        mock_advertise.return_value = f
+
+        with pytest.raises(Exception) as e:
+            yield tchannel.advertise(router_file=router_file)
+        assert 'great sadness' in str(e)
+        assert mock_advertise.call_count == 1
+
+        mock_advertise.side_effect = new_advertise
+        yield tchannel.advertise(router_file=router_file)
+        yield tchannel.advertise(router_file=router_file)
+        yield tchannel.advertise(router_file=router_file)
+        yield tchannel.advertise(router_file=router_file)
+
+        assert mock_advertise.call_count == 2
+
+
+def closed_stream(body):
+    stream = InMemStream(body)
+    stream.close()
+    return stream
 
 
 def test_listen_different_ports():

@@ -30,13 +30,13 @@ from doubles import allow
 from doubles import expect
 from hypothesis import assume
 from hypothesis import given
-from hypothesis import specifiers
+from hypothesis import strategies as st
 
 from tchannel import rw
 from tchannel.errors import ReadError
 from tchannel.io import BytesIO
 
-number_width = specifiers.sampled_from([1, 2, 4, 8])
+number_width = st.sampled_from((1, 2, 4, 8))
 
 
 def bio(bs):
@@ -47,19 +47,19 @@ def roundtrip(value, v_rw):
     return v_rw.read(bio(v_rw.write(value, BytesIO()).getvalue()))
 
 
-@given(int, number_width)
+@given(st.integers(), number_width)
 def test_number_roundtrip(num, width):
     num = num % (2 ** width - 1)
     assert roundtrip(num, rw.number(width)) == num
 
 
-@given(unicode, number_width)
+@given(st.text(), number_width)
 def test_len_prefixed_string_roundtrip(s, len_width):
     assume(len(s.encode('utf-8')) <= 2 ** len_width - 1)
     assert roundtrip(s, rw.len_prefixed_string(rw.number(len_width))) == s
 
 
-@given(str, number_width)
+@given(st.binary(), number_width)
 def test_len_prefixed_string_binary_roundtrip(s, len_width):
     assume(len(s) <= 2 ** len_width - 1)
     assert roundtrip(
@@ -67,12 +67,10 @@ def test_len_prefixed_string_binary_roundtrip(s, len_width):
     ) == s
 
 
-@given(str)
+@given(st.binary())
 def test_none_r(bs):
     stream = bio(bs)
     assert rw.none().read(stream) is None
-    stream.read() == 'a b c'
-
     assert rw.none().width() == 0
 
 

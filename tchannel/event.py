@@ -20,6 +20,7 @@
 
 from __future__ import absolute_import
 
+import sys
 import collections
 import functools
 import logging
@@ -144,8 +145,8 @@ class EventEmitter(object):
         for hook in self.hooks[event]:
             try:
                 hook(*args, **kwargs)
-            except Exception as e:
-                log.error(e.message)
+            except Exception:
+                log.error("error calling hook", exc_info=sys.exc_info())
 
 
 class EventRegistrar(object):

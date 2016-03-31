@@ -58,6 +58,7 @@ def popen(path, wait_for_listen=False):
         ('thrift', 'simple/thrift/'),
         ('bench', 'benchmark/thrift/'),
         ('guide', 'guide/keyvalue/keyvalue/'),
+        ('thrift', 'sync/fanout/'),
     )
 )
 def test_example(scheme, path):

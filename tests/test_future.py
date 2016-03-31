@@ -19,14 +19,54 @@
 # THE SOFTWARE.
 
 from __future__ import (
-    absolute_import, division, print_function, unicode_literals
+    absolute_import, unicode_literals, division, print_function
 )
 
-__version__ = '0.21.11.dev0'
-# Update setup.py when changing this. zest.releaser doesn't support updating
-# both of them yet.
+from tornado import gen
+
+import pytest
+
+from tchannel._future import fail_to
 
 
-from .response import Response  # noqa
-from .request import Request  # noqa
-from .tchannel import TChannel  # noqa
+def test_fail_to_no_failure():
+    answer = gen.Future()
+
+    @fail_to(answer)
+    def f():
+        return 42
+
+    assert f() == 42
+    assert answer.running()
+
+
+@pytest.mark.gen_test
+def test_fail_to_failure():
+    answer = gen.Future()
+
+    @fail_to(answer)
+    def f():
+        raise GreatSadness
+
+    assert f() is None
+    with pytest.raises(GreatSadness):
+        yield answer
+
+
+@pytest.mark.gen_test
+@pytest.mark.gen_test
+def test_fail_to_failure_in_coroutine():
+    answer = gen.Future()
+
+    @fail_to(answer)
+    @gen.coroutine
+    def f():
+        raise GreatSadness
+
+    with pytest.raises(GreatSadness):
+        yield f()
+    assert answer.running()
+
+
+class GreatSadness(Exception):
+    pass

@@ -28,6 +28,7 @@ from tchannel.tornado.stream import read_full
 import tornado
 import tornado.gen
 from tornado import gen
+from tornado.iostream import StreamClosedError
 
 from tchannel.request import Request
 from tchannel.request import TransportHeaders
@@ -180,7 +181,19 @@ class RequestDispatcher(object):
             serializer=handler.resp_serializer,
         )
 
-        connection.post_response(response)
+        def _on_post_response(future):
+            if not future.exception():
+                return
+
+            # Failed to write response because client disappeared. Nothing to
+            # do.
+            if isinstance(future.exception(), StreamClosedError):
+                return
+
+            log.error('failed to write response', exc_info=future.exc_info())
+
+        connection.post_response(response).add_done_callback(_on_post_response)
+
         try:
             # New impl - the handler takes a request and returns a response
             if self._handler_returns_response:
@@ -234,7 +247,7 @@ class RequestDispatcher(object):
             connection.send_error(e)
         except Exception as e:
             error = UnexpectedError(
-                description="Unexpected Error: '%s'" % e.message,
+                description="Unexpected Error: '%s'" % e,
                 id=request.id,
                 tracing=request.tracing,
             )

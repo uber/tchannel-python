@@ -18,15 +18,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from __future__ import (
-    absolute_import, division, print_function, unicode_literals
+import json
+
+from tchannel import thrift
+from tchannel.sync import TChannel
+
+tchannel = TChannel('thrift-client')
+service = thrift.load(
+    path='tests/data/idls/ThriftTest.thrift',
+    service='thrift-server',
+    hostport='localhost:54498',
 )
 
-__version__ = '0.21.11.dev0'
-# Update setup.py when changing this. zest.releaser doesn't support updating
-# both of them yet.
+
+def make_requests():
+
+    # Fan-out
+    futures = [tchannel.thrift(
+        request=service.ThriftTest.testString(thing="req"),
+        headers={
+            'req': 'header',
+        },
+    ) for _ in xrange(20)]
+
+    # Fan-in
+    for future in futures:
+        response = future.result()
+
+    return response
 
 
-from .response import Response  # noqa
-from .request import Request  # noqa
-from .tchannel import TChannel  # noqa
+resp = make_requests()
+
+assert resp.headers == {
+    'resp': 'header',
+}
+assert resp.body == 'resp' * 100000
+
+print resp.body[:4]
+print json.dumps(resp.headers)

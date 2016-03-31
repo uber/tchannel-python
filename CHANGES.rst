@@ -19,11 +19,65 @@ Changes by Version
   connection was previously terminated.
 
 
-0.21.5 (unreleased)
+0.21.11 (unreleased)
+--------------------
+
+- Peer selection is now constant time instead of linear time. This should
+  significantly reduce CPU load per request.
+- Fixed a bug where certain errors while reading requests would propagate as
+  TimeoutErrors.
+- Attempting to register endpoints against a synchronous TChannel now logs an
+  INFO level message.
+- Reduced default advertisement interval to 3 minutes.
+
+
+0.21.10 (2016-03-17)
+--------------------
+
+- Zipkin traces now include a server-side 'cn' annotation to identify callers.
+- Reduced "unconsumed message" warnings to INFO. These are typically generated
+  when Hyperbahn garbage collects your process due to a timed-out
+  advertisement.
+- Handshake timeouts were incorrectly being surfaced as StreamClosedError but
+  are now raised as NetworkError.
+- Reduced default tracing sample rate from 100% to 1%.
+
+
+0.21.9 (2016-03-14)
+-------------------
+
+- Fixed a bug that caused silent failures when a write attempt was made to a
+  closed connection.
+- Reduce ``StreamClosedError`` log noisiness for certain scenarios.
+- Make ``TChannel.advertise`` idempotent and thread-safe.
+
+
+0.21.8 (2016-03-10)
+-------------------
+
+- Reduce read errors due to clients disconnecting to INFO from ERROR.
+
+
+0.21.7 (2016-03-08)
+-------------------
+
+- Fixed an unhelpful stack trace on failed reads.
+
+
+0.21.6 (2016-03-08)
+-------------------
+
+- Fixed a logging error on failed reads.
+
+
+0.21.5 (2016-03-08)
 -------------------
 
 - Tornado 4.2 was listed as a requirement but this was corrected to be 4.3
   which introduced the locks module.
+- Fixed in issue where clients could incorrectly time out when reading large
+  response bodies. This was due to response fragments being dropped due to
+  out-of-order writes; writes are now serialized on a per-connection basis.
 
 
 0.21.4 (2016-02-15)

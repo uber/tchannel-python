@@ -22,8 +22,8 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals
 )
 
-import logging
 import sys
+import logging
 
 from collections import deque
 from itertools import takewhile, dropwhile
@@ -420,7 +420,7 @@ class PeerClientOperation(object):
         request = Request(
             service=self.service,
             argstreams=[InMemStream(endpoint), arg2, arg3],
-            id=connection.next_message_id(),
+            id=connection.writer.next_message_id(),
             headers=headers,
             endpoint=endpoint,
             ttl=ttl,
@@ -494,19 +494,23 @@ class PeerClientOperation(object):
             try:
                 response = yield self._send(connection, request)
                 raise gen.Return(response)
-            except TChannelError as error:
-                blacklist.add(peer.hostport)
-                (peer, connection) = yield self._prepare_for_retry(
-                    request=request,
-                    connection=connection,
-                    protocol_error=error,
-                    blacklist=blacklist,
-                    num_of_attempt=num_of_attempt,
-                    max_retry_limit=retry_limit,
-                )
+            except TChannelError:
+                (typ, error, tb) = sys.exc_info()
+                try:
+                    blacklist.add(peer.hostport)
+                    (peer, connection) = yield self._prepare_for_retry(
+                        request=request,
+                        connection=connection,
+                        protocol_error=error,
+                        blacklist=blacklist,
+                        num_of_attempt=num_of_attempt,
+                        max_retry_limit=retry_limit,
+                    )
 
-                if not connection:
-                    raise error
+                    if not connection:
+                        raise typ, error, tb
+                finally:
+                    del tb  # for GC
 
     @gen.coroutine
     def _prepare_for_retry(
@@ -538,7 +542,7 @@ class PeerClientOperation(object):
 
         connection = yield peer.connect()
         # roll back request
-        request.rewind(connection.next_message_id())
+        request.rewind(connection.writer.next_message_id())
 
         raise gen.Return((peer, connection))
 
@@ -666,7 +670,7 @@ class PeerGroup(object):
         )
         peer.rank = self.rank_calculator.get_rank(peer)
         self._peers[peer.hostport] = peer
-        self.peer_heap.push_peer(peer)
+        self.peer_heap.add_and_shuffle(peer)
 
     def _update_heap(self, peer):
         """Recalculate the peer's rank and update itself in the peer heap."""

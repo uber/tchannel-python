@@ -22,16 +22,17 @@ from __future__ import absolute_import
 
 import mock
 import pytest
+import socket
 import tornado.ioloop
-import tornado.testing
 from tornado import gen
+from tornado.iostream import IOStream, StreamClosedError
 
 from tchannel import TChannel
-from tchannel.tornado.message_factory import MessageFactory
-from tchannel.tornado.peer import Peer
-from tchannel.errors import TimeoutError
+from tchannel import messages
+from tchannel.errors import TimeoutError, ReadError
 from tchannel.tornado import connection
-from tchannel.messages import Types
+from tchannel.tornado.peer import Peer
+from tchannel.tornado.message_factory import MessageFactory
 
 
 def dummy_headers():
@@ -41,33 +42,31 @@ def dummy_headers():
     }
 
 
-class ConnectionTestCase(tornado.testing.AsyncTestCase):
-    @pytest.fixture(autouse=True)
-    def make_server_client(self, tornado_pair):
-        self.server, self.client = tornado_pair
+@pytest.mark.gen_test
+def test_handshake(tornado_pair):
+    """Verify we handshake in an async manner."""
+    server, client = tornado_pair
+    headers = dummy_headers()
 
-    @tornado.testing.gen_test
-    def test_handshake(self):
-        """Verify we handshake in an async manner."""
-        headers = dummy_headers()
+    client.initiate_handshake(headers=headers)
+    yield server.expect_handshake(headers=headers)
 
-        self.client.initiate_handshake(headers=headers)
-        yield self.server.expect_handshake(headers=headers)
+    assert client.requested_version == server.requested_version
 
-        assert self.client.requested_version == self.server.requested_version
 
-    @tornado.testing.gen_test
-    def test_pings(self):
-        """Verify calls are sent to handler properly."""
-        self.client.ping()
+@pytest.mark.gen_test
+def test_pings(tornado_pair):
+    """Verify calls are sent to handler properly."""
+    server, client = tornado_pair
+    client.ping()
 
-        ping = yield self.server.await()
-        assert ping.message_type == Types.PING_REQ
+    ping = yield server.await()
+    assert ping.message_type == messages.Types.PING_REQ
 
-        self.server.pong()
+    server.pong()
 
-        pong = yield self.client.await()
-        assert pong.message_type == Types.PING_RES
+    pong = yield client.await()
+    assert pong.message_type == messages.Types.PING_RES
 
 
 @pytest.mark.gen_test
@@ -134,6 +133,71 @@ def test_pending_outgoing():
 
 
 @pytest.mark.gen_test
+def test_local_timeout_unconsumed_message():
+    """Verify that if the client has a local timeout and the server eventually
+    sends the message, the client does not log an "Unconsumed message"
+    warning.
+    """
+
+    server = TChannel('server')
+
+    @server.raw.register('hello')
+    @gen.coroutine
+    def hello(request):
+        yield gen.sleep(0.07)
+        raise gen.Return('eventual response')
+
+    server.listen()
+
+    client = TChannel('client')
+    with pytest.raises(TimeoutError):
+        yield client.raw(
+            'server', 'hello', 'world',
+            timeout=0.05, hostport=server.hostport,
+            # The server will take 70 milliseconds but we allow at most 50.
+        )
+
+    # Wait for the server to send the late response and make sure it doesn't
+    # log a warning.
+    with mock.patch.object(connection.log, 'warn') as mock_warn:  # :(
+        yield gen.sleep(0.03)
+
+    assert mock_warn.call_count == 0
+
+
+@pytest.mark.gen_test
+def test_stream_closed_error_on_read(tornado_pair):
+    # Test that we don't log an error for StreamClosedErrors while reading.
+    server, client = tornado_pair
+    future = server.await()
+    client.close()
+
+    with mock.patch.object(connection, 'log') as mock_log:  # :(
+        with pytest.raises(StreamClosedError):
+            yield future
+
+    assert mock_log.error.call_count == 0
+    assert mock_log.info.call_count == 1
+
+
+@pytest.mark.gen_test
+def test_other_error_on_read(tornado_pair):
+    # Test that we do log errors for non-StreamClosedError failures while
+    # reading.
+    server, client = tornado_pair
+
+    future = server.await()
+    yield client.connection.write(b'\x00\x02\x00\x00')  # bad payload
+
+    with mock.patch.object(connection, 'log') as mock_log:  # :(
+        with pytest.raises(ReadError):
+            yield future
+
+    assert mock_log.error.call_count == 1
+    assert mock_log.info.call_count == 0
+
+
+@pytest.mark.gen_test
 def test_client_connection_change_callback():
     server = TChannel('server')
     server.listen()
@@ -183,33 +247,32 @@ def test_both_connection_change_callback():
 
 
 @pytest.mark.gen_test
-def test_local_timeout_unconsumed_message():
-    """Verify that if the client has a local timeout and the server eventually
-    sends the message, the client does not log an "Unconsumed message"
-    warning.
-    """
+def test_writer_write_error():
+    server, client = socket.socketpair()
+    reader = connection.Reader(IOStream(server))
+    writer = connection.Writer(IOStream(client))
 
-    server = TChannel('server')
+    # one successful message first
+    yield writer.put(messages.PingRequestMessage())
+    ping = yield reader.get()
+    assert isinstance(ping, messages.PingRequestMessage)
 
-    @server.raw.register('hello')
-    @gen.coroutine
-    def hello(request):
-        yield gen.sleep(0.07)
-        raise gen.Return('eventual response')
+    writer.io_stream.close()
+    with pytest.raises(StreamClosedError):
+        yield writer.put(messages.PingResponseMessage())
 
-    server.listen()
 
-    client = TChannel('client')
-    with pytest.raises(TimeoutError):
-        yield client.raw(
-            'server', 'hello', 'world',
-            timeout=0.05, hostport=server.hostport,
-            # The server will take 70 milliseconds but we allow at most 50.
-        )
+@pytest.mark.gen_test
+def test_reader_read_error():
+    server, client = socket.socketpair()
+    reader = connection.Reader(IOStream(server))
+    writer = connection.Writer(IOStream(client))
 
-    # Wait for the server to send the late response and make sure it doesn't
-    # log a warning.
-    with mock.patch.object(connection.log, 'warn') as mock_warn:  # :(
-        yield gen.sleep(0.03)
+    yield writer.put(messages.PingRequestMessage())
+    ping = yield reader.get()
+    assert isinstance(ping, messages.PingRequestMessage)
 
-    assert mock_warn.call_count == 0
+    reader.io_stream.close()
+    future = reader.get()
+    with pytest.raises(StreamClosedError):
+        yield future
