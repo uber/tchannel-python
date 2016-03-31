@@ -1,8 +1,8 @@
 Changes by Version
 ==================
 
-0.21.11 (unreleased)
---------------------
+0.22.0 (2016-03-31)
+-------------------
 
 - Peer selection is now constant time instead of linear time. This should
   significantly reduce CPU load per request.
