@@ -115,6 +115,13 @@ class PeerHeap(HeapOperation):
         peer.order = self.order + random.randint(0, self.size())
         heap.push(self, peer)
 
+    def add_and_shuffle(self, peer):
+        """Push a new peer into the heap and shuffle the heap"""
+        self.push_peer(peer)
+
+        r = random.randint(0, self.size() - 1)
+        self.swap_order(peer.index, r)
+
     def peek_peer(self):
         """Return the top peer of the heap
         :return
@@ -155,3 +162,15 @@ class PeerHeap(HeapOperation):
             )
         except NoMatchError:
             return None
+
+    def swap_order(self, index1, index2):
+        if index1 == index2:
+            return
+
+        p1 = self.peers[index1]
+        p2 = self.peers[index2]
+
+        (p1.order, p2.order) = (p2.order, p1.order)
+
+        heap.fix(self, p1.index)
+        heap.fix(self, p2.index)

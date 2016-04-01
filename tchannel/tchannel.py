@@ -121,6 +121,11 @@ class TChannel(object):
         # register default health endpoint
         self.thrift.register(Meta)(health)
 
+        # advertise_response is the Future containing the response of calling
+        # advertise().
+        self._advertise_response = None
+        self._advertise_lock = Lock()
+
     def is_listening(self):
         return self._dep_tchannel.is_listening()
 
@@ -260,7 +265,6 @@ class TChannel(object):
         else:
             return decorator(handler)
 
-    @gen.coroutine
     def advertise(self, routers=None, name=None, timeout=None,
                   router_file=None):
         """Advertise with Hyperbahn.
@@ -273,6 +277,9 @@ class TChannel(object):
         Re-advertisement happens periodically after calling this method (every
         minute). Hyperbahn will eject us from the network if it doesn't get a
         re-advertise from us after 5 minutes.
+
+        This function may be called multiple times if it fails. If it
+        succeeds, all consecutive calls are ignored.
 
         :param list routers:
             A seed list of known Hyperbahn addresses to attempt contact with.
@@ -315,14 +322,38 @@ class TChannel(object):
                 log.exception('Failed to read seed routers list.')
                 raise
 
-        dep_result = yield self._dep_tchannel.advertise(
-            routers=routers,
-            name=name,
-            timeout=timeout
-        )
+        @gen.coroutine
+        def _advertise():
+            result = yield self._dep_tchannel.advertise(
+                routers=routers,
+                name=name,
+                timeout=timeout,
+            )
+            body = yield result.get_body()
+            headers = yield result.get_header()
+            response = Response(json.loads(body), headers or {})
+            raise gen.Return(response)
 
-        body = yield dep_result.get_body()
-        headers = yield dep_result.get_header()
-        response = Response(json.loads(body), headers or {})
+        def _on_advertise(future):
+            if not future.exception():
+                return
 
-        raise gen.Return(response)
+            # If the request failed, clear the response so that we can try
+            # again.
+            with self._advertise_lock:
+                # `is` comparison to ensure we're not deleting another Future.
+                if self._advertise_response is future:
+                    self._advertise_response = None
+
+        with self._advertise_lock:
+            if self._advertise_response is not None:
+                return self._advertise_response
+            future = self._advertise_response = _advertise()
+
+        # We call add_done_callback here rather than when we call _advertise()
+        # because if the future has already resolved by the time we call
+        # add_done_callback, the callback will immediately be executed. The
+        # callback will try to acquire the advertise_lock which we already
+        # hold and end up in a deadlock.
+        future.add_done_callback(_on_advertise)
+        return future

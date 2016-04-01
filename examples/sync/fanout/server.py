@@ -18,15 +18,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from __future__ import (
-    absolute_import, division, print_function, unicode_literals
-)
+from __future__ import absolute_import
 
-__version__ = '0.21.11.dev0'
-# Update setup.py when changing this. zest.releaser doesn't support updating
-# both of them yet.
+from tornado import gen, ioloop
+from tchannel import TChannel, Response, thrift
+
+tchannel = TChannel('thrift-server', hostport='localhost:54498')
+service = thrift.load('tests/data/idls/ThriftTest.thrift')
 
 
-from .response import Response  # noqa
-from .request import Request  # noqa
-from .tchannel import TChannel  # noqa
+@tchannel.thrift.register(service.ThriftTest)
+@gen.coroutine
+def testString(request):
+
+    assert request.headers == {'req': 'header'}
+    assert request.body.thing == 'req'
+
+    return Response('resp' * 100000, headers={'resp': 'header'})
+
+
+tchannel.listen()
+
+print tchannel.hostport
+
+ioloop.IOLoop.current().start()

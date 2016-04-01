@@ -54,7 +54,7 @@ class PreferIncomingCalculator(RankCalculator):
         if peer.is_ephemeral or not peer.connections:
             return self.TIERS[0]
 
-        if not peer.incoming_connections:
+        if not peer.has_incoming_connections:
             return self.TIERS[1] + peer.total_outbound_pendings
 
         return self.TIERS[2] + peer.total_outbound_pendings

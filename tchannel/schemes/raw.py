@@ -80,8 +80,15 @@ class RawArgScheme(object):
         :param string retry_on:
             What events to retry on - valid values can be found in
             ``tchannel.retry``.
-        :param string retry_limit:
-            How many times to retry before
+        :param int retry_limit:
+            How many attempts should be made (in addition to the initial
+            attempt) to re-send this request when retryable error conditions
+            (specified by ``retry_on``) are encountered.
+
+            Defaults to ``tchannel.retry.DEFAULT_RETRY_LIMIT`` (4).
+
+            Note that the maximum possible time elapsed for a request is thus
+            ``(retry_limit + 1) * timeout``.
         :param string hostport:
             A 'host:port' value to use when making a request directly to a
             TChannel service, bypassing Hyperbahn.

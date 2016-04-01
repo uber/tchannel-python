@@ -111,8 +111,7 @@ class PatchedClientOperation(object):
             raise TChannelError.from_code(
                 e.code,
                 description=(
-                    "The remote service threw a protocol error: %s" %
-                    e.message
+                    "The remote service threw a protocol error: %s" % (e,)
                 )
             )
 

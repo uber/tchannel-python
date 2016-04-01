@@ -18,15 +18,47 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from __future__ import (
-    absolute_import, division, print_function, unicode_literals
+from tornado import ioloop, gen
+
+from tchannel import TChannel, thrift
+
+
+service = thrift.load(
+    path='examples/guide/keyvalue/service.thrift',
+    service='benchmark-server',
 )
 
-__version__ = '0.21.11.dev0'
-# Update setup.py when changing this. zest.releaser doesn't support updating
-# both of them yet.
 
+def test_roundtrip(benchmark):
+    loop = ioloop.IOLoop.current()
 
-from .response import Response  # noqa
-from .request import Request  # noqa
-from .tchannel import TChannel  # noqa
+    server = TChannel('benchmark-server')
+    server.listen()
+
+    clients = [TChannel('benchmark-client') for _ in range(10)]
+
+    @server.thrift.register(service.KeyValue)
+    def getValue(request):
+        return 'bar'
+
+    def roundtrip():
+        @gen.coroutine
+        def doit():
+            futures = []
+            # 10 clients send 10 requests concurrently
+            for client in clients:
+                for _ in range(10):
+                    futures.append(
+                        client.thrift(
+                            service.KeyValue.getValue("foo"),
+                            hostport=server.hostport,
+                        )
+                    )
+            yield futures
+
+        return loop.run_sync(doit)
+
+    # Establish initial connection
+    roundtrip()
+
+    benchmark(roundtrip)

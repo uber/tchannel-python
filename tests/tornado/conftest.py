@@ -29,7 +29,7 @@ from tchannel.tornado.connection import StreamConnection
 
 
 @pytest.yield_fixture
-def tornado_pair():
+def tornado_pair(io_loop):
     server, client = socket.socketpair()
 
     server_stream = tornado.iostream.IOStream(server)
