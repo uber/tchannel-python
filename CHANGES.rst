@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.22.0 (unreleased)
+0.23.0 (unreleased)
 -------------------
 
 - **BREAKING** - Removed support for the Apache ``thrift`` library.
@@ -19,8 +19,8 @@ Changes by Version
   connection was previously terminated.
 
 
-0.21.11 (unreleased)
---------------------
+0.22.0 (2016-03-31)
+-------------------
 
 - Peer selection is now constant time instead of linear time. This should
   significantly reduce CPU load per request.
