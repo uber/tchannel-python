@@ -234,14 +234,12 @@ class RequestDispatcher(object):
             e.id = request.id
             connection.send_error(e)
         except Exception as e:
+            # Maintain a reference to our original exc info because we stomp
+            # the traceback below.
+            exc_info = sys.exc_info()
+            exc_type, exc_obj, exc_tb = exc_info
             try:
-                # Maintain a reference to our original exc info because we stop
-                # the tb blow.
-                exc_info = sys.exc_info()
-
-                exc_type, exc_obj, exc_tb = exc_info
-
-                # Walk to the TB to find our offending line.
+                # Walk to the traceback to find our offending line.
                 while exc_tb.tb_next is not None:
                     exc_tb = exc_tb.tb_next
 
@@ -272,7 +270,6 @@ class RequestDispatcher(object):
                 # https://docs.python.org/2/library/sys.html#sys.exc_info
                 del exc_tb
                 del exc_info
-
         raise gen.Return(response)
 
     def get_endpoint(self, name):
