@@ -21,6 +21,7 @@
 from __future__ import absolute_import
 
 import logging
+import sys
 from collections import namedtuple
 
 import tornado
@@ -233,17 +234,31 @@ class RequestDispatcher(object):
             e.id = request.id
             connection.send_error(e)
         except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+
+            # Walk to the TB to find our offending line.
+            while exc_tb.tb_next != None:
+                exc_tb = exc_tb.tb_next
+
+            description = "%r from %s in %s:%s" % (
+                e,
+                request.endpoint,
+                exc_tb.tb_frame.f_code.co_filename,
+                exc_tb.tb_lineno,
+            )
             error = UnexpectedError(
-                description="Unexpected Error: '%s'" % e,
+                description=description,
                 id=request.id,
                 tracing=request.tracing,
             )
-            response.set_exception(error)
+
+            # Grab exc_info() again because we stomped our tb above.
+            response.set_exception(error, exc_info=sys.exc_info())
             connection.request_message_factory.remove_buffer(response.id)
 
             connection.send_error(error)
             tchannel.event_emitter.fire(EventType.on_exception, request, error)
-            log.exception(error.description)
+            log.exception(e)
 
         raise gen.Return(response)
 

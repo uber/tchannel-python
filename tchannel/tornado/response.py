@@ -231,9 +231,9 @@ class Response(object):
         self.flushed = True
         self.close_argstreams()
 
-    def set_exception(self, exception):
+    def set_exception(self, exception, exc_info=None):
         for stream in self.argstreams:
-            stream.set_exception(exception)
+            stream.set_exception(exception, exc_info=exc_info)
             stream.close()
 
     def close_argstreams(self, force=False):
