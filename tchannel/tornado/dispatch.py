@@ -235,7 +235,11 @@ class RequestDispatcher(object):
             connection.send_error(e)
         except Exception as e:
             try:
-                exc_type, exc_obj, exc_tb = sys.exc_info()
+                # Maintain a reference to our original exc info because we stop
+                # the tb blow.
+                exc_info = sys.exc_info()
+
+                exc_type, exc_obj, exc_tb = exc_info
 
                 # Walk to the TB to find our offending line.
                 while exc_tb.tb_next is not None:
@@ -253,8 +257,7 @@ class RequestDispatcher(object):
                     tracing=request.tracing,
                 )
 
-                # Grab exc_info() again because we stomped our tb above.
-                response.set_exception(error, exc_info=sys.exc_info())
+                response.set_exception(error, exc_info=exc_info)
                 connection.request_message_factory.remove_buffer(response.id)
 
                 connection.send_error(error)
@@ -263,11 +266,12 @@ class RequestDispatcher(object):
                     request,
                     error,
                 )
-                log.error("Unexpected error", exc_info=sys.exc_info())
+                log.error("Unexpected error", exc_info=exc_info)
             finally:
                 # Clean up circular reference.
                 # https://docs.python.org/2/library/sys.html#sys.exc_info
                 del exc_tb
+                del exc_info
 
         raise gen.Return(response)
 
