@@ -7,6 +7,7 @@ Changes by Version
 - VCR now respects the timeout specified on the original request. Timeouts in
   making the requests while recording now propagate as ``TimeoutError``
   exceptions rather than ``RemoteServiceError``.
+- Reduced a warning for unconsumed error messages to info.
 - Made UnexpectedError's message a little more debuggable.
 
 
