@@ -234,31 +234,36 @@ class RequestDispatcher(object):
             e.id = request.id
             connection.send_error(e)
         except Exception as e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
+            try:
+                exc_type, exc_obj, exc_tb = sys.exc_info()
 
-            # Walk to the TB to find our offending line.
-            while exc_tb.tb_next is not None:
-                exc_tb = exc_tb.tb_next
+                # Walk to the TB to find our offending line.
+                while exc_tb.tb_next is not None:
+                    exc_tb = exc_tb.tb_next
 
-            description = "%r from %s in %s:%s" % (
-                e,
-                request.endpoint,
-                exc_tb.tb_frame.f_code.co_filename,
-                exc_tb.tb_lineno,
-            )
-            error = UnexpectedError(
-                description=description,
-                id=request.id,
-                tracing=request.tracing,
-            )
+                description = "%r from %s in %s:%s" % (
+                    e,
+                    request.endpoint,
+                    exc_tb.tb_frame.f_code.co_filename,
+                    exc_tb.tb_lineno,
+                )
+                error = UnexpectedError(
+                    description=description,
+                    id=request.id,
+                    tracing=request.tracing,
+                )
 
-            # Grab exc_info() again because we stomped our tb above.
-            response.set_exception(error, exc_info=sys.exc_info())
-            connection.request_message_factory.remove_buffer(response.id)
+                # Grab exc_info() again because we stomped our tb above.
+                response.set_exception(error, exc_info=sys.exc_info())
+                connection.request_message_factory.remove_buffer(response.id)
 
-            connection.send_error(error)
-            tchannel.event_emitter.fire(EventType.on_exception, request, error)
-            log.exception(e)
+                connection.send_error(error)
+                tchannel.event_emitter.fire(EventType.on_exception, request, error)
+                log.error("Unexpected error", exc_info=sys.exc_info())
+            finally:
+                # Clean up circular reference.
+                # https://docs.python.org/2/library/sys.html#sys.exc_info
+                del exc_tb
 
         raise gen.Return(response)
 
