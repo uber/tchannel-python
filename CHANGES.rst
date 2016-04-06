@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.22.2 (unreleased)
+0.22.2 (2016-04-06)
 -------------------
 
 - VCR now respects the timeout specified on the original request. Timeouts in
