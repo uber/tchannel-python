@@ -125,8 +125,12 @@ class VCRProxyService(object):
 
         if not peers:
             raise proxy.NoPeersAvailableError(
-                'Both, hostPort and knownPeers were empty or unset. '
-                'One of them must be specified and non-empty.'
+                'Could not find a recorded response for request %s and was '
+                'unable to make a new request because both, hostPort and '
+                'knownPeers were unspecified. One of them must be specified '
+                'for me to make new requests. Make sure you specified a '
+                'hostport in the original request or are advertising '
+                'on Hyperbahn.' % (str(request),)
             )
 
         arg_scheme = proxy.ArgScheme.name_of(request.argScheme).lower()
