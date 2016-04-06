@@ -4,7 +4,7 @@ Changes by Version
 0.22.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Added a timeout to the VCR proxy call.
 
 
 0.22.0 (2016-03-31)
