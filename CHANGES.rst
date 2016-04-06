@@ -5,6 +5,8 @@ Changes by Version
 -------------------
 
 - Added a timeout to the VCR proxy call.
+- Fixed a bug where tests would time out if the VCR server failed to start. The
+  VCR server failure is now propagated to the caller.
 
 
 0.22.0 (2016-03-31)
