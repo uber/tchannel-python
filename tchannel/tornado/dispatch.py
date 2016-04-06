@@ -237,7 +237,7 @@ class RequestDispatcher(object):
             exc_type, exc_obj, exc_tb = sys.exc_info()
 
             # Walk to the TB to find our offending line.
-            while exc_tb.tb_next != None:
+            while exc_tb.tb_next is not None:
                 exc_tb = exc_tb.tb_next
 
             description = "%r from %s in %s:%s" % (
