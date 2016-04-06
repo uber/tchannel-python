@@ -24,7 +24,7 @@ import pytest
 from tornado import gen
 from functools import partial
 
-from tchannel.errors import UnexpectedError
+from tchannel.errors import UnexpectedError, TimeoutError
 from tchannel.thrift import client_for
 from tchannel.testing import vcr
 
@@ -52,12 +52,13 @@ def call(mock_server, use_old_api):
 
         channel = TChannel('test-client')
 
-        def old_f(endpoint, body, headers=None, service=None, scheme=None):
+        def old_f(endpoint, body, headers=None, service=None, scheme=None,
+                  ttl=None):
             return channel.request(
                 hostport=mock_server.hostport,
                 service=service,
                 arg_scheme=scheme,
-            ).send(endpoint, headers or '', body)
+            ).send(endpoint, headers or '', body, ttl=ttl)
 
         return old_f
     else:
@@ -65,7 +66,8 @@ def call(mock_server, use_old_api):
 
         channel = TChannel('test-client')
 
-        def new_f(endpoint, body, headers=None, service=None, scheme=None):
+        def new_f(endpoint, body, headers=None, service=None, scheme=None,
+                  ttl=None):
             scheme = scheme or 'raw'
             return channel.call(
                 hostport=mock_server.hostport,
@@ -74,6 +76,7 @@ def call(mock_server, use_old_api):
                 arg1=endpoint,
                 arg2=headers or '',
                 arg3=body,
+                timeout=ttl,
             )
 
         return new_f
@@ -279,3 +282,41 @@ def test_record_into_nonexistent_directory(tmpdir, mock_server, call,
         assert 'world' == (yield get_body(response))
 
     assert cass.play_count == 1
+
+
+@pytest.mark.gen_test
+def test_record_success_with_ttl(tmpdir, mock_server, call, get_body):
+    path = tmpdir.join('data.yaml')
+
+    mock_server.expect_call('hello').and_write('world', delay=0.1).once()
+
+    with vcr.use_cassette(str(path)) as cass:
+        response = yield call('hello', 'world', service='hello_service',
+                              ttl=0.2)
+        assert 'world' == (yield get_body(response))
+
+    assert cass.play_count == 0
+    assert path.check(file=True)
+
+    with vcr.use_cassette(str(path)) as cass:
+        response = yield call('hello', 'world', service='hello_service',
+                              ttl=0.05)  # shouldn't time out
+        assert 'world' == (yield get_body(response))
+
+    assert cass.play_count == 1
+
+
+@pytest.mark.gen_test
+def test_record_success_with_ttl_timeout(tmpdir, mock_server, call, get_body):
+    """Make sure legitimate request timeouts propagate during recording."""
+    path = tmpdir.join('data.yaml')
+
+    mock_server.expect_call('hello').and_write('world', delay=0.1).once()
+
+    with pytest.raises(TimeoutError):
+        with vcr.use_cassette(str(path)) as cass:
+            response = yield call('hello', 'world', service='hello_service',
+                                  ttl=0.05)
+            assert 'world' == (yield get_body(response))
+
+    assert cass.play_count == 0

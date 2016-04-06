@@ -4,7 +4,9 @@ Changes by Version
 0.22.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- VCR now respects the timeout specified on the original request. Timeouts in
+  making the requests while recording now propagate as ``TimeoutError``
+  exceptions rather than ``RemoteServiceError``.
 
 
 0.22.1 (2016-04-06)
