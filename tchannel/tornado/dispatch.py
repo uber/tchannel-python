@@ -21,6 +21,7 @@
 from __future__ import absolute_import
 
 import logging
+import sys
 from collections import namedtuple
 
 import tornado
@@ -233,18 +234,42 @@ class RequestDispatcher(object):
             e.id = request.id
             connection.send_error(e)
         except Exception as e:
-            error = UnexpectedError(
-                description="Unexpected Error: '%s'" % e,
-                id=request.id,
-                tracing=request.tracing,
-            )
-            response.set_exception(error)
-            connection.request_message_factory.remove_buffer(response.id)
+            # Maintain a reference to our original exc info because we stomp
+            # the traceback below.
+            exc_info = sys.exc_info()
+            exc_type, exc_obj, exc_tb = exc_info
+            try:
+                # Walk to the traceback to find our offending line.
+                while exc_tb.tb_next is not None:
+                    exc_tb = exc_tb.tb_next
 
-            connection.send_error(error)
-            tchannel.event_emitter.fire(EventType.on_exception, request, error)
-            log.exception(error.description)
+                description = "%r from %s in %s:%s" % (
+                    e,
+                    request.endpoint,
+                    exc_tb.tb_frame.f_code.co_filename,
+                    exc_tb.tb_lineno,
+                )
+                error = UnexpectedError(
+                    description=description,
+                    id=request.id,
+                    tracing=request.tracing,
+                )
 
+                response.set_exception(error, exc_info=exc_info)
+                connection.request_message_factory.remove_buffer(response.id)
+
+                connection.send_error(error)
+                tchannel.event_emitter.fire(
+                    EventType.on_exception,
+                    request,
+                    error,
+                )
+                log.error("Unexpected error", exc_info=exc_info)
+            finally:
+                # Clean up circular reference.
+                # https://docs.python.org/2/library/sys.html#sys.exc_info
+                del exc_tb
+                del exc_info
         raise gen.Return(response)
 
     def get_endpoint(self, name):
