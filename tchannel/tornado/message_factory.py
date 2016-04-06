@@ -317,7 +317,7 @@ class MessageFactory(object):
         elif message.message_type == Types.ERROR:
             context = self.message_buffer.pop(message.id, None)
             if context is None:
-                log.warn('Unconsumed error %s', context)
+                # Unconsumed error
                 return None
             else:
                 error = TChannelError.from_code(
