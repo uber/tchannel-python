@@ -78,7 +78,7 @@ class Stream(object):
         """
         raise NotImplementedError()
 
-    def set_exception(self, exception):
+    def set_exception(self, exception, exc_info=None):
         """Set exception to interrupt all Stream operations
 
         :param exception: exception to set
@@ -108,6 +108,7 @@ class InMemStream(Stream):
         self.auto_close = auto_close
 
         self.exception = None
+        self.exc_info = None
 
     def clone(self):
         new_stream = InMemStream()
@@ -120,7 +121,10 @@ class InMemStream(Stream):
 
         def read_chunk(future):
             if self.exception:
-                future.set_exception(self.exception)
+                if self.exc_info:
+                    future.set_exc_info(self.exc_info)
+                else:
+                    future.set_exception(self.exception)
                 return future
 
             chunk = ""
@@ -160,8 +164,9 @@ class InMemStream(Stream):
         r.set_result(None)
         return r
 
-    def set_exception(self, exception):
+    def set_exception(self, exception, exc_info=None):
         self.exception = exception
+        self.exc_info = exc_info
         self.close()
 
     def close(self):
@@ -237,8 +242,9 @@ class PipeStream(Stream):
             if self.exception:
                 raise self.exception
 
-    def set_exception(self, exception):
+    def set_exception(self, exception, exc_info=None):
         self.exception = exception
+        self.exc_info = exc_info
         self.close()
 
     def close(self):

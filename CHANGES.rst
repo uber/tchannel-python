@@ -8,6 +8,7 @@ Changes by Version
   making the requests while recording now propagate as ``TimeoutError``
   exceptions rather than ``RemoteServiceError``.
 - Reduced a warning for unconsumed error messages to info.
+- Made UnexpectedError's message a little more debuggable.
 
 
 0.22.1 (2016-04-06)

@@ -771,6 +771,9 @@ def test_exception(server, service, ThriftTest, server_ttypes, client_ttypes):
 
     # Given this test server:
 
+    class MyCoolError(Exception):
+        pass
+
     @server.thrift.register(ThriftTest)
     def testException(request):
 
@@ -782,7 +785,7 @@ def test_exception(server, service, ThriftTest, server_ttypes, client_ttypes):
         elif request.body.arg == 'TException':
             # TODO - what to raise here? We dont want dep on Thrift
             # so we don't have thrift.TException available to us...
-            raise Exception()
+            raise MyCoolError("hi")
 
     # Make a call:
 
@@ -793,14 +796,17 @@ def test_exception(server, service, ThriftTest, server_ttypes, client_ttypes):
         yield tchannel.thrift(
             service.testException(arg='Xception')
         )
-        assert e.value.errorCode == 1001
-        assert e.value.message == 'Xception'
+    assert e.value.errorCode == 1001
+    assert e.value.message == 'Xception'
 
     # case #2
-    with pytest.raises(UnexpectedError):
+    with pytest.raises(UnexpectedError) as e:
         yield tchannel.thrift(
             service.testException(arg='TException')
         )
+    assert 'MyCoolError' in str(e)
+    assert 'ThriftTest::testException' in str(e)
+    assert 'test_thrift.py' in str(e)
 
     # case #3
     resp = yield tchannel.thrift(
