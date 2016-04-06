@@ -23,6 +23,7 @@ from __future__ import absolute_import
 import threading
 
 import tornado.ioloop
+from tornado import gen
 
 from tchannel import TChannel
 from tchannel import Response
@@ -54,13 +55,16 @@ class Expectation(object):
     def __init__(self):
         self.execute = None
 
-    def and_write(self, body, headers=None):
+    def and_write(self, body, headers=None, delay=None):
 
+        @gen.coroutine
         def execute(request, response):
             if headers:
                 response.headers = headers
             response.body = body
-            return response
+            if delay:
+                yield gen.sleep(delay)
+            raise gen.Return(response)
 
         self.execute = execute
         return self

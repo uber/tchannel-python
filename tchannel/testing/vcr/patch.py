@@ -103,7 +103,9 @@ class PatchedClientOperation(object):
             vcr_response_future = tchannel.thrift(
                 proxy.VCRProxy.send(vcr_request),
                 hostport=self.vcr_hostport,
-                timeout=1.0,
+                timeout=float(ttl) * 1.1 if ttl else ttl,
+                # If a timeout was specified, use that plus 10% to give some
+                # leeway to the VCR proxy request itself.
             )
 
         try:
