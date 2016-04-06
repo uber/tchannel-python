@@ -20,6 +20,7 @@
 
 from __future__ import absolute_import
 
+import mock
 import pytest
 from doubles import InstanceDouble, allow, expect
 
@@ -31,6 +32,10 @@ from tchannel import TChannel
 from tchannel.tornado.stream import InMemStream
 from tchannel.testing.vcr import proxy
 from tchannel.testing.vcr.server import VCRProxyService
+
+
+class SomeException(Exception):
+    pass
 
 
 def stream(s):
@@ -55,7 +60,7 @@ def unpatch():
 
 
 @pytest.yield_fixture
-def vcr_service(cassette, unpatch, io_loop):
+def vcr_service(cassette, unpatch):
     with VCRProxyService(cassette, unpatch) as vcr_service:
         yield vcr_service
 
@@ -198,5 +203,10 @@ def test_protocol_error(vcr_service, cassette, call, mock_server):
     assert exc_info.value.code == 1
 
 
-class SomeException(Exception):
-    pass
+def test_failed_to_start(cassette):
+    with mock.patch.object(TChannel, 'listen', autospec=True) as mock_listen:
+        mock_listen.side_effect = SomeException('foo')
+
+        with pytest.raises(SomeException):
+            with VCRProxyService(cassette, unpatch):
+                assert False, "expected service to fail to start"

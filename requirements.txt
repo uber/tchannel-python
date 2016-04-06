@@ -9,6 +9,7 @@ backports.ssl-match-hostname==3.5.0.1  # via tornado
 certifi==2016.2.28        # via tornado
 contextlib2==0.5.1
 crcmod==1.7
+futures==3.0.5
 ply==3.8                  # via thriftrw
 singledispatch==3.4.0.3   # via tornado
 six==1.10.0               # via singledispatch, thriftrw

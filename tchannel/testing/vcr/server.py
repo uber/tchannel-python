@@ -20,9 +20,11 @@
 
 from __future__ import absolute_import
 
+import sys
 import random
 import threading
 from functools import wraps
+from concurrent.futures import Future as ConcFuture
 
 from tornado import gen
 from tornado.ioloop import IOLoop
@@ -82,7 +84,7 @@ class VCRProxyService(object):
         self.thread = None
         self.tchannel = None
 
-        self._running = threading.Event()
+        self._running = ConcFuture()
 
     @wrap_uncaught(reraise=(
         proxy.CannotRecordInteractionsError,
@@ -181,15 +183,19 @@ class VCRProxyService(object):
             handler=self.send,
         )
 
-        self.tchannel.listen()
-        self._running.set()
-        self.io_loop.start()
+        try:
+            self.tchannel.listen()
+            self._running.set_result(None)
+        except Exception:
+            self._running.set_exception_info(*sys.exc_info()[1:])
+        else:
+            self.io_loop.start()
 
     def start(self):
         self.thread = threading.Thread(target=self._run)
         self.thread.start()
 
-        self._running.wait(1)
+        self._running.result(1)  # seconds
 
     def stop(self):
         self.tchannel._dep_tchannel.close()
