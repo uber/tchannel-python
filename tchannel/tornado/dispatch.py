@@ -258,7 +258,11 @@ class RequestDispatcher(object):
                 connection.request_message_factory.remove_buffer(response.id)
 
                 connection.send_error(error)
-                tchannel.event_emitter.fire(EventType.on_exception, request, error)
+                tchannel.event_emitter.fire(
+                    EventType.on_exception,
+                    request,
+                    error,
+                )
                 log.error("Unexpected error", exc_info=sys.exc_info())
             finally:
                 # Clean up circular reference.
