@@ -363,7 +363,8 @@ class NumberReadWriter(ReadWriter):
         return struct.unpack(self._format, self.take(stream, self._width))[0]
 
     def write(self, num, stream):
-        stream.write(struct.pack(self._format, num))
+        # Cast to int just in case the value is still a float
+        stream.write(struct.pack(self._format, int(num)))
         return stream
 
     def width(self):

@@ -4,7 +4,7 @@ Changes by Version
 0.22.3 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed a bug where type mismatch for timeouts could cause a crash.
 
 
 0.22.2 (2016-04-06)
