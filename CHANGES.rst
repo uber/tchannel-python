@@ -17,6 +17,10 @@ Changes by Version
 - Limit the size of arg1 to 16KB.
 - Fix bug which prevented requests from being retried if the candidate
   connection was previously terminated.
+- You can now specify an override for a request's ``cn`` transport header using
+  the ``caller_name`` argument of the ``call()``, ``json()``, ``raw()``, and
+  ``thrift()`` methods of ``TChannel``.
+
 
 
 0.22.0 (2016-03-31)

@@ -148,6 +148,7 @@ class TChannel(object):
         hostport=None,
         shard_key=None,
         trace=None,
+        caller_name=None,
     ):
         """Make low-level requests to TChannel services.
 
@@ -188,7 +189,7 @@ class TChannel(object):
         # fire operation
         transport_headers = {
             transport.SCHEME: scheme,
-            transport.CALLER_NAME: self.name,
+            transport.CALLER_NAME: caller_name or self.name,
         }
         if shard_key:
             transport_headers[transport.SHARD_KEY] = shard_key
