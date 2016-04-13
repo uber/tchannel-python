@@ -74,7 +74,7 @@ class TChannel(object):
 
     def __init__(self, name, hostport=None, process_name=None,
                  known_peers=None, trace=False, dispatcher=None,
-                 _from_new_api=False):
+                 reuse_port=False, _from_new_api=False):
         """Build or re-use a TChannel.
 
         :param name:
@@ -137,6 +137,12 @@ class TChannel(object):
 
         # server created from calling listen()
         self._server = None
+
+        # allow SO_REUSEPORT
+        if reuse_port is True:
+            self._reuse_port = True
+        else:
+            self._reuse_port = False
 
         # warn if customers are still using this old and soon to be deleted api
         if _from_new_api is False:
@@ -285,7 +291,7 @@ class TChannel(object):
             # this is really useful in a world where services launch N
             # processes per container/os-space, where N is
             # the amount of cpus for example
-            reuse_port=True,
+            reuse_port=self._reuse_port,
         )
         assert sockets, "No sockets bound for port %d" % self._port
 

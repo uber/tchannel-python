@@ -82,7 +82,7 @@ class TChannel(object):
     FALLBACK = DeprecatedTChannel.FALLBACK
 
     def __init__(self, name, hostport=None, process_name=None,
-                 known_peers=None, trace=False):
+                 known_peers=None, trace=False, reuse_port=False):
         """
         **Note:** In general only one ``TChannel`` instance should be used at a
         time. Multiple ``TChannel`` instances are not advisable and could
