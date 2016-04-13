@@ -4,7 +4,9 @@ Changes by Version
 0.22.4 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Added ``ruese_port`` param to ``TChannel`` which takes advantage
+  of ``SO_REUSEPORT`` sockopt so that multiple processes can
+  listen on the same port.
 
 
 0.22.3 (2016-04-07)
