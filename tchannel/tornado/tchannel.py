@@ -275,9 +275,6 @@ class TChannel(object):
         assert self._handler, "Call .host with a RequestHandler first"
         server = TChannelServer(self)
 
-        import ipdb
-        ipdb.set_trace()
-
         sockets = bind_sockets(
             self._port,
             # ipv6 causes random address already in use (socket.error w errno
