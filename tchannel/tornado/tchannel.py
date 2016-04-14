@@ -278,18 +278,21 @@ class TChannel(object):
         assert self._handler, "Call .host with a RequestHandler first"
         server = TChannelServer(self)
 
-        sockets = bind_sockets(
-            self._port,
+        bind_sockets_kwargs = {
+            'port': self._port,
             # ipv6 causes random address already in use (socket.error w errno
             # == 98) when getaddrinfo() returns multiple values
             # @see https://github.com/uber/tchannel-python/issues/256
-            family=socket.AF_INET,
+            'family': socket.AF_INET,
+        }
+        if self._reuse_port is True:
             # allow multiple processes to share the same port,
             # this is really useful in a world where services launch N
             # processes per container/os-space, where N is
             # the amount of cpus for example
-            reuse_port=self._reuse_port,
-        )
+            bind_sockets_kwargs['reuse_port'] = True
+
+        sockets = bind_sockets(**bind_sockets_kwargs)
         assert sockets, "No sockets bound for port %d" % self._port
 
         # If port was 0, the OS probably assigned something better.
