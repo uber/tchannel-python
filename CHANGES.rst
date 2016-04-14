@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.23.1 (unreleased)
+0.23.1 (2016-04-14)
 -------------------
 
 - Fixed tornado version constraint causing ``reuse_port`` to be missing,
