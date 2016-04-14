@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.22.4 (unreleased)
+0.23.0 (2016-04-14)
 -------------------
 
 - Added an opt-in feature to use the ``SO_REUSEPORT`` socket option
