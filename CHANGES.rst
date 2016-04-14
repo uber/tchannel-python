@@ -4,7 +4,8 @@ Changes by Version
 0.23.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed tornado version constraint causing ``reuse_port`` to be missing,
+  updated constraint to ``tornado>=4.3,<5``.
 
 
 0.23.0 (2016-04-14)
