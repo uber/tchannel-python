@@ -4,7 +4,7 @@ Changes by Version
 0.22.4 (unreleased)
 -------------------
 
-- Added ``ruese_port`` param to ``TChannel`` which takes advantage
+- Added ``reuse_port`` param to ``TChannel`` which takes advantage
   of the ``SO_REUSEPORT`` sockopt so that multiple processes can
   listen on the same port.
 
