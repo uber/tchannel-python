@@ -23,10 +23,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from socket import error as SocketError
+import tornado
 import subprocess
 import textwrap
 from mock import MagicMock, patch, ANY
+from socket import error as SocketError
 
 import json
 import os
@@ -541,6 +542,10 @@ def test_forwarding(tmpdir):
     assert response.body == 'world'
 
 
+@pytest.mark.skipif(
+    tuple(tornado.version.split('.')) < ('4', '3'),
+    reason='reuse_port is not supported in tornado < 4.3',
+)
 def test_reuse_port():
     # start a tchannel w SO_REUSEPORT on
     one = TChannel('holler', reuse_port=True)
