@@ -5,7 +5,7 @@ Changes by Version
 -------------------
 
 - Added ``ruese_port`` param to ``TChannel`` which takes advantage
-  of ``SO_REUSEPORT`` sockopt so that multiple processes can
+  of the ``SO_REUSEPORT`` sockopt so that multiple processes can
   listen on the same port.
 
 
