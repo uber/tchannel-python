@@ -94,10 +94,5 @@ requirements.txt: requirements.in
 	# Workaround for https://github.com/nvie/pip-tools/issues/325
 	sed -i .txt '/-e /c\ ' requirements.txt
 
-requirements-test.txt: requirements-test.in
-	pip-compile --no-index requirements-test.in
-	# Workaround for pypy C incompatibilities
-	sed -i .txt '/gnureadline/c\ ' requirements-test.txt
-
 requirements-docs.txt: requirements-docs.in
 	pip-compile --no-index requirements-docs.in
