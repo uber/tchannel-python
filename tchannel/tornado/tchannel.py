@@ -139,10 +139,7 @@ class TChannel(object):
         self._server = None
 
         # allow SO_REUSEPORT
-        if reuse_port is True:
-            self._reuse_port = True
-        else:
-            self._reuse_port = False
+        self._reuse_port = reuse_port
 
         # warn if customers are still using this old and soon to be deleted api
         if _from_new_api is False:
