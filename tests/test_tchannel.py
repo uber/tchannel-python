@@ -23,6 +23,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from socket import error as SocketError
 import subprocess
 import textwrap
 from mock import MagicMock, patch, ANY
@@ -538,3 +539,18 @@ def test_forwarding(tmpdir):
         headers={'expect': 'success'},
     )
     assert response.body == 'world'
+
+
+def test_reuse_port():
+    # start a tchannel w SO_REUSEPORT on
+    one = TChannel('holler', reuse_port=True)
+    one.listen()
+
+    # another one at the same address can reuse port
+    two = TChannel('back', hostport=one.hostport, reuse_port=True)
+    two.listen()
+
+    # if another tchannel w SO_REUSEPORT off listens, it blows up
+    with pytest.raises(SocketError):
+        three = TChannel('yall', hostport=one.hostport, reuse_port=False)
+        three.listen()
