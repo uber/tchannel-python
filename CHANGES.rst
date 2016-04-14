@@ -4,9 +4,9 @@ Changes by Version
 0.22.4 (unreleased)
 -------------------
 
-- Added ``reuse_port`` param to ``TChannel`` which takes advantage
-  of the ``SO_REUSEPORT`` sockopt so that multiple processes can
-  listen on the same port.
+- Added an opt-in feature to use the ``SO_REUSEPORT`` socket option
+  for TChannel servers. Use ``reuse_port=True`` when instantiating a
+  ``TChannel``.
 
 
 0.22.3 (2016-04-07)
