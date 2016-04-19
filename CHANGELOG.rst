@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.23.2 (unreleased)
+0.24.0 (2016-04-19)
 -------------------
 
 - Added ``TChannel.host`` and ``TChannel.port``.
