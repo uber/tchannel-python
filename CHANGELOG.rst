@@ -4,7 +4,8 @@ Changes by Version
 0.23.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Added ``TChannel.host`` and ``TChannel.port``.
+- Added ``TChannel.close()`` and ``TChannel.is_closed()``.
 
 
 0.23.1 (2016-04-14)

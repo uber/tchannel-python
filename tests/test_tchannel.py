@@ -27,7 +27,7 @@ import tornado
 import subprocess
 import textwrap
 from mock import MagicMock, patch, ANY
-from socket import error as SocketError
+import socket
 
 import json
 import os
@@ -432,17 +432,15 @@ def closed_stream(body):
 def test_listen_different_ports():
     server = TChannel(name='test_server')
     server.listen()
-    port = int(server.hostport.rsplit(":")[1])
     with pytest.raises(AlreadyListeningError):
-        server.listen(port + 1)
+        server.listen(server.port + 1)
 
 
 def test_listen_duplicate_ports():
     server = TChannel(name='test_server')
     server.listen()
     server.listen()
-    port = int(server.hostport.rsplit(":")[1])
-    server.listen(port)
+    server.listen(server.port)
     server.listen()
 
 
@@ -556,6 +554,37 @@ def test_reuse_port():
     two.listen()
 
     # if another tchannel w SO_REUSEPORT off listens, it blows up
-    with pytest.raises(SocketError):
+    with pytest.raises(socket.error):
         three = TChannel('yall', hostport=one.hostport, reuse_port=False)
         three.listen()
+
+
+def test_close_stops_listening():
+    server = TChannel(name='server')
+    server.listen()
+
+    host = server.host
+    port = server.port
+
+    # Can connect
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((host, port))
+    sock.close()
+
+    server.close()
+
+    # Can't connect
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    with pytest.raises(socket.error):
+        sock.connect((host, port))
+
+
+def test_hostport_gets_set():
+    tchannel = TChannel(name='holler')
+    tchannel.listen()
+
+    host, port = tchannel.hostport.split(':')
+
+    assert tchannel.host == host
+    assert tchannel.port == int(port)

@@ -111,7 +111,7 @@ class MockServer(object):
 
     @property
     def port(self):
-        return int(self.hostport.rsplit(':', 1)[1])
+        return self.tchannel.port
 
     @property
     def hostport(self):

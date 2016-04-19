@@ -2,5 +2,5 @@
 Changelog
 =========
 
-.. include:: ../CHANGES.rst
+.. include:: ../CHANGELOG.rst
 .. include:: ../UPGRADE.rst
