@@ -77,8 +77,8 @@ def test_close_stops_listening():
     server = TChannel(name='server')
     server.listen()
 
-    host, port = server.hostport.rsplit(':', 1)
-    port = int(port)
+    host = server.host
+    port = server.port
 
     # Can connect
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

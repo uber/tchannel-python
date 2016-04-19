@@ -432,17 +432,15 @@ def closed_stream(body):
 def test_listen_different_ports():
     server = TChannel(name='test_server')
     server.listen()
-    port = int(server.hostport.rsplit(":")[1])
     with pytest.raises(AlreadyListeningError):
-        server.listen(port + 1)
+        server.listen(server.port + 1)
 
 
 def test_listen_duplicate_ports():
     server = TChannel(name='test_server')
     server.listen()
     server.listen()
-    port = int(server.hostport.rsplit(":")[1])
-    server.listen(port)
+    server.listen(server.port)
     server.listen()
 
 
@@ -565,7 +563,6 @@ def test_close_stops_listening():
     server = TChannel(name='server')
     server.listen()
 
-    host, port = server.hostport.rsplit(':', 1)
     host = server.host
     port = server.port
 
