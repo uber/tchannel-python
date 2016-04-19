@@ -578,3 +578,13 @@ def test_close_stops_listening():
 
     with pytest.raises(socket.error):
         sock.connect((host, port))
+
+
+def test_hostport_gets_set():
+    tchannel = TChannel(name='holler')
+    tchannel.listen()
+
+    host, port = tchannel.hostport.split(':')
+
+    assert tchannel.host == host
+    assert tchannel.port == int(port)
