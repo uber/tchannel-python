@@ -210,8 +210,16 @@ class TChannel(object):
             self._state = State.closed
 
     @property
+    def host(self):
+        return self._host
+
+    @property
     def hostport(self):
         return "%s:%d" % (self._host, self._port)
+
+    @property
+    def port(self):
+        return self._port
 
     def request(self,
                 hostport=None,

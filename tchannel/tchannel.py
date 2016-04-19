@@ -236,8 +236,23 @@ class TChannel(object):
             return self._dep_tchannel.listen(port)
 
     @property
+    def host(self):
+        return self._dep_tchannel.host
+
+    @property
     def hostport(self):
         return self._dep_tchannel.hostport
+
+    @property
+    def port(self):
+        return self._dep_tchannel.port
+
+    @property
+    def closed(self):
+        return self._dep_tchannel.closed
+
+    def close(self):
+        return self._dep_tchannel.close()
 
     def register(self, scheme, endpoint=None, handler=None, **kwargs):
         if scheme is self.FALLBACK:
