@@ -247,8 +247,7 @@ class TChannel(object):
     def port(self):
         return self._dep_tchannel.port
 
-    @property
-    def closed(self):
+    def is_closed(self):
         return self._dep_tchannel.closed
 
     def close(self):
