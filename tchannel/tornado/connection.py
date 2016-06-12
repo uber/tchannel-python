@@ -311,6 +311,7 @@ class TornadoConnection(object):
     def close(self):
         if not self.closed:
             self.connection.close()
+            self.closed = True
 
     @tornado.gen.coroutine
     def initiate_handshake(self, headers):

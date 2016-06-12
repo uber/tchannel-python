@@ -35,7 +35,6 @@ from ..schemes import DEFAULT as DEFAULT_SCHEME
 from ..retry import (
     DEFAULT as DEFAULT_RETRY, DEFAULT_RETRY_LIMIT
 )
-from ..context import get_current_context
 from ..errors import NoAvailablePeerError
 from ..errors import TChannelError
 from ..errors import NetworkError
@@ -281,8 +280,10 @@ class PeerClientOperation(object):
         self.tchannel = peer_group.tchannel
         self.service = service
         self.parent_tracing = parent_tracing
-        if not self.parent_tracing and get_current_context():
-            self.parent_tracing = get_current_context().parent_tracing
+        if not self.parent_tracing:
+            ctx = self.tchannel.context_provider_fn().get_current_context()
+            if ctx:
+                self.parent_tracing = ctx.parent_tracing
 
         # TODO the term headers are reserved for application headers,
         # these are transport headers,

@@ -31,7 +31,7 @@ from tornado import gen
 from . import schemes
 from . import transport
 from . import retry
-from .context import get_current_context
+from .context import RequestContextProvider
 from .errors import AlreadyListeningError
 from .glossary import DEFAULT_TIMEOUT
 from .health import health
@@ -82,7 +82,8 @@ class TChannel(object):
     FALLBACK = DeprecatedTChannel.FALLBACK
 
     def __init__(self, name, hostport=None, process_name=None,
-                 known_peers=None, trace=False, reuse_port=False):
+                 known_peers=None, trace=False, reuse_port=False,
+                 context_provider=None):
         """
         **Note:** In general only one ``TChannel`` instance should be used at a
         time. Multiple ``TChannel`` instances are not advisable and could
@@ -99,6 +100,8 @@ class TChannel(object):
             Hyperbahn you callers do not need to know your port.
         """
 
+        self.context_provider = context_provider or RequestContextProvider()
+
         # until we move everything here,
         # lets compose the old tchannel
         self._dep_tchannel = DeprecatedTChannel(
@@ -107,9 +110,12 @@ class TChannel(object):
             process_name=process_name,
             known_peers=known_peers,
             trace=trace,
-            dispatcher=DeprecatedDispatcher(_handler_returns_response=True),
+            dispatcher=DeprecatedDispatcher(
+                _handler_returns_response=True,
+                context_provider_fn=lambda: self.context_provider),
             reuse_port=reuse_port,
             _from_new_api=True,
+            context_provider_fn=lambda: self.context_provider,
         )
 
         self.name = name
@@ -175,7 +181,7 @@ class TChannel(object):
             retry_limit = retry.DEFAULT_RETRY_LIMIT
 
         # TODO - allow filters/steps for serialization, tracing, etc...
-        context = get_current_context()
+        context = self.context_provider.get_current_context()
 
         # calls tchannel.tornado.peer.PeerClientOperation.__init__
         operation = self._dep_tchannel.request(

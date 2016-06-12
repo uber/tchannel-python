@@ -73,12 +73,25 @@ class RequestContext(object):
         _LOCAL.context = self._old_context
 
 
-def get_current_context():
-    """
-    :return: The current :py:class:`RequestContext` for this thread.
-    """
-    return _LOCAL.context
+# noinspection PyMethodMayBeStatic
+class RequestContextProvider(object):
+    def get_current_context(self):
+        """
+        :return: The current :py:class:`RequestContext` for this thread.
+        """
+        return _LOCAL.context
 
+    def request_context(self, parent_tracing):
+        """
+        Factory method meant to be used as:
 
-def request_context(parent_tracing):
-    return StackContext(lambda: RequestContext(parent_tracing))
+        .. code-block:: python
+
+            with tchannel.context_provider.request_context(parent_tracing):
+                handler_fn()
+
+        :param parent_tracing:
+        :return:
+        """
+        # TODO should this be using a thread-safe version of StackContext?
+        return StackContext(lambda: RequestContext(parent_tracing))

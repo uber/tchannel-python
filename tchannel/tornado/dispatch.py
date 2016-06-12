@@ -32,7 +32,7 @@ from tornado.iostream import StreamClosedError
 from tchannel.request import Request
 from tchannel.request import TransportHeaders
 from tchannel.response import response_from_mixed
-from ..context import request_context
+from ..context import RequestContextProvider
 from ..errors import BadRequestError
 from ..errors import UnexpectedError
 from ..errors import TChannelError
@@ -65,7 +65,13 @@ class RequestDispatcher(object):
 
     FALLBACK = object()
 
-    def __init__(self, _handler_returns_response=False):
+    def __init__(self, _handler_returns_response=False,
+                 context_provider_fn=None):
+        if context_provider_fn:
+            self.context_provider_fn = context_provider_fn
+        else:
+            context_provider = RequestContextProvider()
+            self.context_provider_fn = lambda: context_provider
         self.handlers = {}
         self.register(self.FALLBACK, self.not_found)
         self._handler_returns_response = _handler_returns_response
@@ -205,7 +211,8 @@ class RequestDispatcher(object):
                 #    future = f()
                 # yield future
 
-                with request_context(request.tracing):
+                context_provider = self.context_provider_fn()
+                with context_provider.request_context(request.tracing):
                     f = handler.endpoint(new_req)
 
                 new_resp = yield gen.maybe_future(f)
@@ -223,7 +230,8 @@ class RequestDispatcher(object):
 
             # Dep impl - the handler is provided with a req & resp writer
             else:
-                with request_context(request.tracing):
+                context_provider = self.context_provider_fn()
+                with context_provider.request_context(request.tracing):
                     f = handler.endpoint(request, response)
 
                 yield gen.maybe_future(f)
