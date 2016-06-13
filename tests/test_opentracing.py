@@ -296,6 +296,7 @@ def test_trace_mixed(endpoint, transport, expect_spans,
     hook = OpenTracingHook(tracer=tracer, context_provider=context_provider)
 
     mock_server.tchannel.context_provider = context_provider
+    mock_server.tchannel.hooks.register(hook)
     register(mock_server.tchannel, http_client=http_client, base_url=base_url)
 
     tchannel = TChannel(name='test', context_provider=context_provider)
@@ -304,8 +305,6 @@ def test_trace_mixed(endpoint, transport, expect_spans,
     app.add_handlers(".*$", [
         (r"/", HttpHandler, {'client_channel': tchannel})
     ])
-
-    mock_server.tchannel.hooks.register(hook)
 
     with mock.patch('opentracing.tracer', tracer):
         assert opentracing.tracer == tracer  # sanity check that patch worked
@@ -465,3 +464,54 @@ def test_before_receive_request(ex_cls, start_span):
     hook.before_receive_request(request=mock.Mock())
     assert log_fn.call_count == 1
     assert hook.tracer.span_started == start_span
+
+
+@pytest.mark.gen_test
+def test_span_to_trace(tracer, mock_server):
+    """
+    In this test we verify that if the tracer implementation supports the
+    notions of trace_id, span_id, parent_id (similar to Zipkin) then we can
+    pass those IDs not just via the headers (primary OpenTracing propagation
+    mechanism), but also via TChannel's built-in tracing slot in the frame.
+    :param tracer: injected BasicTracer mixin
+    :param mock_server: injected TChannel mock server
+    """
+    def span_to_trace(span):
+        return {
+            'trace_id': span.context.trace_id,
+            'span_id': span.context.span_id,
+            'parent_span_id': span.context.parent_id,
+        }
+
+    context_provider = OpenTracingRequestContextProvider()
+    hook = OpenTracingHook(tracer=tracer, context_provider=context_provider,
+                           span_to_trace_fn=span_to_trace)
+
+    @mock_server.tchannel.raw.register('endpoint1')
+    @tornado.gen.coroutine
+    def handler1(request):
+        ctx = mock_server.tchannel.context_provider.get_current_context()
+        if hasattr(ctx, 'parent_tracing'):
+            res = ctx.parent_tracing.trace_id
+        else:
+            res = 'unknown'
+        raise tornado.gen.Return(Response('%s' % res))
+
+    tchannel = TChannel(name='test', context_provider=context_provider)
+    tchannel.hooks.register(hook)
+
+    with mock.patch('opentracing.tracer', tracer):
+        assert opentracing.tracer == tracer  # sanity check that patch worked
+        span = tracer.start_span('root')
+        with span:  # use span as context manager so that it's always finished
+            wrapper = SpanWrapper(span=span)
+            with context_provider.request_context(wrapper):
+                response_future = tchannel.raw(
+                    service='test-client',
+                    hostport=mock_server.hostport,
+                    endpoint='endpoint1',
+                    headers=mock_server.hostport,
+                    trace=False,
+                )
+            response = yield response_future
+        assert span.context.trace_id == long(response.body)

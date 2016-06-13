@@ -38,7 +38,7 @@ class SpanWrapper(tchannel.zipkin.trace.Trace):
     integrate with non-TChannel RPC calls.
     """
     def __init__(self, span, *args, **kwargs):
-        super(SpanWrapper, self).__init__(args, *kwargs)
+        super(SpanWrapper, self).__init__(*args, **kwargs)
         self.span = span
 
     @staticmethod
@@ -55,19 +55,28 @@ class OpenTracingHook(tchannel.event.EventHook):
     HTTP servers and clients using `opentracing_instrumentation` package.
     """
 
-    def __init__(self, context_provider, tracer=None, log_exception_fn=None):
+    def __init__(self, context_provider, tracer=None,
+                 span_to_trace_fn=None,
+                 log_exception_fn=None):
         """Manage OpenTracing spans
 
-        :param tracer:
-            An instance of OpenTracing Tracer
         :param context_provider:
             TChannel's RequestContextProvider
+        :param tracer:
+            An instance of OpenTracing Tracer
+        :param span_to_trace_fn:
+            An optional, Tracer-specific function that extracts trace_id,
+            span_id, parent_span_id from the Span in order to pass
+            those to the constructor of the TChannel's Trace class.
+            The function must return a dictionary with keys trace_id,
+            span_id, and parent_span_id, where values are all i64.
         :param log_exception_fn:
             Zero-arg function used to log exceptions. Defaults to
             logging.exception('OpenTracing exception').
         """
-        self._tracer = tracer
         self.context_provider = context_provider
+        self._tracer = tracer
+        self.span_to_trace_fn = span_to_trace_fn
         self.log_exception_fn = log_exception_fn if log_exception_fn \
             else lambda: logging.exception('OpenTracing exception')
 
@@ -94,6 +103,19 @@ class OpenTracingHook(tchannel.event.EventHook):
             return None
         return getattr(parent_tracing, 'span', None)
 
+    def _span_to_trace(self, span):
+        try:
+            ids = self.span_to_trace_fn(span) if self.span_to_trace_fn else {}
+            trace_kwargs = {
+                'trace_id': long(ids.get('trace_id', 1)),
+                'span_id': long(ids.get('span_id', 2)),
+                'parent_span_id': long(ids.get('parent_span_id', 1) or 1),
+            }
+        except:
+            self.log_exception_fn()
+            trace_kwargs = {}
+        return trace_kwargs
+
     def before_send_request(self, request):
         try:
             parent_span = self._get_current_span()
@@ -104,7 +126,15 @@ class OpenTracingHook(tchannel.event.EventHook):
             span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
             if hasattr(request, 'service'):
                 span.set_tag(tags.PEER_SERVICE, request.service)
-            request.tracing = SpanWrapper(span)
+
+            trace_kwargs = self._span_to_trace(span=span)
+            request.tracing = SpanWrapper(
+                span,
+                trace_id=trace_kwargs['trace_id'],
+                span_id=trace_kwargs['span_id'],
+                parent_span_id=trace_kwargs['parent_span_id'],
+                traceflags=0
+            )
 
             # inject span into headers
             carrier = {}
