@@ -77,8 +77,10 @@ class OpenTracingHook(tchannel.event.EventHook):
         self.context_provider = context_provider
         self._tracer = tracer
         self.span_to_trace_fn = span_to_trace_fn
-        self.log_exception_fn = log_exception_fn if log_exception_fn \
-            else lambda: logging.exception('OpenTracing exception')
+        if not log_exception_fn:
+            log_exception_fn = (
+                lambda: logging.exception('OpenTracing exception'))
+        self.log_exception_fn = log_exception_fn
 
     @staticmethod
     def _operation_name(request):
@@ -104,16 +106,17 @@ class OpenTracingHook(tchannel.event.EventHook):
         return getattr(parent_tracing, 'span', None)
 
     def _span_to_trace(self, span):
+        trace_kwargs = {}
         try:
-            ids = self.span_to_trace_fn(span) if self.span_to_trace_fn else {}
-            trace_kwargs = {
-                'trace_id': long(ids.get('trace_id', 1)),
-                'span_id': long(ids.get('span_id', 2)),
-                'parent_span_id': long(ids.get('parent_span_id', 1) or 1),
-            }
+            if self.span_to_trace_fn:
+                ids = self.span_to_trace_fn(span)
+                trace_kwargs = {
+                    'trace_id': long(ids.get('trace_id', 1)),
+                    'span_id': long(ids.get('span_id', 2)),
+                    'parent_span_id': long(ids.get('parent_span_id', 1) or 1),
+                }
         except:
             self.log_exception_fn()
-            trace_kwargs = {}
         return trace_kwargs
 
     def before_send_request(self, request):
@@ -130,9 +133,9 @@ class OpenTracingHook(tchannel.event.EventHook):
             trace_kwargs = self._span_to_trace(span=span)
             request.tracing = SpanWrapper(
                 span,
-                trace_id=trace_kwargs['trace_id'],
-                span_id=trace_kwargs['span_id'],
-                parent_span_id=trace_kwargs['parent_span_id'],
+                trace_id=trace_kwargs.get('trace_id'),
+                span_id=trace_kwargs.get('span_id'),
+                parent_span_id=trace_kwargs.get('parent_span_id'),
                 traceflags=0
             )
 

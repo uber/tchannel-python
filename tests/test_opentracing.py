@@ -148,7 +148,6 @@ def register(tchannel, http_client=None, base_url=None):
     @tchannel.raw.register('endpoint1')
     @tornado.gen.coroutine
     def handler1(request):
-        print 'handler1 hit'
         host_port = request.headers
         res = yield tchannel.raw(
             service='handler2',
@@ -162,7 +161,6 @@ def register(tchannel, http_client=None, base_url=None):
     @tchannel.raw.register('endpoint2')
     @tornado.gen.coroutine
     def handler2(_):
-        print 'handler2 hit'
         span = get_current_span()
         if span:
             return span.get_baggage_item(BAGGAGE_KEY)
@@ -171,7 +169,6 @@ def register(tchannel, http_client=None, base_url=None):
     @tchannel.raw.register('endpoint3')
     @tornado.gen.coroutine
     def handler3(_):
-        print 'handler3 called'
         response = yield http_client.fetch(base_url)
         if response.code != 200:
             raise Exception('Downstream http service returned code=%s: %s' % (
@@ -209,11 +206,9 @@ class HttpHandler(tornado.web.RequestHandler):
             self.write('ERROR: Failed to join trace')
             self.set_status(200)
 
-        print 'http_server: %s' % span
         return span
 
     def get(self):
-        print 'http GET called'
         span = self._get_span()
         if span:
             self.write(span.get_baggage_item(BAGGAGE_KEY))
@@ -222,11 +217,9 @@ class HttpHandler(tornado.web.RequestHandler):
 
     @tornado.gen.coroutine
     def post(self):
-        print 'http POST called'
         span = self._get_span()
         if span:
             try:
-                print 'executing handler2 against %s' % self.request.body
                 with span_in_stack_context(span):
                     res = self.client_channel.raw(
                         service='handler2',
@@ -295,8 +288,6 @@ def test_trace_mixed(endpoint, transport, expect_spans,
     :param base_url: address of http server (provided by pytest-tornado)
     :param http_client: Tornado's AsyncHTTPClient (provided by pytest-tornado)
     """
-    print 'starting test, %s' % base_url
-
     context_provider = OpenTracingRequestContextProvider()
     hook = OpenTracingHook(tracer=tracer, context_provider=context_provider)
 
@@ -315,7 +306,6 @@ def test_trace_mixed(endpoint, transport, expect_spans,
         assert opentracing.tracer == tracer  # sanity check that patch worked
 
         span = tracer.start_span('root')
-        print 'root: %s' % span
         baggage = 'from handler3 %d' % time.time()
         span.set_baggage_item(BAGGAGE_KEY, baggage)
         with span:  # use span as context manager so that it's always finished
@@ -357,8 +347,6 @@ def test_trace_mixed(endpoint, transport, expect_spans,
         yield tornado.gen.sleep(0.001)  # yield execution and sleep for 1ms
 
     spans = tracer.recorder.get_spans()
-    for i in range(0, len(spans)):
-        print spans[i]
     assert expect_spans == len(spans)
     # We expect all trace IDs in collected spans to be the same
     trace_id = spans[0].context.trace_id
