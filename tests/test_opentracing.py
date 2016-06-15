@@ -35,11 +35,16 @@ import tornado.testing
 import tornado.web
 from basictracer import BasicTracer, SpanRecorder
 from opentracing import Format
-from opentracing_instrumentation.client_hooks.tornado_http import \
-    install_patches, reset_patchers
-from opentracing_instrumentation.request_context import \
-    RequestContext, RequestContextManager, \
-    span_in_stack_context, get_current_span
+from opentracing_instrumentation.client_hooks.tornado_http import (
+    install_patches,
+    reset_patchers
+)
+from opentracing_instrumentation.request_context import (
+    RequestContext,
+    RequestContextManager,
+    span_in_stack_context,
+    get_current_span
+)
 from tchannel import TChannel, Response
 from tchannel.context import RequestContextProvider
 from tchannel.tracing.opentracing import OpenTracingHook, SpanWrapper
@@ -134,7 +139,7 @@ class OpenTracingRequestContextProvider(RequestContextProvider):
 def http_patchers():
     install_patches.__original_func()  # install_patches func is a @singleton
     try:
-        yield 'http_patchers'
+        yield
     finally:
         reset_patchers()
 
