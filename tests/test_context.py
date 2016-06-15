@@ -26,7 +26,6 @@ from tornado import gen
 from tchannel import TChannel
 from tchannel import Response
 from tchannel import schemes
-from tchannel.context import get_current_context
 
 
 @pytest.mark.gen_test
@@ -46,12 +45,12 @@ def test_context_should_carry_tracing_info():
             arg3='req body',
             hostport=server.hostport,
         )
-        context[0] = get_current_context()
+        context[0] = server.context_provider.get_current_context()
         raise gen.Return(Response('resp body', 'resp headers'))
 
     @server.register(scheme=schemes.RAW)
     def endpoint2(request):
-        context[1] = get_current_context()
+        context[1] = server.context_provider.get_current_context()
         return Response('resp body', 'resp headers')
 
     server.listen()

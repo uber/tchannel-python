@@ -3,6 +3,8 @@ pytest>=2,<3
 pytest-cov
 pytest-timeout
 pytest-tornado
+# bound pygal due to https://github.com/ionelmc/pytest-benchmark/issues/50
+pygal<2.1
 pytest-benchmark[histogram]>=3,<4
 
 # Property based tests
@@ -35,6 +37,10 @@ thrift==0.9.2
 
 # Smarter decorators
 wrapt>=1.10,<1.11
+
+# OpenTracing reference implementation
+basictracer==1.0rc1
+opentracing_instrumentation>=1.1,<=1.2
 
 # Mocks
 mock==1.0.1

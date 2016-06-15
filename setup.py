@@ -55,6 +55,9 @@ setup(
         # tchannel deps
         'thriftrw>=0.4,<2',
         'threadloop>=1,<2',
+
+        # tracing deps
+        'opentracing>=1.0rc4,<2'
     ],
     extras_require={
         'vcr': ['PyYAML', 'mock', 'wrapt'],

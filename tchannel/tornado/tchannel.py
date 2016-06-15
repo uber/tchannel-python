@@ -34,6 +34,7 @@ import tornado.tcpserver
 from tornado.netutil import bind_sockets
 
 from . import hyperbahn
+from ..context import RequestContextProvider
 from ..deprecate import deprecate
 from ..enum import enum
 from ..errors import AlreadyListeningError
@@ -74,7 +75,8 @@ class TChannel(object):
 
     def __init__(self, name, hostport=None, process_name=None,
                  known_peers=None, trace=False, dispatcher=None,
-                 reuse_port=False, _from_new_api=False):
+                 reuse_port=False, context_provider_fn=None,
+                 _from_new_api=False):
         """Build or re-use a TChannel.
 
         :param name:
@@ -98,12 +100,23 @@ class TChannel(object):
         :param trace:
             Flag to turn on/off zipkin trace. It can be a bool variable or
             a function that return true or false.
+
+        :param context_provider_fn:
+            A getter function to retrieve an instance of
+            context.RequestContextProvider used to manage
+            thread-local request context.
         """
 
         self._state = State.ready
+        if context_provider_fn:
+            self.context_provider_fn = context_provider_fn
+        else:
+            context_provider = RequestContextProvider()
+            self.context_provider_fn = lambda: context_provider
 
         if not dispatcher:
-            self._handler = RequestDispatcher()
+            self._handler = RequestDispatcher(
+                context_provider_fn=lambda: self.context_provider_fn())
         else:
             self._handler = dispatcher
 
