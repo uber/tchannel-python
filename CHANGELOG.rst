@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.24.1 (unreleased)
+0.25.0 (2016-06-16)
 -------------------
 
 - Support for OpenTracing.
