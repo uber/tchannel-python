@@ -4,7 +4,7 @@ Changes by Version
 0.24.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Support for OpenTracing.
 
 
 0.24.0 (2016-04-19)
