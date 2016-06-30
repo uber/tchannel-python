@@ -224,6 +224,7 @@ class TChannel(object):
             body=body,
             headers=headers,
             transport=t,
+            status=response.code,
         )
 
         raise gen.Return(result)

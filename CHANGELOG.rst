@@ -4,7 +4,8 @@ Changes by Version
 0.25.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed a bug where the application error status code was not being copied into
+  Response objects.
 
 
 0.25.0 (2016-06-16)
