@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.25.1 (unreleased)
+0.25.1 (2016-06-30)
 -------------------
 
 - Fixed a bug where the application error status code was not being copied into
