@@ -57,7 +57,7 @@ setup(
         'threadloop>=1,<2',
 
         # tracing deps
-        'opentracing>=1.0rc4,<2'
+        'opentracing==1.0rc4'
     ],
     extras_require={
         'vcr': ['PyYAML', 'mock', 'wrapt'],
