@@ -66,6 +66,16 @@ tracing_rw = rw.instance(
 )
 
 
+def clone_tracing(tracing):
+    if type(tracing) is Tracing:
+        return tracing  # Tracing tuple is immutable
+    # TODO only needed for zipkin.Trace(); remove once it's gone
+    return Tracing(
+        span_id=tracing.span_id,
+        parent_id=tracing.parent_span_id,
+        trace_id=tracing.trace_id,
+        traceflags=tracing.traceflags)
+
 ChecksumType = enum(
     'ChecksumType',
     none=0x00,

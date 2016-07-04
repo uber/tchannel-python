@@ -22,6 +22,8 @@ from __future__ import absolute_import
 
 import inspect
 import logging
+
+import opentracing
 import os
 import socket
 import sys
@@ -76,7 +78,7 @@ class TChannel(object):
     def __init__(self, name, hostport=None, process_name=None,
                  known_peers=None, trace=False, dispatcher=None,
                  reuse_port=False, context_provider_fn=None,
-                 _from_new_api=False):
+                 tracer=None, _from_new_api=False):
         """Build or re-use a TChannel.
 
         :param name:
@@ -98,8 +100,12 @@ class TChannel(object):
             Defaults to an empty list.
 
         :param trace:
-            Flag to turn on/off zipkin trace. It can be a bool variable or
-            a function that return true or false.
+            Flag to turn on/off distributed tracing. It can be a bool
+            variable or a function that return true or false.
+
+        :param tracer:
+            An instance of OpenTracing Tracer (http://opentracing.io).
+            If not provided, a global `opentracing.tracer` will be used.
 
         :param context_provider_fn:
             A getter function to retrieve an instance of
@@ -139,6 +145,7 @@ class TChannel(object):
 
         self.name = name
         self._trace = trace
+        self._tracer = tracer
 
         # register event hooks
         self.event_emitter = EventEmitter()
@@ -168,6 +175,13 @@ class TChannel(object):
             return self._trace()
         else:
             return self._trace
+
+    @property
+    def tracer(self):
+        if self._tracer:
+            return self._tracer
+        else:
+            return opentracing.tracer
 
     def advertise(
         self,

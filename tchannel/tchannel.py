@@ -83,7 +83,7 @@ class TChannel(object):
 
     def __init__(self, name, hostport=None, process_name=None,
                  known_peers=None, trace=False, reuse_port=False,
-                 context_provider=None):
+                 context_provider=None, tracer=None):
         """
         **Note:** In general only one ``TChannel`` instance should be used at a
         time. Multiple ``TChannel`` instances are not advisable and could
@@ -110,11 +110,13 @@ class TChannel(object):
             process_name=process_name,
             known_peers=known_peers,
             trace=trace,
+            tracer=tracer,
             dispatcher=DeprecatedDispatcher(
                 _handler_returns_response=True,
                 context_provider_fn=lambda: self.context_provider),
             reuse_port=reuse_port,
             _from_new_api=True,
+            # TODO(ys) decide if we want to use context from opentracing_instr
             context_provider_fn=lambda: self.context_provider,
         )
 
