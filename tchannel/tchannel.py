@@ -163,7 +163,7 @@ class TChannel(object):
         :py:class:`tchannel.schemes.ThriftArgScheme`.
         """
 
-        # TODO - dont use asserts for public API
+        # TODO - don't use asserts for public API
         assert format, "format is required"
         assert service, "service is required"
         assert arg1, "arg1 is required"

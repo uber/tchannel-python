@@ -102,7 +102,7 @@ class RequestDispatcher(object):
         It passes all the messages into the message_factory to build the init
         request object. Only when it get a CallRequestMessage and a completed
         arg_1=argstream[0], the message_factory will return a request object.
-        Then it will trigger the async call_handle call.
+        Then it will trigger the async handle_call method.
 
         :param message: CallRequestMessage or CallRequestContinueMessage
         :param connection: tornado connection
@@ -132,7 +132,6 @@ class RequestDispatcher(object):
         # request.endpoint. The original argstream[0] is no longer valid. If
         # user still tries read from it, it will return empty.
         chunk = yield request.argstreams[0].read()
-        response = None
         while chunk:
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
@@ -142,6 +141,7 @@ class RequestDispatcher(object):
         tchannel = connection.tchannel
 
         # event: receive_request
+        # TODO(ys) can start Zipkin-compatible Span here
         request.tracing.name = request.endpoint
         tchannel.event_emitter.fire(EventType.before_receive_request, request)
 
@@ -169,7 +169,7 @@ class RequestDispatcher(object):
         response = DeprecatedResponse(
             id=request.id,
             checksum=request.checksum,
-            tracing=request.tracing,
+            tracing=request.tracing,  # TODO(ys) also store tracing_span
             connection=connection,
             headers={'as': request.headers.get('as', 'raw')},
             serializer=handler.resp_serializer,

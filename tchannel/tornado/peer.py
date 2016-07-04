@@ -362,7 +362,7 @@ class PeerClientOperation(object):
             String or Stream containing the contents of arg3. If None, an empty
             stream is used.
         :param headers:
-            Headers will be put int he message as protocol header.
+            Headers will be put in the message as protocol header.
         :param traceflag:
             Flag is for tracing.
         :param retry_limit:
@@ -417,6 +417,7 @@ class PeerClientOperation(object):
             headers=headers,
             endpoint=endpoint,
             ttl=ttl,
+            # FIXME(ys) replace with opentracing.Span
             tracing=Trace(
                 name=endpoint,
                 trace_id=trace_id,
