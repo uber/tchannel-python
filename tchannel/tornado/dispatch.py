@@ -40,7 +40,6 @@ from ..event import EventType
 from ..messages import Types
 from ..serializer.raw import RawSerializer
 from .response import Response as DeprecatedResponse
-from ..zipkin.annotation import Endpoint
 from ..zipkin.trace import Trace
 
 log = logging.getLogger('tchannel')
@@ -150,9 +149,6 @@ class RequestDispatcher(object):
                 span_id=request.tracing.span_id,
                 parent_span_id=request.tracing.parent_id,
                 traceflags=request.tracing.traceflags,
-                endpoint=Endpoint(connection.remote_host,
-                                  connection.remote_host_port,
-                                  request.service),
             )
         request.tracing.name = request.endpoint
         tchannel.event_emitter.fire(EventType.before_receive_request, request)

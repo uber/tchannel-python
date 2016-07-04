@@ -42,7 +42,6 @@ from ..event import EventType
 from ..glossary import DEFAULT_TIMEOUT
 from ..peer_heap import PeerHeap
 from ..peer_strategy import PreferIncomingCalculator
-from ..zipkin.annotation import Endpoint
 from ..zipkin.trace import Trace
 from .connection import StreamConnection
 from .connection import INCOMING, OUTGOING
@@ -417,12 +416,12 @@ class PeerClientOperation(object):
             headers=headers,
             endpoint=endpoint,
             ttl=ttl,
-            # FIXME(ys) replace with opentracing.Span
+            # TODO(ys) replace with opentracing.Span
             tracing=Trace(
                 name=endpoint,
                 trace_id=trace_id,
                 parent_span_id=parent_span_id,
-                endpoint=Endpoint(peer.host, peer.port, self.service),
+                # endpoint=Endpoint(peer.host, peer.port, self.service),
                 traceflags=traceflag,
             )
         )
