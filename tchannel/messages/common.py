@@ -20,6 +20,7 @@
 
 from __future__ import absolute_import
 
+import random
 import zlib
 from collections import namedtuple
 
@@ -66,15 +67,21 @@ tracing_rw = rw.instance(
 )
 
 
-def clone_tracing(tracing):
-    if type(tracing) is Tracing:
-        return tracing  # Tracing tuple is immutable
-    # TODO only needed for zipkin.Trace(); remove once it's gone
+def random_tracing():
+    """
+    Create new Tracing() tuple with random IDs.
+    """
+
+    def _uniq_id():  # TODO: cython
+        """Create a random 64-bit unsigned long."""
+        return random.getrandbits(64)
+
     return Tracing(
-        span_id=tracing.span_id,
-        parent_id=tracing.parent_span_id,
-        trace_id=tracing.trace_id,
-        traceflags=tracing.traceflags)
+        span_id=_uniq_id(),
+        parent_id=0,
+        trace_id=_uniq_id(),
+        traceflags=0)
+
 
 ChecksumType = enum(
     'ChecksumType',

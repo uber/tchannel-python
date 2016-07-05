@@ -23,11 +23,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import opentracing
 from tornado import gen
 
 from . import JSON
 from ..serializer.json import JsonSerializer
-
+from ..tracing import ClientTracer
 
 class JsonArgScheme(object):
     """Semantic params and serialization for json."""
@@ -36,6 +37,7 @@ class JsonArgScheme(object):
 
     def __init__(self, tchannel):
         self._tchannel = tchannel
+        self.tracer = ClientTracer(channel=tchannel)
 
     @gen.coroutine
     def __call__(
@@ -101,25 +103,31 @@ class JsonArgScheme(object):
         :rtype: Response
         """
 
+        span, headers = self.tracer.start_span(
+            service=service, endpoint=endpoint, headers=headers
+        )
+
         # serialize
         serializer = JsonSerializer()
         headers = serializer.serialize_header(headers)
         body = serializer.serialize_body(body)
 
-        response = yield self._tchannel.call(
-            scheme=self.NAME,
-            service=service,
-            arg1=endpoint,
-            arg2=headers,
-            arg3=body,
-            timeout=timeout,
-            retry_on=retry_on,
-            retry_limit=retry_limit,
-            hostport=hostport,
-            shard_key=shard_key,
-            trace=trace,
-            routing_delegate=routing_delegate,
-        )
+        with span:
+            response = yield self._tchannel.call(
+                scheme=self.NAME,
+                service=service,
+                arg1=endpoint,
+                arg2=headers,
+                arg3=body,
+                timeout=timeout,
+                retry_on=retry_on,
+                retry_limit=retry_limit,
+                hostport=hostport,
+                shard_key=shard_key,
+                trace=trace,
+                tracing_span=span,
+                routing_delegate=routing_delegate,
+            )
 
         # deserialize
         response.headers = serializer.deserialize_header(response.headers)

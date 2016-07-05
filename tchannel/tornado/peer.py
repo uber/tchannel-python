@@ -28,6 +28,7 @@ import logging
 from collections import deque
 from itertools import takewhile, dropwhile
 
+from tchannel import tracing
 from tornado import gen
 from tornado.iostream import StreamClosedError
 
@@ -42,7 +43,6 @@ from ..event import EventType
 from ..glossary import DEFAULT_TIMEOUT
 from ..peer_heap import PeerHeap
 from ..peer_strategy import PreferIncomingCalculator
-from ..zipkin.trace import Trace
 from .connection import StreamConnection
 from .connection import INCOMING, OUTGOING
 from .request import Request
@@ -254,7 +254,7 @@ class PeerClientOperation(object):
                  service,
                  arg_scheme=None,
                  retry=None,
-                 parent_tracing=None,
+                 tracing_span=None,
                  hostport=None):
         """Initialize a new PeerClientOperation.
 
@@ -267,8 +267,8 @@ class PeerClientOperation(object):
             arg scheme type
         :param retry
             retry type
-        :param parent_tracing
-            tracing span from parent request
+        :param tracing_span
+            tracing span created for this request
         :param hostport
             remote server's host port.
         """
@@ -278,10 +278,7 @@ class PeerClientOperation(object):
         self.peer_group = peer_group
         self.tchannel = peer_group.tchannel
         self.service = service
-        self.parent_tracing = parent_tracing
-        if not self.parent_tracing:
-            self.parent_tracing = self.tchannel.\
-                context_provider_fn().get_current_span()
+        self.tracing_span = tracing_span
 
         # TODO the term headers are reserved for application headers,
         # these are transport headers,
@@ -344,7 +341,6 @@ class PeerClientOperation(object):
     def send(
         self, arg1, arg2, arg3,
         headers=None,
-        traceflag=None,
         retry_limit=None,
         ttl=None,
     ):
@@ -361,8 +357,6 @@ class PeerClientOperation(object):
             stream is used.
         :param headers:
             Headers will be put in the message as protocol header.
-        :param traceflag:
-            Flag is for tracing.
         :param retry_limit:
            Maximum number of retries will perform on the message. If the number
            is 0, it means no retry.
@@ -390,19 +384,6 @@ class PeerClientOperation(object):
         arg1.close()
         endpoint = yield read_full(arg1)
 
-        # TODO after adding stackcontext, get ride of this.
-        if self.parent_tracing:
-            parent_span_id = self.parent_tracing.span_id
-            trace_id = self.parent_tracing.trace_id
-        else:
-            parent_span_id = None
-            trace_id = None
-
-        if traceflag is None:
-            traceflag = self.tchannel.trace
-
-        traceflag = traceflag() if callable(traceflag) else traceflag
-
         # set default transport headers
         headers = headers or {}
         for k, v in self.headers.iteritems():
@@ -415,14 +396,7 @@ class PeerClientOperation(object):
             headers=headers,
             endpoint=endpoint,
             ttl=ttl,
-            # TODO(ys) replace with opentracing.Span
-            tracing=Trace(
-                name=endpoint,
-                trace_id=trace_id,
-                parent_span_id=parent_span_id,
-                # endpoint=Endpoint(peer.host, peer.port, self.service),
-                traceflags=traceflag,
-            )
+            tracing=tracing.span_to_tracing_field(self.tracing_span)
         )
 
         # only retry on non-stream request

@@ -23,6 +23,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from tchannel.tracing import ClientTracer
 from tornado import gen
 
 from . import THRIFT
@@ -66,6 +67,7 @@ class ThriftArgScheme(object):
 
     def __init__(self, tchannel):
         self._tchannel = tchannel
+        self.tracer = ClientTracer(channel=tchannel)
 
     @gen.coroutine
     def __call__(
@@ -120,6 +122,12 @@ class ThriftArgScheme(object):
         if not headers:
             headers = {}
 
+        span, headers = self.tracer.start_span(
+            service=request.service,
+            endpoint=request.endpoint,
+            headers=headers
+        )
+
         serializer = request.get_serializer()
 
         # serialize
@@ -134,20 +142,22 @@ class ThriftArgScheme(object):
         body = serializer.serialize_body(request.call_args)
 
         # TODO There's only one yield. Drop in favor of future+callback.
-        response = yield self._tchannel.call(
-            scheme=self.NAME,
-            service=request.service,
-            arg1=request.endpoint,
-            arg2=headers,
-            arg3=body,
-            timeout=timeout,
-            retry_on=retry_on,
-            retry_limit=retry_limit,
-            hostport=hostport or request.hostport,
-            shard_key=shard_key,
-            trace=trace,
-            routing_delegate=routing_delegate,
-        )
+        with span:
+            response = yield self._tchannel.call(
+                scheme=self.NAME,
+                service=request.service,
+                arg1=request.endpoint,
+                arg2=headers,
+                arg3=body,
+                timeout=timeout,
+                retry_on=retry_on,
+                retry_limit=retry_limit,
+                hostport=hostport or request.hostport,
+                shard_key=shard_key,
+                trace=trace,
+                tracing_span=span,
+                routing_delegate=routing_delegate,
+            )
 
         response.headers = serializer.deserialize_header(
             headers=response.headers

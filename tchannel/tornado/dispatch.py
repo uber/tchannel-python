@@ -39,8 +39,7 @@ from ..event import EventType
 from ..messages import Types
 from ..serializer.raw import RawSerializer
 from .response import Response as DeprecatedResponse
-from ..zipkin.trace import Trace
-from ..tracing import TracingContextProvider
+from .. import tracing
 
 log = logging.getLogger('tchannel')
 
@@ -66,13 +65,7 @@ class RequestDispatcher(object):
 
     FALLBACK = object()
 
-    def __init__(self, _handler_returns_response=False,
-                 context_provider_fn=None):
-        if context_provider_fn:
-            self.context_provider_fn = context_provider_fn
-        else:
-            context_provider = TracingContextProvider()
-            self.context_provider_fn = lambda: context_provider
+    def __init__(self, _handler_returns_response=False):
         self.handlers = {}
         self.register(self.FALLBACK, self.not_found)
         self._handler_returns_response = _handler_returns_response
@@ -141,16 +134,6 @@ class RequestDispatcher(object):
 
         tchannel = connection.tchannel
 
-        # event: receive_request
-        # TODO(ys) can start Zipkin-compatible Span here
-        if type(request.tracing) is not Trace:
-            request.tracing = Trace(
-                trace_id=request.tracing.trace_id,
-                span_id=request.tracing.span_id,
-                parent_span_id=request.tracing.parent_id,
-                traceflags=request.tracing.traceflags,
-            )
-        request.tracing.name = request.endpoint
         tchannel.event_emitter.fire(EventType.before_receive_request, request)
 
         handler = self.get_endpoint(request.endpoint)
@@ -177,7 +160,7 @@ class RequestDispatcher(object):
         response = DeprecatedResponse(
             id=request.id,
             checksum=request.checksum,
-            tracing=request.tracing,  # TODO(ys) also store tracing_span
+            tracing=request.tracing,
             connection=connection,
             headers={'as': request.headers.get('as', 'raw')},
             serializer=handler.resp_serializer,
@@ -196,6 +179,11 @@ class RequestDispatcher(object):
 
         connection.post_response(response).add_done_callback(_on_post_response)
 
+        tracer = tracing.ServerTracer(
+            tracer=tchannel.tracer, operation_name=request.endpoint
+        )
+        tracer.start_basic_span(tracing=request.tracing)
+
         try:
             # New impl - the handler takes a request and returns a response
             if self._handler_returns_response:
@@ -211,13 +199,12 @@ class RequestDispatcher(object):
                     service=request.service,
                     timeout=request.ttl,
                 )
-
-                context_provider = self.context_provider_fn()
-                with context_provider.span_in_context(request.tracing):
-                    # Cannot yield while inside the StackContext
-                    f = handler.endpoint(new_req)
-
-                new_resp = yield gen.maybe_future(f)
+                with tracer.start_span(request=request, headers=he) as span:
+                    context_provider = tchannel.context_provider_fn()
+                    with context_provider.span_in_context(span):
+                        # Cannot yield while inside the StackContext
+                        f = handler.endpoint(new_req)
+                    new_resp = yield gen.maybe_future(f)
 
                 # instantiate a tchannel.Response
                 new_resp = response_from_mixed(new_resp)
@@ -232,12 +219,13 @@ class RequestDispatcher(object):
 
             # Dep impl - the handler is provided with a req & resp writer
             else:
-                context_provider = self.context_provider_fn()
-                with context_provider.span_in_context(request.tracing):
-                    # Cannot yield while inside the StackContext
-                    f = handler.endpoint(request, response)
+                with tracer.start_span(request=request, headers={}) as span:
+                    context_provider = tchannel.context_provider_fn()
+                    with context_provider.span_in_context(span):
+                        # Cannot yield while inside the StackContext
+                        f = handler.endpoint(request, response)
 
-                yield gen.maybe_future(f)
+                    yield gen.maybe_future(f)
 
             response.flush()
         except TChannelError as e:

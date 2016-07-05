@@ -51,7 +51,7 @@ def build_raw_error_message(protocol_exception):
     message = ErrorMessage(
         id=protocol_exception.id,
         code=protocol_exception.code,
-        tracing=common.clone_tracing(protocol_exception.tracing),
+        tracing=protocol_exception.tracing,
         description=protocol_exception.description,
     )
 
@@ -92,7 +92,7 @@ class MessageFactory(object):
             message = CallRequestMessage(
                 flags=request.flags,
                 ttl=request.ttl * 1000,
-                tracing=common.clone_tracing(request.tracing),
+                tracing=request.tracing,
                 service=request.service,
                 headers=request.headers,
                 checksum=request.checksum,
@@ -131,7 +131,7 @@ class MessageFactory(object):
             message = CallResponseMessage(
                 flags=response.flags,
                 code=response.code,
-                tracing=common.clone_tracing(response.tracing),
+                tracing=response.tracing,
                 headers=response.headers,
                 checksum=response.checksum,
                 args=args

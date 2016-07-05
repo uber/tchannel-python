@@ -121,8 +121,7 @@ class TChannel(object):
             self.context_provider_fn = lambda: context_provider
 
         if not dispatcher:
-            self._handler = RequestDispatcher(
-                context_provider_fn=lambda: self.context_provider_fn())
+            self._handler = RequestDispatcher()
         else:
             self._handler = dispatcher
 
@@ -182,6 +181,10 @@ class TChannel(object):
             return self._tracer
         else:
             return opentracing.tracer
+
+    @property
+    def context_provider(self):
+        return self.context_provider_fn()
 
     def advertise(
         self,

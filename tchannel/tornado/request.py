@@ -24,6 +24,7 @@ from collections import namedtuple
 
 import tornado
 import tornado.gen
+from tchannel.messages import common
 from tornado.iostream import StreamClosedError
 
 from tchannel import retry
@@ -34,7 +35,6 @@ from ..messages.common import ChecksumType
 from ..messages.common import FlagsType
 from ..messages.common import StreamState
 from ..serializer.raw import RawSerializer
-from ..zipkin.trace import Trace
 from .stream import InMemStream
 from .util import get_arg
 
@@ -65,7 +65,7 @@ class Request(object):
         self.flags = flags
         self.ttl = ttl
         self.service = service
-        self.tracing = tracing or Trace()
+        self.tracing = tracing or common.random_tracing()
         # argstreams is a list of InMemStream/PipeStream objects
         self.argstreams = argstreams or [InMemStream(),
                                          InMemStream(),
@@ -95,7 +95,7 @@ class Request(object):
                 self._copy_argstreams[2].clone(),
             ]
         self.state = StreamState.init
-        self.tracing = Trace()
+        self.tracing = common.random_tracing()
 
     @property
     def arg_scheme(self):
