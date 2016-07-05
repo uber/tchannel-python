@@ -31,7 +31,6 @@ from tornado import gen
 from . import schemes
 from . import transport
 from . import retry
-from .context import RequestContextProvider
 from .errors import AlreadyListeningError
 from .glossary import DEFAULT_TIMEOUT
 from .health import health
@@ -39,6 +38,7 @@ from .health import Meta
 from .response import Response, TransportHeaders
 from .tornado import TChannel as DeprecatedTChannel
 from .tornado.dispatch import RequestDispatcher as DeprecatedDispatcher
+from .tracing import TracingContextProvider
 
 log = logging.getLogger('tchannel')
 
@@ -100,7 +100,7 @@ class TChannel(object):
             Hyperbahn you callers do not need to know your port.
         """
 
-        self.context_provider = context_provider or RequestContextProvider()
+        self.context_provider = context_provider or TracingContextProvider()
 
         # until we move everything here,
         # lets compose the old tchannel
@@ -183,7 +183,7 @@ class TChannel(object):
             retry_limit = retry.DEFAULT_RETRY_LIMIT
 
         # TODO - allow filters/steps for serialization, tracing, etc...
-        context = self.context_provider.get_current_context()
+        parent_span = self.context_provider.get_current_span()
 
         # calls tchannel.tornado.peer.PeerClientOperation.__init__
         operation = self._dep_tchannel.request(
@@ -191,7 +191,7 @@ class TChannel(object):
             hostport=hostport,
             arg_scheme=scheme,
             retry=retry_on,
-            parent_tracing=context.parent_tracing if context else None
+            parent_tracing=parent_span
         )
 
         # fire operation

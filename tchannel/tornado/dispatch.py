@@ -32,7 +32,6 @@ from tornado.iostream import StreamClosedError
 from tchannel.request import Request
 from tchannel.request import TransportHeaders
 from tchannel.response import response_from_mixed
-from ..context import RequestContextProvider
 from ..errors import BadRequestError
 from ..errors import UnexpectedError
 from ..errors import TChannelError
@@ -41,6 +40,7 @@ from ..messages import Types
 from ..serializer.raw import RawSerializer
 from .response import Response as DeprecatedResponse
 from ..zipkin.trace import Trace
+from ..tracing import TracingContextProvider
 
 log = logging.getLogger('tchannel')
 
@@ -71,7 +71,7 @@ class RequestDispatcher(object):
         if context_provider_fn:
             self.context_provider_fn = context_provider_fn
         else:
-            context_provider = RequestContextProvider()
+            context_provider = TracingContextProvider()
             self.context_provider_fn = lambda: context_provider
         self.handlers = {}
         self.register(self.FALLBACK, self.not_found)
@@ -212,15 +212,9 @@ class RequestDispatcher(object):
                     timeout=request.ttl,
                 )
 
-                # Not safe to have coroutine yields statement within
-                # stack context.
-                # The right way to do it is:
-                # with request_context(..):
-                #    future = f()
-                # yield future
-
                 context_provider = self.context_provider_fn()
-                with context_provider.request_context(request.tracing):
+                with context_provider.span_in_context(request.tracing):
+                    # Cannot yield while inside the StackContext
                     f = handler.endpoint(new_req)
 
                 new_resp = yield gen.maybe_future(f)
@@ -239,7 +233,8 @@ class RequestDispatcher(object):
             # Dep impl - the handler is provided with a req & resp writer
             else:
                 context_provider = self.context_provider_fn()
-                with context_provider.request_context(request.tracing):
+                with context_provider.span_in_context(request.tracing):
+                    # Cannot yield while inside the StackContext
                     f = handler.endpoint(request, response)
 
                 yield gen.maybe_future(f)

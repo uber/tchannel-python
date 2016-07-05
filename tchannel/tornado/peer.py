@@ -280,9 +280,8 @@ class PeerClientOperation(object):
         self.service = service
         self.parent_tracing = parent_tracing
         if not self.parent_tracing:
-            ctx = self.tchannel.context_provider_fn().get_current_context()
-            if ctx:
-                self.parent_tracing = ctx.parent_tracing
+            self.parent_tracing = self.tchannel.\
+                context_provider_fn().get_current_span()
 
         # TODO the term headers are reserved for application headers,
         # these are transport headers,

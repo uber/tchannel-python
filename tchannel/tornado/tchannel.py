@@ -36,7 +36,6 @@ import tornado.tcpserver
 from tornado.netutil import bind_sockets
 
 from . import hyperbahn
-from ..context import RequestContextProvider
 from ..deprecate import deprecate
 from ..enum import enum
 from ..errors import AlreadyListeningError
@@ -52,6 +51,7 @@ from ..schemes import DEFAULT_NAMES
 from ..schemes import JSON
 from ..serializer.json import JsonSerializer
 from ..serializer.raw import RawSerializer
+from ..tracing import TracingContextProvider
 from .connection import StreamConnection
 from .connection import INCOMING
 from .dispatch import RequestDispatcher
@@ -109,15 +109,15 @@ class TChannel(object):
 
         :param context_provider_fn:
             A getter function to retrieve an instance of
-            context.RequestContextProvider used to manage
-            thread-local request context.
+            ``tracing.TracingContextProvider`` used to manage tracing span
+            in a thread-local request context.
         """
 
         self._state = State.ready
         if context_provider_fn:
             self.context_provider_fn = context_provider_fn
         else:
-            context_provider = RequestContextProvider()
+            context_provider = TracingContextProvider()
             self.context_provider_fn = lambda: context_provider
 
         if not dispatcher:

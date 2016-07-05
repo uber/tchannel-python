@@ -45,12 +45,12 @@ def test_context_should_carry_tracing_info():
             arg3='req body',
             hostport=server.hostport,
         )
-        context[0] = server.context_provider.get_current_context()
+        context[0] = server.context_provider.get_current_span()
         raise gen.Return(Response('resp body', 'resp headers'))
 
     @server.register(scheme=schemes.RAW)
     def endpoint2(request):
-        context[1] = server.context_provider.get_current_context()
+        context[1] = server.context_provider.get_current_span()
         return Response('resp body', 'resp headers')
 
     server.listen()
@@ -68,5 +68,5 @@ def test_context_should_carry_tracing_info():
         hostport=server.hostport,
     )
 
-    assert context[0].parent_tracing.name == 'endpoint1'
-    assert context[1].parent_tracing.name == 'endpoint2'
+    assert context[0].name == 'endpoint1'
+    assert context[1].name == 'endpoint2'
