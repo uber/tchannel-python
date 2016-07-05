@@ -116,7 +116,6 @@ class TChannel(object):
                 context_provider_fn=lambda: self.context_provider),
             reuse_port=reuse_port,
             _from_new_api=True,
-            # TODO(ys) decide if we want to use context from opentracing_instr
             context_provider_fn=lambda: self.context_provider,
         )
 
