@@ -18,9 +18,6 @@ TChannel
 .. autoclass:: tchannel.Response
     :members:
 
-.. automodule:: tchannel.context
-    :members:
-
 
 Serialization Schemes
 ---------------------
