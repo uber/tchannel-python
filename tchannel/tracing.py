@@ -32,6 +32,7 @@ from tchannel.messages import common
 log = logging.getLogger('tchannel')
 
 
+# noinspection PyMethodMayBeStatic
 class TracingContextProvider(object):
     """Tracks the OpenTracing Span currently in effect.
 
@@ -56,18 +57,24 @@ class TracingContextProvider(object):
     """
     def get_current_span(self):
         """
-        :return: The current :py:class:`Span` for this thread.
+        :return: The current :py:class:`Span` for this thread/request.
         """
         return opentracing_instrumentation.get_current_span()
 
     def span_in_context(self, span):
         """
-        Factory method meant to be used as a context manager:
+        Store the `span` in the request context and return a `StackContext`.
+
+        This method is meant to be used as a context manager:
 
         .. code-block:: python
 
             with tchannel.context_provider.span_in_context(span):
-                handler_fn()
+                f = handler_fn()
+            res = yield f
+
+        Note: StackContext does not allow yield when used a context manager.
+        Instead, save the future and yield it outside of `with:` statement.
 
         :param span: an OpenTracing Span
         :return: ``StackContext``-based context manager
@@ -76,6 +83,8 @@ class TracingContextProvider(object):
 
 
 class ServerTracer(object):
+    """Helper class for creating server-side spans."""
+
     __slots__ = ['tracer', 'operation_name', 'span']
 
     def __init__(self, tracer, operation_name):
@@ -86,20 +95,27 @@ class ServerTracer(object):
     # noinspection PyMethodMayBeStatic
     def start_basic_span(self, tracing):
         """
-        Starts tracing span from the protocol's `tracing` fields.
+        Start tracing span from the protocol's `tracing` fields.
 
         This will only work if the `tracer` supports Zipkin-style span context.
 
         :param tracing: common.Tracing
         """
-        # this is currently not implemented
-        return self
+        pass  # TODO(ys) implement start_basic_span
 
     def start_span(self, request, headers):
-        # TODO(ys) if self.span is already defined, merge baggage into it
+        """
+        Starts a new server-side span. If the span has already been started
+        by `start_basic_span`, this method only adds baggage from the headers.
+        :param request:
+        :param headers:
+        :return:
+        """
         if self.span:
+            # TODO(ys) if self.span is already defined, merge baggage into it
             return self.span
         operation_name = '%s:%s' % (request.service, request.endpoint)
+        # noinspection PyBroadException
         try:
             if headers:
                 self.span = self.tracer.join(
@@ -115,15 +131,11 @@ class ServerTracer(object):
             )
         return self.span
 
-def span_to_tracing_field(span):
-    if span is None:
-        return common.random_tracing()
-    # TODO(ys) if tracer is Zipkin compatible, try to convert span to Tracing
-    return common.random_tracing()
-
 
 class ClientTracer(object):
-    __slots__ = ['channel', 'operation_name', 'span']
+    """Helper class for creating client-side spans."""
+
+    __slots__ = ['channel']
 
     def __init__(self, channel):
         self.channel = channel
@@ -138,12 +150,20 @@ class ClientTracer(object):
         if headers is None:
             headers = {}
         if isinstance(headers, dict):
+            # noinspection PyBroadException
             try:
                 self.channel.tracer.inject(
                     span, opentracing.Format.TEXT_MAP, headers)
             except:
                 log.exception('Failed to inject tracing span into headers')
         return span, headers
+
+
+def span_to_tracing_field(span):
+    if span is None:
+        return common.random_tracing()
+    # TODO(ys) if tracer is Zipkin compatible, try to convert span to Tracing
+    return common.random_tracing()
 
 
 def apply_trace_flag(span, trace, default_trace):
