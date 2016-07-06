@@ -33,7 +33,8 @@ import tornado
 import tornado.gen
 import tornado.testing
 import tornado.web
-from basictracer import BasicTracer, SpanRecorder
+from basictracer import BasicTracer
+from basictracer.recorder import InMemoryRecorder
 from opentracing import Format
 from opentracing_instrumentation.client_hooks.tornado_http import (
     install_patches,
@@ -43,7 +44,7 @@ from opentracing_instrumentation.request_context import (
     span_in_stack_context,
     get_current_span
 )
-from tchannel import TChannel, Response
+from tchannel import Response, thrift
 from tornado import netutil
 from tornado.httpclient import HTTPRequest
 
@@ -64,32 +65,15 @@ def patched_bind_unused_port(reuse_port=False):
 tornado.testing.bind_unused_port = patched_bind_unused_port
 
 
-@pytest.fixture
-def span_recorder():
-    class InMemoryRecorder(SpanRecorder):
-        def __init__(self):
-            self.spans = []
-            self.mux = threading.Lock()
-
-        def record_span(self, span):
-            with self.mux:
-                self.spans.append(span)
-
-        def get_spans(self):
-            with self.mux:
-                return self.spans[:]
-
-    return InMemoryRecorder()
-
-
 # noinspection PyShadowingNames
 @pytest.fixture
-def tracer(span_recorder):
-    return BasicTracer(recorder=span_recorder)
+def tracer():
+    return BasicTracer(recorder=InMemoryRecorder())
 
 
 @pytest.yield_fixture
 def http_patchers():
+    """Applies tracing monkey-patching to http libs"""
     install_patches.__original_func()  # install_patches func is a @singleton
     try:
         yield
@@ -97,7 +81,21 @@ def http_patchers():
         reset_patchers()
 
 
-def register(tchannel, http_client=None, base_url=None):
+@pytest.fixture
+def thrift_service(tmpdir):
+    thrift_file = tmpdir.join('service.thrift')
+    thrift_file.write('''
+        service X {
+          string thrift1(1: string hostport), // calls thrift2()
+          string thrift2(),
+          string thrift3(1: string hostport)  // calls http
+        }
+    ''')
+
+    return thrift.load(str(thrift_file), 'test-service')
+
+
+def register(tchannel, thrift_service, http_client, base_url):
     @tchannel.json.register('endpoint1')
     @tornado.gen.coroutine
     def handler1(request):
@@ -106,7 +104,18 @@ def register(tchannel, http_client=None, base_url=None):
             service='handler2',
             hostport=host_port,
             endpoint="endpoint2",
-            trace=False,
+        )
+
+        raise tornado.gen.Return(Response(res.body))
+
+    @tchannel.thrift.register(thrift_service.X, method='thrift1')
+    @tornado.gen.coroutine
+    def thrift1(request):
+        host_port = request.body
+        res = yield tchannel.json(
+            service='handler2',
+            hostport=host_port,
+            endpoint="endpoint2",
         )
 
         raise tornado.gen.Return(Response(res.body))
@@ -177,7 +186,6 @@ class HttpHandler(tornado.web.RequestHandler):
                         service='handler2',
                         hostport=self.request.body,
                         endpoint="endpoint2",
-                        trace=False,
                     )
                 res = yield res
                 body = res.body
@@ -193,18 +201,21 @@ class HttpHandler(tornado.web.RequestHandler):
                 span.finish()
 
 
-@pytest.mark.parametrize('endpoint,transport,enabled,expect_spans', [
-    ('endpoint1', 'tchannel', True,  5),  # tchannel->tchannel
-    ('endpoint1', 'tchannel', False, 5),
-    ('endpoint3', 'tchannel', True,  5),  # tchannel->http
-    ('endpoint3', 'tchannel', False, 5),
-    ('/',         'http',     True,  5),  # http->tchannel
-    ('/',         'http',     False, 5),
+@pytest.mark.parametrize('endpoint,transport,encoding,enabled,expect_spans', [
+    ('endpoint1', 'tchannel', 'json',   True,  5),  # tchannel->tchannel/json
+    ('endpoint1', 'tchannel', 'json',   False, 0),
+    # ('thrift1',   'tchannel', 'thrift', True,  5),  # tchannel->tchannel/thrift
+    # ('thrift1',   'tchannel', 'thrift', False, 5),
+    ('endpoint3', 'tchannel', 'json',   True,  5),  # tchannel->http
+    ('endpoint3', 'tchannel', 'json',   False, 0),
+    ('/',         'http',     'json',   True,  5),  # http->tchannel
+    ('/',         'http',     'json',   False, 0),
 ])
 @pytest.mark.gen_test
-def test_trace_propagation(endpoint, transport, enabled, expect_spans,
-                           http_patchers, tracer, mock_server,
-                           app, http_server, base_url, http_client):
+def test_trace_propagation(
+        endpoint, transport, encoding, enabled, expect_spans,
+        http_patchers, tracer, mock_server, thrift_service,
+        app, http_server, base_url, http_client):
     """
     Main TChannel-OpenTracing integration test, using basictracer as
     implementation of OpenTracing API.
@@ -234,21 +245,25 @@ def test_trace_propagation(endpoint, transport, enabled, expect_spans,
 
     :param endpoint: name of the endpoint to call on the first service
     :param transport: type of the first service: tchannel or http
+    :param enabled: if False, channels are instructed to disable tracing
     :param expect_spans: number of spans we expect to be generated
     :param http_patchers: monkey-patching of tornado AsyncHTTPClient
     :param tracer: a concrete implementation of OpenTracing Tracer
     :param mock_server: tchannel server (from conftest.py)
+    :param thrift_service: fixture that creates a Thrift service from fake IDL
     :param app: tornado.web.Application fixture
     :param http_server: http server (provided by pytest-tornado)
     :param base_url: address of http server (provided by pytest-tornado)
     :param http_client: Tornado's AsyncHTTPClient (provided by pytest-tornado)
     """
-    register(mock_server.tchannel, http_client=http_client, base_url=base_url)
-
     # mock_server is created as a fixture, so we need to set tracer on it
     mock_server.tchannel._dep_tchannel._tracer = tracer
+    mock_server.tchannel._dep_tchannel._trace = enabled
 
-    tchannel = TChannel(name='test', tracer=tracer)
+    register(tchannel=mock_server.tchannel, thrift_service=thrift_service,
+             http_client=http_client, base_url=base_url)
+
+    tchannel = TChannel(name='test', tracer=tracer, trace=enabled)
 
     app.add_handlers(".*$", [
         (r"/", HttpHandler, {'client_channel': tchannel})
@@ -260,17 +275,26 @@ def test_trace_propagation(endpoint, transport, enabled, expect_spans,
         span = tracer.start_span('root')
         baggage = 'from handler3 %d' % time.time()
         span.set_baggage_item(BAGGAGE_KEY, baggage)
+        if not enabled:
+            span.set_tag('sampling.priority', 0)
         with span:  # use span as context manager so that it's always finished
             response_future = None
             with tchannel.context_provider.span_in_context(span):
                 if transport == 'tchannel':
-                    response_future = tchannel.json(
-                        service='test-client',
-                        endpoint=endpoint,
-                        hostport=mock_server.hostport,
-                        trace=True,
-                        body=mock_server.hostport,
-                    )
+                    if encoding == 'json':
+                        response_future = tchannel.json(
+                            service='test-client',
+                            endpoint=endpoint,
+                            hostport=mock_server.hostport,
+                            body=mock_server.hostport,
+                        )
+                    elif encoding == 'thrift':
+                        response_future = tchannel.thrift(
+                            thrift_service.X.thrift1(mock_server.hostport),
+                            hostport=mock_server.hostport,
+                        )
+                    else:
+                        raise ValueError('wrong encoding %s' % encoding)
                 elif transport == 'http':
                     response_future = http_client.fetch(
                         request=HTTPRequest(
@@ -287,22 +311,26 @@ def test_trace_propagation(endpoint, transport, enabled, expect_spans,
     body = response.body
     assert body == baggage
 
+    def get_sampled_spans():
+        return [s for s in tracer.recorder.get_spans() if s.context.sampled]
+
     # Sometimes the test runs into weird race condition where the
     # after_send_response() hook is executed, but the span is not yet
     # recorded. To prevent flaky test runs we check and wait until
     # all spans are recorded, for up to 1 second.
     for i in range(0, 1000):
-        spans = tracer.recorder.get_spans()
-        if len(spans) == expect_spans:
+        spans = get_sampled_spans()
+        if len(spans) >= expect_spans:
             break
         yield tornado.gen.sleep(0.001)  # yield execution and sleep for 1ms
 
-    spans = tracer.recorder.get_spans()
+    spans = get_sampled_spans()
     print ''
     for span in spans:
         print 'SPAN: %s %s' % (span.operation_name, span)
-    assert expect_spans == len(spans)
+    assert expect_spans == len(spans), 'Unexpected number of spans reported'
     # We expect all trace IDs in collected spans to be the same
+    spans = tracer.recorder.get_spans()
     trace_id = spans[0].context.trace_id
     for i in range(1, len(spans)):
         assert trace_id == spans[i].context.trace_id, 'span #%d' % i
