@@ -193,15 +193,18 @@ class HttpHandler(tornado.web.RequestHandler):
                 span.finish()
 
 
-@pytest.mark.parametrize('endpoint,transport,expect_spans', [
-    ('endpoint1', 'tchannel', 5),  # tchannel->tchannel
-    ('endpoint3', 'tchannel', 5),  # tchannel->http
-    ('/', 'http', 5),  # http->tchannel
+@pytest.mark.parametrize('endpoint,transport,enabled,expect_spans', [
+    ('endpoint1', 'tchannel', True,  5),  # tchannel->tchannel
+    ('endpoint1', 'tchannel', False, 5),
+    ('endpoint3', 'tchannel', True,  5),  # tchannel->http
+    ('endpoint3', 'tchannel', False, 5),
+    ('/',         'http',     True,  5),  # http->tchannel
+    ('/',         'http',     False, 5),
 ])
 @pytest.mark.gen_test
-def test_trace_mixed(endpoint, transport, expect_spans,
-                     http_patchers, tracer, mock_server,
-                     app, http_server, base_url, http_client):
+def test_trace_propagation(endpoint, transport, enabled, expect_spans,
+                           http_patchers, tracer, mock_server,
+                           app, http_server, base_url, http_client):
     """
     Main TChannel-OpenTracing integration test, using basictracer as
     implementation of OpenTracing API.
@@ -449,3 +452,68 @@ def test_trace_mixed(endpoint, transport, expect_spans,
 #                 )
 #             response = yield response_future
 #         assert span.context.trace_id == long(response.body)
+
+@pytest.mark.gen_test
+def test_trace_over_json(tracer):
+    """Simple test to verify trace propagation via JSON encoding"""
+    server = TChannel('server', tracer=tracer)
+    server.listen()
+
+    @server.json.register('foo')
+    def handler(request):
+        assert request.headers['header1'] == 'header-value1'
+        sp = server.context_provider.get_current_span()
+        baggage = sp.get_baggage_item('bender') if sp else None
+        return {'bender': baggage}
+
+    client = TChannel('client', known_peers=[server.hostport], tracer=tracer)
+
+    span = tracer.start_span('root')
+    span.set_baggage_item('bender', 'is great')
+    with client.context_provider.span_in_context(span):
+        res = client.json(
+            service='service',
+            endpoint='foo',
+            body={},
+            headers={'header1': 'header-value1'},
+        )
+    res = yield res  # cannot yield in StackContext
+    assert res.body == {'bender': 'is great'}
+
+from tchannel import TChannel, schemes
+from tchannel.errors import BadRequestError
+from tchannel.event import EventHook
+
+
+@pytest.mark.gen_test
+def test_tracing_field_in_error_message():
+    tchannel = TChannel('test')
+
+    class ErrorEventHook(EventHook):
+        def __init__(self):
+            self.request_trace = None
+            self.error_trace = None
+
+        def before_receive_request(self, request):
+            self.request_trace = request.tracing
+
+        def after_send_error(self, error):
+            self.error_trace = error.tracing
+
+    hook = ErrorEventHook()
+    tchannel.hooks.register(hook)
+
+    tchannel.listen()
+
+    with pytest.raises(BadRequestError):
+        yield tchannel.call(
+            scheme=schemes.RAW,
+            service='test',
+            arg1='endpoint',
+            hostport=tchannel.hostport,
+            timeout=0.02,
+        )
+
+    assert hook.error_trace
+    assert hook.request_trace
+    assert hook.error_trace == hook.request_trace

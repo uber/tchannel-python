@@ -145,7 +145,17 @@ class ClientTracer(object):
                 log.exception('Failed to inject tracing span into headers')
         return span, headers
 
-    def apply_trace_flag(self, span, traceflag):
-        traceflag = traceflag() if callable(traceflag) else traceflag
-        if traceflag is False and span:
-            span.set_tag(ext_tags.SAMPLING_PRIORITY, 0)
+
+def apply_trace_flag(span, trace, default_trace):
+    """
+    If ``trace`` (or ``default_trace``) is False, disables tracing on ``span``.
+    :param span:
+    :param trace:
+    :param default_trace:
+    :return:
+    """
+    if trace is None:
+        trace = default_trace
+    trace = trace() if callable(trace) else trace
+    if trace is False and span:
+        span.set_tag(ext_tags.SAMPLING_PRIORITY, 0)

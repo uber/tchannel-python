@@ -25,8 +25,9 @@ from __future__ import (
 import json
 import logging
 
-from opentracing.ext import tags as ext_tags
 from threading import Lock
+
+from tchannel import tracing
 from tornado import gen
 
 from . import schemes
@@ -187,11 +188,7 @@ class TChannel(object):
 
         # TODO - allow filters/steps for serialization, tracing, etc...
 
-        if trace is None:
-            trace = self._dep_tchannel.trace
-        trace = trace() if callable(trace) else trace
-        if not trace and tracing_span:
-            tracing_span.set_tag(ext_tags.SAMPLING_PRIORITY, 0)
+        tracing.apply_trace_flag(tracing_span, trace, self._dep_tchannel.trace)
 
         # calls tchannel.tornado.peer.PeerClientOperation.__init__
         operation = self._dep_tchannel.request(
