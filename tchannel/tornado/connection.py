@@ -310,7 +310,13 @@ class TornadoConnection(object):
 
     def close(self):
         if not self.closed:
-            self.connection.close()
+            # TODO this is a temporary fix against "socket is None" error
+            # that randomly happens in vcr-related tests.
+            # https://github.com/uber/tchannel-python/issues/416
+            try:
+                self.connection.close()
+            except:
+                log.exception('Error when closing connection')
             self.closed = True
 
     @tornado.gen.coroutine
