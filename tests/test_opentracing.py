@@ -43,7 +43,9 @@ from opentracing_instrumentation.request_context import (
     span_in_stack_context,
     get_current_span
 )
-from tchannel import Response, thrift
+from tchannel import Response, thrift, TChannel, schemes
+from tchannel.errors import BadRequestError
+from tchannel.event import EventHook
 from tornado import netutil
 from tornado.httpclient import HTTPRequest
 
@@ -419,7 +421,7 @@ def test_trace_propagation(
 #     with mock.patch('opentracing.tracer', tracer):
 #         assert opentracing.tracer == tracer  # sanity check that patch worked
 #         span = tracer.start_span('root')
-#         with span:  # use span as context manager so that it's always finished
+#        with span:  # use span as context manager so that it's always finished
 #             wrapper = SpanWrapper(span=span)
 #             with context_provider.request_context(wrapper):
 #                 response_future = tchannel.raw(
@@ -458,10 +460,6 @@ def test_trace_over_json(tracer):
         )
     res = yield res  # cannot yield in StackContext
     assert res.body == {'bender': 'is great'}
-
-from tchannel import TChannel, schemes
-from tchannel.errors import BadRequestError
-from tchannel.event import EventHook
 
 
 @pytest.mark.gen_test

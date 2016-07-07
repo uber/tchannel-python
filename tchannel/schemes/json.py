@@ -23,12 +23,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import opentracing
 from tornado import gen
-
 from . import JSON
 from ..serializer.json import JsonSerializer
 from ..tracing import ClientTracer
+
 
 class JsonArgScheme(object):
     """Semantic params and serialization for json."""
