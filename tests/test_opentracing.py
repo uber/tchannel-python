@@ -21,7 +21,6 @@
 from __future__ import absolute_import
 
 import socket
-import threading
 import time
 import traceback
 import urllib
@@ -111,25 +110,37 @@ def register(tchannel, thrift_service, http_client, base_url):
     @tchannel.thrift.register(thrift_service.X, method='thrift1')
     @tornado.gen.coroutine
     def thrift1(request):
-        host_port = request.body
-        res = yield tchannel.json(
-            service='handler2',
+        host_port = request.body.hostport
+        res = yield tchannel.thrift(
+            thrift_service.X.thrift2(),
             hostport=host_port,
-            endpoint="endpoint2",
         )
-
         raise tornado.gen.Return(Response(res.body))
 
     @tchannel.json.register('endpoint2')
     def handler2(_):
+        return _extract_span()
+
+    @tchannel.thrift.register(thrift_service.X, method='thrift2')
+    def thrift2(_):
+        return _extract_span()
+
+    def _extract_span():
         span = get_current_span()
         if span:
             return span.get_baggage_item(BAGGAGE_KEY)
         return "baggage not found"
 
     @tchannel.json.register('endpoint3')
-    @tornado.gen.coroutine
     def handler3(_):
+        return _call_http()
+
+    @tchannel.thrift.register(thrift_service.X, method='thrift3')
+    def thrift3(_):
+        return _call_http()
+
+    @tornado.gen.coroutine
+    def _call_http():
         response = yield http_client.fetch(base_url)
         if response.code != 200:
             raise Exception('Downstream http service returned code=%s: %s' % (
@@ -202,13 +213,20 @@ class HttpHandler(tornado.web.RequestHandler):
 
 
 @pytest.mark.parametrize('endpoint,transport,encoding,enabled,expect_spans', [
-    ('endpoint1', 'tchannel', 'json',   True,  5),  # tchannel->tchannel/json
+    # tchannel(json)->tchannel(json)
+    ('endpoint1', 'tchannel', 'json',   True,  5),
     ('endpoint1', 'tchannel', 'json',   False, 0),
-    # ('thrift1',   'tchannel', 'thrift', True,  5),  # tchannel->tchannel/thrift
-    # ('thrift1',   'tchannel', 'thrift', False, 5),
-    ('endpoint3', 'tchannel', 'json',   True,  5),  # tchannel->http
+    # tchannel(thrift)->tchannel(thrift)
+    ('thrift1',   'tchannel', 'thrift', True,  5),
+    ('thrift1',   'tchannel', 'thrift', False, 0),
+    # tchannel(json)->http(json)
+    ('endpoint3', 'tchannel', 'json',   True,  5),
     ('endpoint3', 'tchannel', 'json',   False, 0),
-    ('/',         'http',     'json',   True,  5),  # http->tchannel
+    # tchannel(thrift)->http(json)
+    ('thrift3',   'tchannel', 'thrift', True,  5),
+    ('thrift3',   'tchannel', 'thrift', False, 0),
+    # http->tchannel
+    ('/',         'http',     'json',   True,  5),
     ('/',         'http',     'json',   False, 0),
 ])
 @pytest.mark.gen_test
@@ -334,73 +352,6 @@ def test_trace_propagation(
     trace_id = spans[0].context.trace_id
     for i in range(1, len(spans)):
         assert trace_id == spans[i].context.trace_id, 'span #%d' % i
-
-
-# @pytest.mark.parametrize('method,args,expected_count', [
-#     ('before_send_request', {'request': None}, 1),
-#     ('after_receive_response', {'request': None, 'response': None}, 1),
-#     ('after_receive_error', {'request': None, 'error': None}, 1),
-#     ('before_receive_request', {'request': None}, 2),
-#     ('after_send_response', {'response': None}, 1),
-#     ('after_send_error', {'error': None}, 1),
-# ])
-# def test_top_level_exceptions(method, args, expected_count):
-#     log_exception_fn = mock.Mock()
-#     hook = OpenTracingHook(context_provider=None, tracer='x',
-#                            log_exception_fn=log_exception_fn)
-#     m = getattr(hook, method)
-#     m(**args)
-#     assert log_exception_fn.call_count == expected_count
-
-
-# def test_get_current_span():
-#     """Test various permutations of getting a span from the context."""
-#     context_provider = OpenTracingRequestContextProvider()
-#     hook = OpenTracingHook(context_provider=context_provider)
-#
-#     assert hook._get_current_span() is None, 'no context'
-#
-#     import opentracing_instrumentation.request_context as otrc
-#     with mock.patch.object(hook.context_provider, 'get_current_context',
-#                            side_effect=[otrc.RequestContext(span=None)]):
-#         assert hook._get_current_span() is None, \
-#             'context without span or parent_context attributes'
-#
-#     with context_provider.request_context(
-#             parent_tracing=MockRequestContext(span='123')):
-#         assert hook._get_current_span() is '123', 'context with span attr'
-#
-#     hook = OpenTracingHook(context_provider=RequestContextProvider())
-#     with hook.context_provider.request_context(
-#             parent_tracing=SpanWrapper(span='567')):
-#         assert hook._get_current_span() is '567', \
-#             'context with parent_tracing attr but without span attr inside'
-
-
-# def test_after_receive_error():
-#     hook = OpenTracingHook(context_provider=None)
-#     span = mock.Mock()
-#     with mock.patch(
-#             'tchannel.tracing.opentracing.SpanWrapper.get_span',
-#             side_effect=[span]):
-#         with mock.patch.object(span, 'set_tag') as set_tag, \
-#                 mock.patch.object(span, 'finish') as finish:
-#             hook.after_receive_error(request=mock.Mock(), error='abc')
-#             assert set_tag.call_count == 2
-#             assert finish.call_count == 1
-#
-#
-# def test_after_send_error():
-#     hook = OpenTracingHook(context_provider=None)
-#     span = mock.Mock()
-#     with mock.patch(
-#             'tchannel.tracing.opentracing.SpanWrapper.get_span',
-#             side_effect=[span]):
-#         with mock.patch.object(span, 'set_tag') as set_tag, \
-#                 mock.patch.object(span, 'finish') as finish:
-#             hook.after_send_error(error=mock.Mock())
-#             assert set_tag.call_count == 2
-#             assert finish.call_count == 1
 
 
 # @pytest.mark.parametrize('ex_cls,start_span', [
