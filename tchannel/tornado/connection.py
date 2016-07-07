@@ -310,7 +310,10 @@ class TornadoConnection(object):
 
     def close(self):
         if not self.closed:
-            self.connection.close()
+            try:
+                self.connection.close()
+            except:
+                log.exception('Error when closing connection')
             self.closed = True
 
     @tornado.gen.coroutine
