@@ -25,7 +25,7 @@ import logging
 import opentracing
 import opentracing_instrumentation
 
-from opentracing.ext import tags as ext_tags
+from opentracing.ext import tags
 from tchannel.messages import common
 
 
@@ -103,7 +103,7 @@ class ServerTracer(object):
         """
         pass  # TODO(ys) implement start_basic_span
 
-    def start_span(self, request, headers):
+    def start_span(self, request, headers, peer_host, peer_port):
         """
         Starts a new server-side span. If the span has already been started
         by `start_basic_span`, this method only adds baggage from the headers.
@@ -114,12 +114,11 @@ class ServerTracer(object):
         if self.span:
             # TODO(ys) if self.span is already defined, merge baggage into it
             return self.span
-        operation_name = '%s:%s' % (request.service, request.endpoint)
         # noinspection PyBroadException
         try:
             if headers:
                 self.span = self.tracer.join(
-                    operation_name=operation_name,
+                    operation_name=request.endpoint,
                     format=opentracing.Format.TEXT_MAP,
                     carrier=headers
                 )
@@ -127,8 +126,17 @@ class ServerTracer(object):
             log.exception('Cannot extract tracing span from headers')
         if not self.span:
             self.span = self.tracer.start_span(
-                operation_name=operation_name
+                operation_name=request.endpoint
             )
+        self.span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_SERVER)
+        if 'cn' in request.headers:
+            self.span.set_tag(tags.PEER_SERVICE, request.headers['cn'])
+        if peer_host:
+            self.span.set_tag(tags.PEER_HOST_IPV4, peer_host)
+        if peer_port:
+            self.span.set_tag(tags.PEER_PORT, peer_port)
+        if 'as' in request.headers:
+            self.span.set_tag('as', request.headers['as'])
         return self.span
 
 
@@ -140,12 +148,18 @@ class ClientTracer(object):
     def __init__(self, channel):
         self.channel = channel
 
-    def start_span(self, service, endpoint, headers):
+    def start_span(self, service, endpoint, headers,
+                   hostport=None, encoding=None):
         parent_span = self.channel.context_provider.get_current_span()
         span = self.channel.tracer.start_span(
-            operation_name='%s:%s' % (service, endpoint),
+            operation_name=endpoint,
             parent=parent_span
         )
+        span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
+        span.set_tag(tags.PEER_SERVICE, service)
+        set_peer_host_port(span, hostport)
+        if encoding:
+            span.set_tag('as', encoding)
 
         if headers is None:
             headers = {}
@@ -157,6 +171,17 @@ class ClientTracer(object):
             except:
                 log.exception('Failed to inject tracing span into headers')
         return span, headers
+
+
+def set_peer_host_port(span, hostport):
+    if hostport:
+        # noinspection PyBroadException
+        try:
+            host, port = hostport.split(':')
+            span.set_tag(tags.PEER_HOST_IPV4, host)
+            span.set_tag(tags.PEER_PORT, port)
+        except:
+            pass
 
 
 def span_to_tracing_field(span):
@@ -178,4 +203,4 @@ def apply_trace_flag(span, trace, default_trace):
         trace = default_trace
     trace = trace() if callable(trace) else trace
     if trace is False and span:
-        span.set_tag(ext_tags.SAMPLING_PRIORITY, 0)
+        span.set_tag(tags.SAMPLING_PRIORITY, 0)

@@ -123,9 +123,8 @@ class ThriftArgScheme(object):
             headers = {}
 
         span, headers = self.tracer.start_span(
-            service=request.service,
-            endpoint=request.endpoint,
-            headers=headers
+            service=request.service, endpoint=request.endpoint,
+            headers=headers, hostport=hostport, encoding='thrift'
         )
 
         serializer = request.get_serializer()

@@ -199,7 +199,11 @@ class RequestDispatcher(object):
                     service=request.service,
                     timeout=request.ttl,
                 )
-                with tracer.start_span(request=request, headers=he) as span:
+                with tracer.start_span(
+                    request=request, headers=he,
+                    peer_host=connection.remote_host,
+                    peer_port=connection.remote_host_port
+                ) as span:
                     context_provider = tchannel.context_provider_fn()
                     with context_provider.span_in_context(span):
                         # Cannot yield while inside the StackContext
@@ -219,7 +223,11 @@ class RequestDispatcher(object):
 
             # Dep impl - the handler is provided with a req & resp writer
             else:
-                with tracer.start_span(request=request, headers={}) as span:
+                with tracer.start_span(
+                    request=request, headers={},
+                    peer_host=connection.remote_host,
+                    peer_port=connection.remote_host_port
+                ) as span:
                     context_provider = tchannel.context_provider_fn()
                     with context_provider.span_in_context(span):
                         # Cannot yield while inside the StackContext

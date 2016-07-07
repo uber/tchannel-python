@@ -20,6 +20,7 @@
 
 from __future__ import absolute_import
 
+import json
 import socket
 import time
 import traceback
@@ -35,6 +36,7 @@ import tornado.web
 from basictracer import BasicTracer
 from basictracer.recorder import InMemoryRecorder
 from opentracing import Format
+from opentracing.ext import tags
 from opentracing_instrumentation.client_hooks.tornado_http import (
     install_patches,
     reset_patchers
@@ -345,15 +347,11 @@ def test_trace_propagation(
         yield tornado.gen.sleep(0.001)  # yield execution and sleep for 1ms
 
     spans = get_sampled_spans()
-    print ''
-    for span in spans:
-        print 'SPAN: %s %s' % (span.operation_name, span)
     assert expect_spans == len(spans), 'Unexpected number of spans reported'
     # We expect all trace IDs in collected spans to be the same
     spans = tracer.recorder.get_spans()
-    trace_id = spans[0].context.trace_id
-    for i in range(1, len(spans)):
-        assert trace_id == spans[i].context.trace_id, 'span #%d' % i
+    assert 1 == len(set([s.context.trace_id for s in spans])), \
+        'all spans must have the same trace_id'
 
 
 # @pytest.mark.parametrize('ex_cls,start_span', [
@@ -434,32 +432,77 @@ def test_trace_propagation(
 #             response = yield response_future
 #         assert span.context.trace_id == long(response.body)
 
+
+@pytest.mark.parametrize('encoding,operation', [
+    ('json', 'foo'),
+    ('thrift', 'X::thrift2'),
+])
 @pytest.mark.gen_test
-def test_trace_over_json(tracer):
-    """Simple test to verify trace propagation via JSON encoding"""
+def test_span_tags(encoding, operation, tracer, thrift_service):
     server = TChannel('server', tracer=tracer)
     server.listen()
 
-    @server.json.register('foo')
-    def handler(request):
-        assert request.headers['header1'] == 'header-value1'
+    def get_span_baggage():
         sp = server.context_provider.get_current_span()
         baggage = sp.get_baggage_item('bender') if sp else None
         return {'bender': baggage}
 
-    client = TChannel('client', known_peers=[server.hostport], tracer=tracer)
+    @server.json.register('foo')
+    def handler(_):
+        return get_span_baggage()
+
+    @server.thrift.register(thrift_service.X, method='thrift2')
+    def thrift2(_):
+        return json.dumps(get_span_baggage())
+
+    client = TChannel('client', tracer=tracer)
 
     span = tracer.start_span('root')
     span.set_baggage_item('bender', 'is great')
-    with client.context_provider.span_in_context(span):
-        res = client.json(
-            service='service',
-            endpoint='foo',
-            body={},
-            headers={'header1': 'header-value1'},
-        )
-    res = yield res  # cannot yield in StackContext
-    assert res.body == {'bender': 'is great'}
+    with span:
+        res = None
+        with client.context_provider.span_in_context(span):
+            if encoding == 'json':
+                res = client.json(
+                    service='test-service',  # match thrift_service name
+                    endpoint='foo',
+                    body={},
+                    hostport=server.hostport,
+                )
+            elif encoding == 'thrift':
+                res = client.thrift(
+                    thrift_service.X.thrift2(),
+                    hostport=server.hostport,
+                )
+            else:
+                raise ValueError('Unknown encoding %s' % encoding)
+        res = yield res  # cannot yield in StackContext
+    res = res.body
+    if isinstance(res, basestring):
+        res = json.loads(res)
+    assert res == {'bender': 'is great'}
+    spans = tracer.recorder.get_spans()
+    assert len(spans) == 3
+    assert 1 == len(set([s.context.trace_id for s in spans])), \
+        'all spans must have the same trace_id'
+    parent = child = None
+    for s in spans:
+        if s.tags is None:
+            continue
+        if s.tags.get(tags.SPAN_KIND, None) == tags.SPAN_KIND_RPC_SERVER:
+            child = s
+        elif s.tags.get(tags.SPAN_KIND, None) == tags.SPAN_KIND_RPC_CLIENT:
+            parent = s
+    assert parent is not None
+    assert child is not None
+    assert parent.operation_name == operation
+    assert child.operation_name == operation
+    assert parent.tags.get(tags.PEER_SERVICE) == 'test-service'
+    assert child.tags.get(tags.PEER_SERVICE) == 'client'
+    assert parent.tags.get(tags.PEER_HOST_IPV4) is not None
+    assert child.tags.get(tags.PEER_HOST_IPV4) is not None
+    assert parent.tags.get('as') == encoding
+    assert child.tags.get('as') == encoding
 
 
 @pytest.mark.gen_test

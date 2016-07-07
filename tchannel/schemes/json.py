@@ -103,7 +103,8 @@ class JsonArgScheme(object):
         """
 
         span, headers = self.tracer.start_span(
-            service=service, endpoint=endpoint, headers=headers
+            service=service, endpoint=endpoint, headers=headers,
+            hostport=hostport, encoding='json'
         )
 
         # serialize
