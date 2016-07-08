@@ -186,9 +186,9 @@ class Cassette(object):
                 data = f.read()
                 self.existed = True
                 file_hash = sha256(data).hexdigest()
-                if (self.path, file_hash) in self._cache:
-                    self._available = \
-                        deepcopy(self._cache[(self.path, file_hash)])
+                cached = self._cache.get((self.path, file_hash))
+                if cached is not None:
+                    self._available = deepcopy(cached)
                     return
         except IOError:
             return  # nothing to read
