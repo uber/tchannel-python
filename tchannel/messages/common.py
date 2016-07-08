@@ -67,15 +67,16 @@ tracing_rw = rw.instance(
 )
 
 
+# TODO: cython
+def _uniq_id():
+    """Create a random 64-bit unsigned long."""
+    return random.getrandbits(64)
+
+
 def random_tracing():
     """
     Create new Tracing() tuple with random IDs.
     """
-
-    def _uniq_id():  # TODO: cython
-        """Create a random 64-bit unsigned long."""
-        return random.getrandbits(64)
-
     return Tracing(
         span_id=_uniq_id(),
         parent_id=0,
