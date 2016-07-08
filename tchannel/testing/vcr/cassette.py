@@ -25,6 +25,8 @@ import os.path
 from itertools import chain
 from collections import deque
 from collections import namedtuple
+from copy import deepcopy
+from hashlib import sha256
 
 from . import yaml
 from .exceptions import RequestNotFoundError
@@ -86,7 +88,9 @@ DEFAULT_MATCHERS = (
 class Cassette(object):
     """Represents a series of recorded interactions."""
 
-    def __init__(self, path, record_mode=None, matchers=None):
+    _cache = {} # cache for interactions loaded from yaml files
+
+    def __init__(self, path, record_mode=None, matchers=None, serializer=None):
         """Initialize a new cassette.
 
         :param path:
@@ -110,6 +114,10 @@ class Cassette(object):
         # this was a new cassette and the YAML file did not exist.
         self.existed = False
 
+        if serializer is None:
+            serializer = yaml
+        self.serializer = serializer
+
         if matchers is None:
             matchers = DEFAULT_MATCHERS
 
@@ -124,6 +132,7 @@ class Cassette(object):
         self._available = deque()
         self._played = deque()
         self._recorded = deque()
+        self._cache = Cassette._cache
 
         self._load()
 
@@ -168,14 +177,19 @@ class Cassette(object):
                 yield interaction
 
     def _load(self):
+        file_hash = None
         try:
             with open(self.path, 'rb') as f:
                 data = f.read()
                 self.existed = True
+                file_hash = sha256(data).hexdigest()
+                if (self.path, file_hash) in self._cache:
+                    self._available = deepcopy(self._cache[(self.path, file_hash)])
+                    return
         except IOError:
             return  # nothing to read
 
-        data = yaml.load(data)
+        data = self.serializer.load(data)
         if not (data and 'interactions' in data):
             return  # file was probably empty
 
@@ -188,6 +202,8 @@ class Cassette(object):
         self._available = [
             Interaction.to_native(i) for i in data['interactions']
         ]
+        if file_hash is not None:
+            self._cache[(self.path, file_hash)] = deepcopy(self._available)
 
     def save(self):
         if not self._recorded:
