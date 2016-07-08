@@ -531,7 +531,7 @@ def test_tracing_field_in_error_message():
             service='test',
             arg1='endpoint',
             hostport=tchannel.hostport,
-            timeout=0.02,
+            timeout=1.0,  # used to be 0.02, but was unstable in Travis
         )
 
     assert hook.error_trace
