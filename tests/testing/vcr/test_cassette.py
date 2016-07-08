@@ -229,4 +229,3 @@ def test_interactions_cache(path):
         assert not mock_serializer.load.called
         assert len(Cassette._cache) == 1
         assert len(cass._available) == 1
-

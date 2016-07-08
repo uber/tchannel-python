@@ -88,7 +88,7 @@ DEFAULT_MATCHERS = (
 class Cassette(object):
     """Represents a series of recorded interactions."""
 
-    _cache = {} # cache for interactions loaded from yaml files
+    _cache = {}  # cache for interactions loaded from yaml files
 
     def __init__(self, path, record_mode=None, matchers=None, serializer=None):
         """Initialize a new cassette.
@@ -184,7 +184,8 @@ class Cassette(object):
                 self.existed = True
                 file_hash = sha256(data).hexdigest()
                 if (self.path, file_hash) in self._cache:
-                    self._available = deepcopy(self._cache[(self.path, file_hash)])
+                    self._available = \
+                        deepcopy(self._cache[(self.path, file_hash)])
                     return
         except IOError:
             return  # nothing to read
