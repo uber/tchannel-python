@@ -102,6 +102,9 @@ class Cassette(object):
             If specified, this is a collection of matcher names. These
             specify which attributes on two requests should match for them to
             be considered equal.
+        :param serializer:
+            An object with a ``dump(obj)`` and a ``load(str)`` method used to
+            serialize and deserialize the cassette.
         """
         # TODO move documentation around
         record_mode = record_mode or RecordMode.ONCE
@@ -220,7 +223,7 @@ class Cassette(object):
             interactions.extend(self._available)
         interactions.extend(self._recorded)
 
-        data = yaml.dump(
+        data = self.serializer.dump(
             {
                 'interactions': [i.to_primitive() for i in interactions],
                 'version': VERSION,
