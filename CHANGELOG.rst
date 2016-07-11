@@ -4,7 +4,8 @@ Changes by Version
 0.25.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Modified VCR cassette class to cache interactions loaded from fixture files
+  to avoid loading/parsing the same file multiple times during a test run
 
 
 0.25.1 (2016-06-30)

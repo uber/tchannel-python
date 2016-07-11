@@ -25,6 +25,8 @@ import os.path
 from itertools import chain
 from collections import deque
 from collections import namedtuple
+from copy import deepcopy
+from hashlib import sha256
 
 from . import yaml
 from .exceptions import RequestNotFoundError
@@ -86,7 +88,9 @@ DEFAULT_MATCHERS = (
 class Cassette(object):
     """Represents a series of recorded interactions."""
 
-    def __init__(self, path, record_mode=None, matchers=None):
+    _cache = {}  # cache for interactions loaded from yaml files
+
+    def __init__(self, path, record_mode=None, matchers=None, serializer=None):
         """Initialize a new cassette.
 
         :param path:
@@ -98,6 +102,9 @@ class Cassette(object):
             If specified, this is a collection of matcher names. These
             specify which attributes on two requests should match for them to
             be considered equal.
+        :param serializer:
+            An object with a ``dump(obj)`` and a ``load(str)`` method used to
+            serialize and deserialize the cassette.
         """
         # TODO move documentation around
         record_mode = record_mode or RecordMode.ONCE
@@ -109,6 +116,10 @@ class Cassette(object):
         # Whether the cassette was loaded from an existing YAML. If False,
         # this was a new cassette and the YAML file did not exist.
         self.existed = False
+
+        if serializer is None:
+            serializer = yaml
+        self.serializer = serializer
 
         if matchers is None:
             matchers = DEFAULT_MATCHERS
@@ -124,6 +135,7 @@ class Cassette(object):
         self._available = deque()
         self._played = deque()
         self._recorded = deque()
+        self._cache = Cassette._cache
 
         self._load()
 
@@ -168,14 +180,20 @@ class Cassette(object):
                 yield interaction
 
     def _load(self):
+        file_hash = None
         try:
             with open(self.path, 'rb') as f:
                 data = f.read()
                 self.existed = True
+                file_hash = sha256(data).hexdigest()
+                cached = self._cache.get((self.path, file_hash))
+                if cached is not None:
+                    self._available = deepcopy(cached)
+                    return
         except IOError:
             return  # nothing to read
 
-        data = yaml.load(data)
+        data = self.serializer.load(data)
         if not (data and 'interactions' in data):
             return  # file was probably empty
 
@@ -188,6 +206,8 @@ class Cassette(object):
         self._available = [
             Interaction.to_native(i) for i in data['interactions']
         ]
+        if file_hash is not None:
+            self._cache[(self.path, file_hash)] = deepcopy(self._available)
 
     def save(self):
         if not self._recorded:
@@ -203,7 +223,7 @@ class Cassette(object):
             interactions.extend(self._available)
         interactions.extend(self._recorded)
 
-        data = yaml.dump(
+        data = self.serializer.dump(
             {
                 'interactions': [i.to_primitive() for i in interactions],
                 'version': VERSION,
