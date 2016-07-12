@@ -30,7 +30,7 @@ from tchannel.deprecate import deprecated
 from tchannel.errors import OneWayNotSupportedError
 
 from ..serializer.thrift import ThriftSerializer
-from ..import tracing
+from .. import tracing
 from .reflection import get_service_methods
 
 # Generated clients will use this base class.
