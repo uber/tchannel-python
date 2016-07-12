@@ -132,7 +132,7 @@ def register(tchannel, thrift_service, http_client, base_url):
     def _extract_span():
         span = get_current_span()
         if span:
-            return span.get_baggage_item(BAGGAGE_KEY)
+            return span.context.get_baggage_item(BAGGAGE_KEY)
         return "baggage not found"
 
     @tchannel.json.register('endpoint3')
@@ -172,7 +172,12 @@ class HttpHandler(tornado.web.RequestHandler):
             carrier = {}
             for k, v in self.request.headers.iteritems():
                 carrier[k] = urllib.unquote(v)
-            span = opentracing.tracer.join('server', Format.TEXT_MAP, carrier)
+            span_ctx = opentracing.tracer.extract(Format.TEXT_MAP, carrier)
+            if span_ctx:
+                span = opentracing.tracer.start_span(
+                    operation_name='server',
+                    references=opentracing.ChildOf(span_ctx)
+                )
         except Exception as e:
             self.write('ERROR: %s' % e)
             self.set_status(200)
@@ -187,7 +192,7 @@ class HttpHandler(tornado.web.RequestHandler):
     def get(self):
         span = self._get_span()
         if span:
-            self.write(span.get_baggage_item(BAGGAGE_KEY))
+            self.write(span.context.get_baggage_item(BAGGAGE_KEY))
             self.set_status(200)
             span.finish()
 
@@ -296,7 +301,7 @@ def test_trace_propagation(
 
         span = tracer.start_span('root')
         baggage = 'from handler3 %d' % time.time()
-        span.set_baggage_item(BAGGAGE_KEY, baggage)
+        span.context.set_baggage_item(BAGGAGE_KEY, baggage)
         if not enabled:
             span.set_tag('sampling.priority', 0)
         with span:  # use span as context manager so that it's always finished
@@ -444,7 +449,7 @@ def test_span_tags(encoding, operation, tracer, thrift_service):
 
     def get_span_baggage():
         sp = server.context_provider.get_current_span()
-        baggage = sp.get_baggage_item('bender') if sp else None
+        baggage = sp.context.get_baggage_item('bender') if sp else None
         return {'bender': baggage}
 
     @server.json.register('foo')
@@ -458,7 +463,7 @@ def test_span_tags(encoding, operation, tracer, thrift_service):
     client = TChannel('client', tracer=tracer)
 
     span = tracer.start_span('root')
-    span.set_baggage_item('bender', 'is great')
+    span.context.set_baggage_item('bender', 'is great')
     with span:
         res = None
         with client.context_provider.span_in_context(span):

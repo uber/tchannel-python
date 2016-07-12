@@ -115,19 +115,21 @@ class ServerTracer(object):
             # TODO(ys) if self.span is already defined, merge baggage into it
             return self.span
         # noinspection PyBroadException
+        parent_ref = None
         try:
             if headers:
-                self.span = self.tracer.join(
-                    operation_name=request.endpoint,
+                parent = self.tracer.extract(
                     format=opentracing.Format.TEXT_MAP,
                     carrier=headers
                 )
+                if parent:
+                    parent_ref = opentracing.ChildOf(parent)
         except:
             log.exception('Cannot extract tracing span from headers')
-        if not self.span:
-            self.span = self.tracer.start_span(
-                operation_name=request.endpoint
-            )
+        self.span = self.tracer.start_span(
+            operation_name=request.endpoint,
+            references=parent_ref
+        )
         self.span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_SERVER)
         if 'cn' in request.headers:
             self.span.set_tag(tags.PEER_SERVICE, request.headers['cn'])
@@ -151,9 +153,11 @@ class ClientTracer(object):
     def start_span(self, service, endpoint, headers,
                    hostport=None, encoding=None):
         parent_span = self.channel.context_provider.get_current_span()
+        parent_ref = None if parent_span is None else opentracing.ChildOf(
+            parent_span.context)
         span = self.channel.tracer.start_span(
             operation_name=endpoint,
-            parent=parent_span
+            references=parent_ref
         )
         span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
         span.set_tag(tags.PEER_SERVICE, service)
@@ -167,7 +171,7 @@ class ClientTracer(object):
             # noinspection PyBroadException
             try:
                 self.channel.tracer.inject(
-                    span, opentracing.Format.TEXT_MAP, headers)
+                    span.context, opentracing.Format.TEXT_MAP, headers)
             except:
                 log.exception('Failed to inject tracing span into headers')
         return span, headers
