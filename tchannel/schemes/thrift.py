@@ -94,11 +94,6 @@ class ThriftArgScheme(object):
         :param float timeout:
             How long to wait (in seconds) before raising a ``TimeoutError`` -
             this defaults to ``tchannel.glossary.DEFAULT_TIMEOUT``.
-        :param string hostport:
-            A 'host:port' value to use when making a request directly to a
-            TChannel service, bypassing Hyperbahn. This value takes precedence
-            over the ``hostport`` specified to
-            :py:func:`tchannel.thrift.load`.
         :param string retry_on:
             What events to retry on - valid values can be found in
             ``tchannel.retry``.
@@ -111,6 +106,15 @@ class ThriftArgScheme(object):
 
             Note that the maximum possible time elapsed for a request is thus
             ``(retry_limit + 1) * timeout``.
+        :param string shard_key:
+            Set the ``sk`` transport header to assist in Ringpop request routing.
+        :param int trace:
+            Flags for tracing.
+        :param string hostport:
+            A 'host:port' value to use when making a request directly to a
+            TChannel service, bypassing Hyperbahn. This value takes precedence
+            over the ``hostport`` specified to
+            :py:func:`tchannel.thrift.load`.
         :param routing_delegate:
             Name of a service to which the request router should forward the
             request instead of the service specified in the call req.
