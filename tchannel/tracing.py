@@ -37,7 +37,7 @@ class TracingContextProvider(object):
     """Tracks the OpenTracing Span currently in effect.
 
     Distributed tracing requires context propagation inside the application,
-    do that outbound (downstream) calls can be part of the same trace as the
+    so that outbound (downstream) calls can be part of the same trace as the
     inbound request.
 
     There are two ways to do this:
@@ -105,10 +105,11 @@ class ServerTracer(object):
 
     def start_span(self, request, headers, peer_host, peer_port):
         """
-        Starts a new server-side span. If the span has already been started
+        Start a new server-side span. If the span has already been started
         by `start_basic_span`, this method only adds baggage from the headers.
-        :param request:
-        :param headers:
+
+        :param request: inbound tchannel.tornado.request.Request
+        :param headers: dictionary containing parsed application headers
         :return:
         """
         if self.span:
