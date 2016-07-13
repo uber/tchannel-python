@@ -39,7 +39,7 @@ thrift==0.9.2
 wrapt>=1.10,<1.11
 
 # OpenTracing reference implementation
-basictracer>=1.0rc2,<1.1
+basictracer==2.0.0.dev1
 
 # Mocks
 mock==1.0.1

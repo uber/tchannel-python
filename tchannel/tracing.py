@@ -124,7 +124,7 @@ class ServerTracer(object):
                     carrier=headers
                 )
                 if parent:
-                    parent_ref = opentracing.ChildOf(parent)
+                    parent_ref = opentracing.child_of(parent)
         except:
             log.exception('Cannot extract tracing span from headers')
         self.span = self.tracer.start_span(
@@ -154,11 +154,10 @@ class ClientTracer(object):
     def start_span(self, service, endpoint, headers,
                    hostport=None, encoding=None):
         parent_span = self.channel.context_provider.get_current_span()
-        parent_ref = None if parent_span is None else opentracing.ChildOf(
-            parent_span.context)
+        parent_ctx = parent_span.context if parent_span else None
         span = self.channel.tracer.start_span(
             operation_name=endpoint,
-            references=parent_ref
+            references=opentracing.child_of(parent_ctx)
         )
         span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
         span.set_tag(tags.PEER_SERVICE, service)
