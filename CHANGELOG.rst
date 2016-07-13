@@ -1,10 +1,11 @@
 Changes by Version
 ==================
 
-0.25.2 (unreleased)
+0.26.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- VCR: ``use_cassette`` now uses cached copies of cassettes if their contents
+  have not changed. This should improve performance for large cassette files.
 
 
 0.25.1 (2016-06-30)
