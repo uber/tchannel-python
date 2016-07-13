@@ -107,7 +107,7 @@ class ThriftArgScheme(object):
             Note that the maximum possible time elapsed for a request is thus
             ``(retry_limit + 1) * timeout``.
         :param string shard_key:
-            Set the ``sk`` transport header to assist in Ringpop request routing.
+            Set the ``sk`` transport header for Ringpop request routing.
         :param int trace:
             Flags for tracing.
         :param string hostport:
