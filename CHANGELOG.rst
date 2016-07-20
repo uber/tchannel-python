@@ -1,10 +1,11 @@
 Changes by Version
 ==================
 
-0.26.1 (unreleased)
+0.27.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Native integration with OpenTracing (for real this time)
+- Replace tcollector and explicit trace reporting with OpenTracing
 
 
 0.26.0 (2016-07-13)
