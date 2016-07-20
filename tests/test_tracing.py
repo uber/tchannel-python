@@ -33,8 +33,8 @@ import tornado
 import tornado.gen
 import tornado.testing
 import tornado.web
-from basictracer import BasicTracer
-from basictracer.recorder import InMemoryRecorder
+from jaeger_client import Tracer, ConstSampler
+from jaeger_client.reporter import InMemoryReporter
 from opentracing import Format
 from opentracing.ext import tags
 from opentracing_instrumentation.client_hooks.tornado_http import (
@@ -69,9 +69,17 @@ tornado.testing.bind_unused_port = patched_bind_unused_port
 
 
 # noinspection PyShadowingNames
-@pytest.fixture
+@pytest.yield_fixture
 def tracer():
-    return BasicTracer(recorder=InMemoryRecorder())
+    tracer = Tracer(
+        service_name='test-tracer',
+        sampler=ConstSampler(True),
+        reporter=InMemoryReporter(),
+    )
+    try:
+        yield tracer
+    finally:
+        tracer.close()
 
 
 @pytest.yield_fixture
@@ -334,7 +342,7 @@ def test_trace_propagation(
     assert body == baggage
 
     def get_sampled_spans():
-        return [s for s in tracer.recorder.get_spans() if s.context.sampled]
+        return [s for s in tracer.reporter.get_spans() if s.is_sampled]
 
     # Sometimes the test runs into weird race condition where the
     # after_send_response() hook is executed, but the span is not yet
@@ -349,9 +357,10 @@ def test_trace_propagation(
     spans = get_sampled_spans()
     assert expect_spans == len(spans), 'Unexpected number of spans reported'
     # We expect all trace IDs in collected spans to be the same
-    spans = tracer.recorder.get_spans()
-    assert 1 == len(set([s.context.trace_id for s in spans])), \
-        'all spans must have the same trace_id'
+    if expect_spans > 0:
+        spans = tracer.reporter.get_spans()
+        assert 1 == len(set([s.trace_id for s in spans])), \
+            'all spans must have the same trace_id'
 
 
 @pytest.mark.parametrize('encoding,operation', [
@@ -376,7 +385,7 @@ def test_span_tags(encoding, operation, tracer, thrift_service):
     def thrift2(_):
         return json.dumps(get_span_baggage())
 
-    client = TChannel('client', tracer=tracer)
+    client = TChannel('client', tracer=tracer, trace=True)
 
     span = tracer.start_span('root')
     span.set_baggage_item('bender', 'is great')
@@ -402,26 +411,34 @@ def test_span_tags(encoding, operation, tracer, thrift_service):
     if isinstance(res, basestring):
         res = json.loads(res)
     assert res == {'bender': 'is great'}
-    spans = tracer.recorder.get_spans()
+    for i in range(1000):
+        spans = tracer.reporter.get_spans()
+        if len(spans) == 3:
+            break
+        yield tornado.gen.sleep(0.001)  # yield execution and sleep for 1ms
+    spans = tracer.reporter.get_spans()
     assert len(spans) == 3
-    assert 1 == len(set([s.context.trace_id for s in spans])), \
+    assert 1 == len(set([s.trace_id for s in spans])), \
         'all spans must have the same trace_id'
     parent = child = None
     for s in spans:
         if s.tags is None:
             continue
-        if s.tags.get(tags.SPAN_KIND, None) == tags.SPAN_KIND_RPC_SERVER:
+        print('tags %s' % s.tags)
+        # replace list with dictionary
+        s.tags = {tag.key: tag.value for tag in s.tags}
+        if s.kind == tags.SPAN_KIND_RPC_SERVER:
             child = s
-        elif s.tags.get(tags.SPAN_KIND, None) == tags.SPAN_KIND_RPC_CLIENT:
+        elif s.kind == tags.SPAN_KIND_RPC_CLIENT:
             parent = s
     assert parent is not None
     assert child is not None
     assert parent.operation_name == operation
     assert child.operation_name == operation
-    assert parent.tags.get(tags.PEER_SERVICE) == 'test-service'
-    assert child.tags.get(tags.PEER_SERVICE) == 'client'
-    assert parent.tags.get(tags.PEER_HOST_IPV4) is not None
-    assert child.tags.get(tags.PEER_HOST_IPV4) is not None
+    assert parent.peer['service_name'] == 'test-service'
+    assert child.peer['service_name'] == 'client'
+    assert parent.peer['ipv4'] is not None
+    assert child.peer['ipv4'] is not None
     assert parent.tags.get('as') == encoding
     assert child.tags.get('as') == encoding
 
