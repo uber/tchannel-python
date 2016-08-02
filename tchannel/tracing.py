@@ -31,6 +31,12 @@ from tchannel.messages import common
 
 log = logging.getLogger('tchannel')
 
+# TRACING_KEY_PREFIX is used to prefix all keys used by the OpenTracing Tracer
+# to represent its trace context and baggage. The prefixing is done in order
+# to distinguish tracing headers from the actual application headers and to
+# hide the former from the user code.
+TRACING_KEY_PREFIX = '$tracing$'
+
 
 # noinspection PyMethodMayBeStatic
 class TracingContextProvider(object):
@@ -118,10 +124,15 @@ class ServerTracer(object):
         # noinspection PyBroadException
         try:
             if headers:
+                tracing_headers = {
+                    k[len(TRACING_KEY_PREFIX):]: v
+                    for k, v in headers.iteritems()
+                    if k.startswith(TRACING_KEY_PREFIX)
+                }
                 self.span = self.tracer.join(
                     operation_name=request.endpoint,
                     format=opentracing.Format.TEXT_MAP,
-                    carrier=headers
+                    carrier=tracing_headers
                 )
         except:
             log.exception('Cannot extract tracing span from headers')
@@ -167,8 +178,11 @@ class ClientTracer(object):
         if isinstance(headers, dict):
             # noinspection PyBroadException
             try:
+                tracing_headers = {}
                 self.channel.tracer.inject(
-                    span, opentracing.Format.TEXT_MAP, headers)
+                    span, opentracing.Format.TEXT_MAP, tracing_headers)
+                for k, v in tracing_headers.iteritems():
+                    headers[TRACING_KEY_PREFIX + k] = v
             except:
                 log.exception('Failed to inject tracing span into headers')
         return span, headers
