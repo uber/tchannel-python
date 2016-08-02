@@ -17,7 +17,7 @@ DefaultClientPort = 8080
 DefaultServerPort = 8081
 
 idl_path = 'crossdock/server/simple-service.thrift'
-simple_service = thrift.load(path=idl_path, service='python')
+thrift_services = {}
 
 
 def serve():
@@ -49,6 +49,14 @@ def register_http_handlers(app):
     ])
 
 
+def get_thrift_service(service_name):
+    if service_name in thrift_services:
+        return thrift_services[service_name]
+    thrift_service = thrift.load(path=idl_path, service=service_name)
+    thrift_services[service_name] = thrift_service
+    return thrift_service
+
+
 def register_tchannel_handlers(tchannel):
     @tchannel.json.register('trace')
     @tornado.gen.coroutine
@@ -57,14 +65,16 @@ def register_tchannel_handlers(tchannel):
         res = yield _process_request(request.body)
         raise tornado.gen.Return(Response(body=res))
 
-    @tchannel.thrift.register(simple_service.SimpleService, method='Call')
+    thrift_service = get_thrift_service(service_name='python')
+
+    @tchannel.thrift.register(thrift_service.SimpleService, method='Call')
     @tornado.gen.coroutine
     def thrift_trace_handler(request):
         print 'thrift request received %s' % request.body.arg
         req = json.loads(request.body.arg.s2)
         res = yield _process_request(req)
         print 'before thrift response: %s' % res
-        data = simple_service.Data(b1=False, i3=0, s2=json.dumps(res))
+        data = thrift_service.Data(b1=False, i3=0, s2=json.dumps(res))
         raise tornado.gen.Return(data)
 
     @tornado.gen.coroutine
@@ -104,19 +114,20 @@ def call_downstream(tchannel, target):
 
     if target.encoding == 'json':
         response = yield tchannel.json(
-            service='test-client',
+            service=target.serviceName,
             endpoint='trace',
             hostport=target.hostPort,
             body=req,
         )
         res = api.response_from_dict(response.body)
     elif target.encoding == 'thrift':
-        data = simple_service.Data(b1=False, i3=0, s2=json.dumps(req))
-        response = yield tchannel.thrift(
-            simple_service.SimpleService.Call(data),
-            # service=target.serviceName,
+        thrift_service = get_thrift_service(service_name=target.serviceName)
+        data = thrift_service.Data(b1=False, i3=0, s2=json.dumps(req))
+        response = tchannel.thrift(
+            thrift_service.SimpleService.Call(data),
             hostport=target.hostPort,
         )
+        response = yield response
         body = response.body
         res = api.response_from_dict(json.loads(body.s2))
     else:
