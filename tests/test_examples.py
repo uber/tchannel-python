@@ -22,6 +22,7 @@ import contextlib
 import json
 import os
 import subprocess
+import sys
 
 import psutil
 import pytest
@@ -44,10 +45,25 @@ def popen(path, wait_for_listen=False):
         except psutil.Error:
             raise AssertionError(process.stderr.read())
 
+    success = True
+    # noinspection PyBroadException
     try:
         yield process
+    except:
+        success = False
+        raise
     finally:
         process.kill()
+        if not success:
+            dump_std_streams(path, process)
+
+
+def dump_std_streams(name, process):
+    sys.stdout.write('----- %s stdout ----\n' % name)
+    sys.stdout.writelines(process.stdout.readlines())
+
+    sys.stderr.write('----- %s stderr ----\n' % name)
+    sys.stderr.writelines(process.stderr.readlines())
 
 
 @pytest.mark.parametrize(
