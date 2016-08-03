@@ -9,7 +9,7 @@ docker: clean-compile
 	docker build -f crossdock/Dockerfile -t jaeger-client-python .
 
 .PHONY: crossdock
-crossdock: ${TRACETEST_THRIFT}
+crossdock:
 	docker-compose -f $(XDOCK_YAML) kill python
 	docker-compose -f $(XDOCK_YAML) rm -f python
 	docker-compose -f $(XDOCK_YAML) build python
@@ -17,7 +17,7 @@ crossdock: ${TRACETEST_THRIFT}
 	grep 'Tests passed!' run-crossdock.log
 
 .PHONY: crossdock-fresh
-crossdock-fresh: ${TRACETEST_THRIFT}
+crossdock-fresh:
 	docker-compose -f $(XDOCK_YAML) kill
 	docker-compose -f $(XDOCK_YAML) rm --force
 	docker-compose -f $(XDOCK_YAML) pull

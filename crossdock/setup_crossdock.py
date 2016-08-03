@@ -20,7 +20,6 @@ setup(
         ]
     },
     install_requires=[
-        'tchannel>=0.25,<1',
-        'opentracing_instrumentation>=1.2,<2',
+        # all dependencies are included in tchannel already
     ],
 )
