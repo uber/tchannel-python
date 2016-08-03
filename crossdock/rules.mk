@@ -13,8 +13,7 @@ crossdock:
 	docker-compose -f $(XDOCK_YAML) kill python
 	docker-compose -f $(XDOCK_YAML) rm -f python
 	docker-compose -f $(XDOCK_YAML) build python
-	docker-compose -f $(XDOCK_YAML) run crossdock 2>&1 | tee run-crossdock.log
-	grep 'Tests passed!' run-crossdock.log
+	docker-compose -f $(XDOCK_YAML) run crossdock
 
 .PHONY: crossdock-fresh
 crossdock-fresh:
