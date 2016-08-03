@@ -61,7 +61,6 @@ def register_tchannel_handlers(tchannel):
     @tchannel.json.register('trace')
     @tornado.gen.coroutine
     def json_trace_handler(request):
-        print 'Request %s' % request.body
         res = yield _process_request(request.body)
         raise tornado.gen.Return(Response(body=res))
 
@@ -70,22 +69,18 @@ def register_tchannel_handlers(tchannel):
     @tchannel.thrift.register(thrift_service.SimpleService, method='Call')
     @tornado.gen.coroutine
     def thrift_trace_handler(request):
-        print 'thrift request received %s' % request.body.arg
         req = json.loads(request.body.arg.s2)
         res = yield _process_request(req)
-        print 'before thrift response: %s' % res
         data = thrift_service.Data(b1=False, i3=0, s2=json.dumps(res))
         raise tornado.gen.Return(data)
 
     @tornado.gen.coroutine
     def _process_request(req_dict):
-        print req_dict
         req = api.request_from_dict(req_dict)
         span = observe_span()
         downstream = yield call_downstream(
             tchannel=tchannel,
             target=req.downstream)
-        print downstream
         res = api.Response(span=span, downstream=downstream)
         raise tornado.gen.Return(api.namedtuple_to_dict(res))
 
