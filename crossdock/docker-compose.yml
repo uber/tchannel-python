@@ -18,7 +18,7 @@ services:
             - AXIS_S3ENCODING=json,thrift
 
             - BEHAVIOR_TRACE=client,s1name,sampled,s2name,s2encoding,s3name,s3encoding
-            - REPORT=compact
+            - REPORT=list
 
     go:
         image: crossdock_go
