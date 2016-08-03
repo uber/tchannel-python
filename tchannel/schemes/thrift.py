@@ -145,22 +145,21 @@ class ThriftArgScheme(object):
         body = serializer.serialize_body(request.call_args)
 
         # TODO There's only one yield. Drop in favor of future+callback.
-        with span:
-            response = yield self._tchannel.call(
-                scheme=self.NAME,
-                service=request.service,
-                arg1=request.endpoint,
-                arg2=headers,
-                arg3=body,
-                timeout=timeout,
-                retry_on=retry_on,
-                retry_limit=retry_limit,
-                hostport=hostport or request.hostport,
-                shard_key=shard_key,
-                trace=trace,
-                tracing_span=span,
-                routing_delegate=routing_delegate,
-            )
+        response = yield self._tchannel.call(
+            scheme=self.NAME,
+            service=request.service,
+            arg1=request.endpoint,
+            arg2=headers,
+            arg3=body,
+            timeout=timeout,
+            retry_on=retry_on,
+            retry_limit=retry_limit,
+            hostport=hostport or request.hostport,
+            shard_key=shard_key,
+            trace=trace,
+            tracing_span=span,  # span is finished in PeerClientOperation.send
+            routing_delegate=routing_delegate,
+        )
 
         response.headers = serializer.deserialize_header(
             headers=response.headers

@@ -71,10 +71,19 @@ tornado.testing.bind_unused_port = patched_bind_unused_port
 # noinspection PyShadowingNames
 @pytest.yield_fixture
 def tracer():
+    reporter = InMemoryReporter()
+    report_func = reporter.report_span
+
+    def log_and_report(span):
+        print 'Reporting span %s' % span
+        report_func(span)
+
+    reporter.report_span = log_and_report
+
     tracer = Tracer(
         service_name='test-tracer',
         sampler=ConstSampler(True),
-        reporter=InMemoryReporter(),
+        reporter=reporter,
     )
     try:
         yield tracer
@@ -100,6 +109,7 @@ def thrift_service(tmpdir):
           string thrift1(1: string hostport), // calls thrift2()
           string thrift2(),
           string thrift3(1: string hostport)  // calls http
+          string thrift4(1: string hostport)  // calls raw
         }
     ''')
 
@@ -159,6 +169,24 @@ def register(tchannel, thrift_service, http_client, base_url):
                 response.code, response.body
             ))
         raise tornado.gen.Return(Response(body=response.body))
+
+    @tchannel.thrift.register(thrift_service.X, method='thrift4')
+    @tornado.gen.coroutine
+    def thrift4(request):
+        print 'thrift4 hit'
+        host_port = request.body.hostport
+        res = tchannel.raw(
+            service='test-service',
+            endpoint='raw2',
+            hostport=host_port,
+        )
+        res = yield res
+        print 'result', res
+        raise tornado.gen.Return(Response(res.body))
+
+    @tchannel.raw.register('raw2')
+    def raw2(_):
+        return _extract_span()
 
 
 @pytest.fixture
@@ -224,26 +252,30 @@ class HttpHandler(tornado.web.RequestHandler):
                 span.finish()
 
 
-@pytest.mark.parametrize('endpoint,transport,encoding,enabled,expect_spans', [
-    # tchannel(json)->tchannel(json)
-    ('endpoint1', 'tchannel', 'json',   True,  5),
-    ('endpoint1', 'tchannel', 'json',   False, 0),
-    # tchannel(thrift)->tchannel(thrift)
-    ('thrift1',   'tchannel', 'thrift', True,  5),
-    ('thrift1',   'tchannel', 'thrift', False, 0),
-    # tchannel(json)->http(json)
-    ('endpoint3', 'tchannel', 'json',   True,  5),
-    ('endpoint3', 'tchannel', 'json',   False, 0),
-    # tchannel(thrift)->http(json)
-    ('thrift3',   'tchannel', 'thrift', True,  5),
-    ('thrift3',   'tchannel', 'thrift', False, 0),
-    # http->tchannel
-    ('/',         'http',     'json',   True,  5),
-    ('/',         'http',     'json',   False, 0),
-])
+@pytest.mark.parametrize(
+    'endpoint,transport,encoding,enabled,expect_spans,expect_baggage', [
+        # tchannel(json)->tchannel(json)
+        ('endpoint1', 'tchannel', 'json', True, 5, True),
+        ('endpoint1', 'tchannel', 'json', False, 0, True),
+        # tchannel(thrift)->tchannel(thrift)
+        ('thrift1', 'tchannel', 'thrift', True, 5, True),
+        ('thrift1', 'tchannel', 'thrift', False, 0, True),
+        # tchannel(thrift)->tchannel(raw)
+        ('thrift4', 'tchannel', 'thrift', True, 5, False),
+        ('thrift4', 'tchannel', 'thrift', False, 0, False),
+        # tchannel(json)->http(json)
+        ('endpoint3', 'tchannel', 'json', True, 5, True),
+        ('endpoint3', 'tchannel', 'json', False, 0, True),
+        # tchannel(thrift)->http(json)
+        ('thrift3', 'tchannel', 'thrift', True, 5, True),
+        ('thrift3', 'tchannel', 'thrift', False, 0, True),
+        # http->tchannel
+        ('/', 'http', 'json', True, 5, True),
+        ('/', 'http', 'json', False, 0, True),
+    ])
 @pytest.mark.gen_test
 def test_trace_propagation(
-        endpoint, transport, encoding, enabled, expect_spans,
+        endpoint, transport, encoding, enabled, expect_spans, expect_baggage,
         http_patchers, tracer, mock_server, thrift_service,
         app, http_server, base_url, http_client):
     """
@@ -319,10 +351,23 @@ def test_trace_propagation(
                             body=mock_server.hostport,
                         )
                     elif encoding == 'thrift':
-                        response_future = tchannel.thrift(
-                            thrift_service.X.thrift1(mock_server.hostport),
-                            hostport=mock_server.hostport,
-                        )
+                        if endpoint == 'thrift1':
+                            response_future = tchannel.thrift(
+                                thrift_service.X.thrift1(mock_server.hostport),
+                                hostport=mock_server.hostport,
+                            )
+                        elif endpoint == 'thrift3':
+                            response_future = tchannel.thrift(
+                                thrift_service.X.thrift3(mock_server.hostport),
+                                hostport=mock_server.hostport,
+                            )
+                        elif endpoint == 'thrift4':
+                            response_future = tchannel.thrift(
+                                thrift_service.X.thrift4(mock_server.hostport),
+                                hostport=mock_server.hostport,
+                            )
+                        else:
+                            raise ValueError('wrong endpoint %s' % endpoint)
                     else:
                         raise ValueError('wrong encoding %s' % encoding)
                 elif transport == 'http':
@@ -339,7 +384,8 @@ def test_trace_propagation(
             response = yield response_future
 
     body = response.body
-    assert body == baggage
+    if expect_baggage:
+        assert body == baggage
 
     def get_sampled_spans():
         return [s for s in tracer.reporter.get_spans() if s.is_sampled]
@@ -368,7 +414,7 @@ def test_trace_propagation(
     ('thrift', 'X::thrift2'),
 ])
 @pytest.mark.gen_test
-def test_span_tags(encoding, operation, tracer, thrift_service):
+def __test_span_tags(encoding, operation, tracer, thrift_service):
     server = TChannel('server', tracer=tracer)
     server.listen()
 
@@ -444,7 +490,7 @@ def test_span_tags(encoding, operation, tracer, thrift_service):
 
 
 @pytest.mark.gen_test
-def test_tracing_field_in_error_message():
+def __test_tracing_field_in_error_message():
     tchannel = TChannel('test')
 
     class ErrorEventHook(EventHook):
