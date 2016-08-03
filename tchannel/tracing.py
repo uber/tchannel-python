@@ -113,7 +113,6 @@ class ServerTracer(object):
         """
         # noinspection PyBroadException
         try:
-            print 'Starting basic span from %s' % (request.tracing,)
             self.span = self.tracer.join(
                 operation_name=request.endpoint,
                 format=ZIPKIN_SPAN_FORMAT,
@@ -173,7 +172,6 @@ class ServerTracer(object):
             self.span.set_tag(tags.PEER_PORT, peer_port)
         if 'as' in request.headers:
             self.span.set_tag('as', request.headers['as'])
-        print 'ServerTracer span %s' % self.span
         return self.span
 
 
@@ -237,12 +235,10 @@ def span_to_tracing_field(span):
         carrier = {}
         span.tracer.inject(
             span, ZIPKIN_SPAN_FORMAT, carrier)
-        print 'prepared Zipkin fields %s' % carrier
         tracing = Tracing(span_id=carrier['span_id'],
                           trace_id=carrier['trace_id'],
                           parent_id=carrier['parent_id'],
                           traceflags=carrier['traceflags'])
-        print 'generated Zipkin fields %s' % (tracing, )
         return tracing
     except opentracing.UnsupportedFormatException:
         pass  # it's possible tracer does not support Zipkin format
