@@ -20,8 +20,6 @@
 
 from __future__ import absolute_import
 
-import json
-
 import time
 
 import mock
@@ -30,7 +28,7 @@ import pytest
 import tornado.web
 import crossdock.server.api as api
 from crossdock.server import server
-from crossdock.server.api import Request, Downstream, Response, ObservedSpan
+from crossdock.server.api import Request, Downstream
 from jaeger_client import Tracer, ConstSampler
 from jaeger_client.reporter import InMemoryReporter
 from tchannel import TChannel
