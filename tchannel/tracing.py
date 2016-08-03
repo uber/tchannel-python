@@ -120,7 +120,10 @@ class ServerTracer(object):
         except opentracing.UnsupportedFormatException:
             pass  # it's possible tracer does not support Zipkin format
         except:
-            log.exception('Cannot extract tracing span from Trace field')
+            # TODO(ys) log the error once OT issue #30 is addressed
+            # https://github.com/opentracing/opentracing-python/issues/30
+            # log.exception('Cannot extract tracing span from Trace field')
+            pass
 
     def start_span(self, request, headers, peer_host, peer_port):
         """
@@ -233,8 +236,7 @@ def span_to_tracing_field(span):
     # noinspection PyBroadException
     try:
         carrier = {}
-        span.tracer.inject(
-            span, ZIPKIN_SPAN_FORMAT, carrier)
+        span.tracer.inject(span, ZIPKIN_SPAN_FORMAT, carrier)
         tracing = Tracing(span_id=carrier['span_id'],
                           trace_id=carrier['trace_id'],
                           parent_id=carrier['parent_id'],
@@ -243,7 +245,10 @@ def span_to_tracing_field(span):
     except opentracing.UnsupportedFormatException:
         pass  # it's possible tracer does not support Zipkin format
     except:
-        log.exception('Failed to inject tracing span into headers')
+        # TODO(ys) log the error once OT issue #30 is addressed
+        # https://github.com/opentracing/opentracing-python/issues/30
+        # log.exception('Failed to inject tracing span into headers')
+        pass
     return common.random_tracing()
 
 
