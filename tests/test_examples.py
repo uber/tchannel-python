@@ -61,6 +61,7 @@ def popen(path, wait_for_listen=False):
         ('thrift', 'sync/fanout/'),
     )
 )
+@pytest.mark.timeout(30)
 def test_example(scheme, path):
     """Smoke test example code to ensure it still runs."""
 
