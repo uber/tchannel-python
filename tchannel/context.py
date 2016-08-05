@@ -36,10 +36,10 @@ _LOCAL = TChannelLocal()
 class RequestContext(object):
     """Tracks the :py:class:`Request` currently being handled.
 
-    NOTE: this class is deprecated and not used by TChannel itself.
-    It is only kept for backwards compatibility.
-
-    See tracing.TracingContextProvider for replacement.
+    .. deprecated:: 0.27.0
+        This class is deprecated and not used by TChannel itself.
+        It is only kept for backwards compatibility.
+        Use tracing.TracingContextProvider
 
     The asynchronous nature of Tornado means that multiple requests can be
     in-flight at any given moment. It's often useful to be able to see some
@@ -81,10 +81,10 @@ class RequestContext(object):
 # noinspection PyMethodMayBeStatic
 class RequestContextProvider(object):
     """
-    NOTE: this class is deprecated and not used by TChannel itself.
-    It is only kept for backwards compatibility.
-
-    See tracing.TracingContextProvider for replacement.
+    .. deprecated:: 0.27.0
+        This class is deprecated and not used by TChannel itself.
+        It is only kept for backwards compatibility.
+        Use tracing.TracingContextProvider
     """
     def get_current_context(self):
         """

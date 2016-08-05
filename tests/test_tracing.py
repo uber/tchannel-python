@@ -414,7 +414,7 @@ def test_trace_propagation(
     ('thrift', 'X::thrift2'),
 ])
 @pytest.mark.gen_test
-def __test_span_tags(encoding, operation, tracer, thrift_service):
+def test_span_tags(encoding, operation, tracer, thrift_service):
     server = TChannel('server', tracer=tracer)
     server.listen()
 
@@ -490,7 +490,7 @@ def __test_span_tags(encoding, operation, tracer, thrift_service):
 
 
 @pytest.mark.gen_test
-def __test_tracing_field_in_error_message():
+def test_tracing_field_in_error_message():
     tchannel = TChannel('test')
 
     class ErrorEventHook(EventHook):
