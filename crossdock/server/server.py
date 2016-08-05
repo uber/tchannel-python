@@ -13,8 +13,8 @@ from jaeger_client.reporter import NullReporter
 from opentracing_instrumentation import get_current_span
 from tchannel import thrift, Response, TChannel
 
-DefaultClientPort = 8080
-DefaultServerPort = 8081
+DEFAULT_CLIENT_PORT = 8080
+DEFAULT_SERVER_PORT = 8081
 
 idl_path = 'crossdock/server/simple-service.thrift'
 thrift_services = {}
@@ -31,14 +31,14 @@ def serve():
         sampler=ConstSampler(decision=True))
     opentracing.tracer = tracer
 
-    tchannel = TChannel(name='python', hostport=':%d' % DefaultServerPort,
+    tchannel = TChannel(name='python', hostport=':%d' % DEFAULT_SERVER_PORT,
                         trace=True)
     register_tchannel_handlers(tchannel=tchannel)
     tchannel.listen()
 
     app = tornado.web.Application(debug=True)
     register_http_handlers(app)
-    app.listen(DefaultClientPort)
+    app.listen(DEFAULT_CLIENT_PORT)
 
     tornado.ioloop.IOLoop.current().start()
 

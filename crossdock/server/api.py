@@ -45,11 +45,7 @@ ObservedSpan = namedtuple('ObservedSpan', ['traceId', 'sampled', 'baggage'])
 
 
 def namedtuple_from_dict(json, tuple_cls):
-    try:
-        return tuple_cls(**dict([(f, json[f]) for f in tuple_cls._fields]))
-    except KeyError:
-        print json
-        raise
+    return tuple_cls(**{f: json[f] for f in tuple_cls._fields})
 
 
 def request_from_dict(json):
@@ -66,8 +62,8 @@ def downstream_from_dict(json):
 
 def namedtuple_to_dict(tpl):
     json = {}
-    for k, v in tpl.__dict__.iteritems():
-        if isinstance(v, tuple):
+    for k, v in tpl._asdict().iteritems():
+        if hasattr(v, '_asdict'):
             v = namedtuple_to_dict(v)
         json[k] = v
     return json
