@@ -14,6 +14,8 @@ TEST_LOG_FILE=test-server.log
 
 .DEFAULT_GOAL := test-lint
 
+-include crossdock/rules.mk
+
 
 env/bin/activate:
 	virtualenv env
