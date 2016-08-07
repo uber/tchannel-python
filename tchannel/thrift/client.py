@@ -30,6 +30,7 @@ from tchannel.deprecate import deprecated
 from tchannel.errors import OneWayNotSupportedError
 
 from ..serializer.thrift import ThriftSerializer
+from .. import tracing
 from .reflection import get_service_methods
 
 # Generated clients will use this base class.
@@ -92,7 +93,7 @@ def client_for(service, service_module, thrift_service_name=None):
             Address of the machine to which the requests will be sent, or None
             if the TChannel will do peer selection on a per-request basis.
         :param trace:
-            Whether Zipkin tracing is enabled.
+            Whether tracing is enabled.
         :param protocol_headers:
             Protocol-level headers to send with the request.
         """
@@ -170,33 +171,41 @@ def generate_method(service_module, service_name, method_name):
         for name, value in params.items():
             setattr(call_args, name, value)
 
+        tracer = tracing.ClientTracer(channel=self.tchannel)
+        span, headers = tracer.start_span(
+            service=service_name, endpoint=method_name, headers={}
+        )
+
         body = serializer.serialize_body(call_args)
-        header = serializer.serialize_header({})
+        header = serializer.serialize_header(headers)
 
         # Glue for old API.
         if hasattr(self.tchannel, 'request'):
-            response = yield self.tchannel.request(
-                hostport=self.hostport, service=self.service
-            ).send(
-                arg1=endpoint,
-                arg2=header,
-                arg3=body,  # body
-                headers=self.protocol_headers,
-                traceflag=self.trace
-            )
+            tracing.apply_trace_flag(span, self.trace, True)
+            with span:
+                response = yield self.tchannel.request(
+                    hostport=self.hostport, service=self.service
+                ).send(
+                    arg1=endpoint,
+                    arg2=header,
+                    arg3=body,  # body
+                    headers=self.protocol_headers,
+                )
             body = yield response.get_body()
         else:
-            response = yield self.tchannel.call(
-                scheme=schemes.THRIFT,
-                service=self.service,
-                arg1=endpoint,
-                arg2=header,
-                arg3=body,
-                hostport=self.hostport,
-                # TODO: Need to handle these!
-                # headers=self.protocol_headers,
-                # traceflag=self.trace,
-            )
+            with span:
+                response = yield self.tchannel.call(
+                    scheme=schemes.THRIFT,
+                    service=self.service,
+                    arg1=endpoint,
+                    arg2=header,
+                    arg3=body,
+                    hostport=self.hostport,
+                    trace=self.trace,
+                    tracing_span=span
+                    # TODO: Need to handle these!
+                    # headers=self.protocol_headers,
+                )
             body = response.body
 
         call_result = serializer.deserialize_body(body)

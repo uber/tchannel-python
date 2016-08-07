@@ -24,9 +24,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from tornado import gen
-
 from . import JSON
 from ..serializer.json import JsonSerializer
+from ..tracing import ClientTracer
 
 
 class JsonArgScheme(object):
@@ -36,6 +36,7 @@ class JsonArgScheme(object):
 
     def __init__(self, tchannel):
         self._tchannel = tchannel
+        self.tracer = ClientTracer(channel=tchannel)
 
     @gen.coroutine
     def __call__(
@@ -101,6 +102,11 @@ class JsonArgScheme(object):
         :rtype: Response
         """
 
+        span, headers = self.tracer.start_span(
+            service=service, endpoint=endpoint, headers=headers,
+            hostport=hostport, encoding='json'
+        )
+
         # serialize
         serializer = JsonSerializer()
         headers = serializer.serialize_header(headers)
@@ -118,6 +124,7 @@ class JsonArgScheme(object):
             hostport=hostport,
             shard_key=shard_key,
             trace=trace,
+            tracing_span=span,  # span is finished in PeerClientOperation.send
             routing_delegate=routing_delegate,
         )
 

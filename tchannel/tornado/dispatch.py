@@ -32,7 +32,6 @@ from tornado.iostream import StreamClosedError
 from tchannel.request import Request
 from tchannel.request import TransportHeaders
 from tchannel.response import response_from_mixed
-from ..context import RequestContextProvider
 from ..errors import BadRequestError
 from ..errors import UnexpectedError
 from ..errors import TChannelError
@@ -40,6 +39,7 @@ from ..event import EventType
 from ..messages import Types
 from ..serializer.raw import RawSerializer
 from .response import Response as DeprecatedResponse
+from .. import tracing
 
 log = logging.getLogger('tchannel')
 
@@ -65,13 +65,7 @@ class RequestDispatcher(object):
 
     FALLBACK = object()
 
-    def __init__(self, _handler_returns_response=False,
-                 context_provider_fn=None):
-        if context_provider_fn:
-            self.context_provider_fn = context_provider_fn
-        else:
-            context_provider = RequestContextProvider()
-            self.context_provider_fn = lambda: context_provider
+    def __init__(self, _handler_returns_response=False):
         self.handlers = {}
         self.register(self.FALLBACK, self.not_found)
         self._handler_returns_response = _handler_returns_response
@@ -102,7 +96,7 @@ class RequestDispatcher(object):
         It passes all the messages into the message_factory to build the init
         request object. Only when it get a CallRequestMessage and a completed
         arg_1=argstream[0], the message_factory will return a request object.
-        Then it will trigger the async call_handle call.
+        Then it will trigger the async handle_call method.
 
         :param message: CallRequestMessage or CallRequestContinueMessage
         :param connection: tornado connection
@@ -132,7 +126,6 @@ class RequestDispatcher(object):
         # request.endpoint. The original argstream[0] is no longer valid. If
         # user still tries read from it, it will return empty.
         chunk = yield request.argstreams[0].read()
-        response = None
         while chunk:
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
@@ -141,8 +134,6 @@ class RequestDispatcher(object):
 
         tchannel = connection.tchannel
 
-        # event: receive_request
-        request.tracing.name = request.endpoint
         tchannel.event_emitter.fire(EventType.before_receive_request, request)
 
         handler = self.get_endpoint(request.endpoint)
@@ -188,6 +179,11 @@ class RequestDispatcher(object):
 
         connection.post_response(response).add_done_callback(_on_post_response)
 
+        tracer = tracing.ServerTracer(
+            tracer=tchannel.tracer, operation_name=request.endpoint
+        )
+        tracer.start_basic_span(request)
+
         try:
             # New impl - the handler takes a request and returns a response
             if self._handler_returns_response:
@@ -203,19 +199,16 @@ class RequestDispatcher(object):
                     service=request.service,
                     timeout=request.ttl,
                 )
-
-                # Not safe to have coroutine yields statement within
-                # stack context.
-                # The right way to do it is:
-                # with request_context(..):
-                #    future = f()
-                # yield future
-
-                context_provider = self.context_provider_fn()
-                with context_provider.request_context(request.tracing):
-                    f = handler.endpoint(new_req)
-
-                new_resp = yield gen.maybe_future(f)
+                with tracer.start_span(
+                    request=request, headers=he,
+                    peer_host=connection.remote_host,
+                    peer_port=connection.remote_host_port
+                ) as span:
+                    context_provider = tchannel.context_provider_fn()
+                    with context_provider.span_in_context(span):
+                        # Cannot yield while inside the StackContext
+                        f = handler.endpoint(new_req)
+                    new_resp = yield gen.maybe_future(f)
 
                 # instantiate a tchannel.Response
                 new_resp = response_from_mixed(new_resp)
@@ -230,11 +223,17 @@ class RequestDispatcher(object):
 
             # Dep impl - the handler is provided with a req & resp writer
             else:
-                context_provider = self.context_provider_fn()
-                with context_provider.request_context(request.tracing):
-                    f = handler.endpoint(request, response)
+                with tracer.start_span(
+                    request=request, headers={},
+                    peer_host=connection.remote_host,
+                    peer_port=connection.remote_host_port
+                ) as span:
+                    context_provider = tchannel.context_provider_fn()
+                    with context_provider.span_in_context(span):
+                        # Cannot yield while inside the StackContext
+                        f = handler.endpoint(request, response)
 
-                yield gen.maybe_future(f)
+                    yield gen.maybe_future(f)
 
             response.flush()
         except TChannelError as e:

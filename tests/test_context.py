@@ -21,52 +21,25 @@
 from __future__ import absolute_import
 
 import pytest
+from tchannel import context
 from tornado import gen
-
-from tchannel import TChannel
-from tchannel import Response
-from tchannel import schemes
 
 
 @pytest.mark.gen_test
-@pytest.mark.call
-def test_context_should_carry_tracing_info():
-    context = [None, None]
-    server = TChannel(name='server')
+def test_deprecated_context_provider():
+    """
+    Test that the deprecated RequestContextProvider() can still propagate
+    the request context across coroutines.
+    """
+    provider = context.RequestContextProvider()
 
-    @server.register(scheme=schemes.RAW)
     @gen.coroutine
-    def endpoint1(request):
-        yield server.call(
-            scheme=schemes.RAW,
-            service='server',
-            arg1='endpoint2',
-            arg2='req headers',
-            arg3='req body',
-            hostport=server.hostport,
-        )
-        context[0] = server.context_provider.get_current_context()
-        raise gen.Return(Response('resp body', 'resp headers'))
+    def _get_context():
+        res = provider.get_current_context().parent_tracing
+        raise gen.Return(res)
 
-    @server.register(scheme=schemes.RAW)
-    def endpoint2(request):
-        context[1] = server.context_provider.get_current_context()
-        return Response('resp body', 'resp headers')
+    with provider.request_context(parent_tracing='Farnsworth'):
+        res = _get_context()
 
-    server.listen()
-
-    # Make a call:
-
-    tchannel = TChannel(name='client')
-
-    yield tchannel.call(
-        scheme=schemes.RAW,
-        service='server',
-        arg1='endpoint1',
-        arg2='req headers',
-        arg3='req body',
-        hostport=server.hostport,
-    )
-
-    assert context[0].parent_tracing.name == 'endpoint1'
-    assert context[1].parent_tracing.name == 'endpoint2'
+    res = yield res
+    assert res == 'Farnsworth'

@@ -24,6 +24,7 @@ from collections import namedtuple
 
 import tornado
 import tornado.gen
+from tchannel.messages import common
 from tornado.iostream import StreamClosedError
 
 from tchannel import retry
@@ -34,7 +35,6 @@ from ..messages.common import ChecksumType
 from ..messages.common import FlagsType
 from ..messages.common import StreamState
 from ..serializer.raw import RawSerializer
-from ..zipkin.trace import Trace
 from .stream import InMemStream
 from .util import get_arg
 
@@ -56,7 +56,7 @@ class Request(object):
         ttl=DEFAULT_TIMEOUT,
         tracing=None,
         service=None,
-        headers=None,
+        headers=None,  # transport headers
         checksum=None,
         argstreams=None,
         serializer=None,
@@ -65,7 +65,7 @@ class Request(object):
         self.flags = flags
         self.ttl = ttl
         self.service = service
-        self.tracing = tracing or Trace()
+        self.tracing = tracing or common.random_tracing()
         # argstreams is a list of InMemStream/PipeStream objects
         self.argstreams = argstreams or [InMemStream(),
                                          InMemStream(),
@@ -95,7 +95,7 @@ class Request(object):
                 self._copy_argstreams[2].clone(),
             ]
         self.state = StreamState.init
-        self.tracing = Trace()
+        self.tracing = common.random_tracing()
 
     @property
     def arg_scheme(self):
@@ -113,11 +113,11 @@ class Request(object):
 
     @tornado.gen.coroutine
     def get_header(self):
-        """Get the header value from the request.
+        """Get the application header value from the request.
 
         :return: a future contains the deserialized value of header
         """
-        raw_header = yield get_arg(self, 1)
+        raw_header = yield get_arg(self, 1)  # from arg2
         if not self.serializer:
             raise tornado.gen.Return(raw_header)
         else:
@@ -126,12 +126,12 @@ class Request(object):
 
     @tornado.gen.coroutine
     def get_body(self):
-        """Get the body value from the resquest.
+        """Get the body value from the request.
 
         :return: a future contains the deserialized value of body
         """
 
-        raw_body = yield get_arg(self, 2)
+        raw_body = yield get_arg(self, 2)  # from arg3
         if not self.serializer:
             raise tornado.gen.Return(raw_body)
         else:
