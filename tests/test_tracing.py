@@ -211,7 +211,7 @@ class HttpHandler(tornado.web.RequestHandler):
             span_ctx = opentracing.tracer.extract(Format.TEXT_MAP, carrier)
             span = opentracing.tracer.start_span(
                 operation_name='server',
-                references=opentracing.child_of(span_ctx)
+                child_of=span_ctx,
             )
         except Exception as e:
             self.write('ERROR: %s' % e)
