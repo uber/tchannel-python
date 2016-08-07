@@ -29,6 +29,7 @@ from collections import deque
 from itertools import takewhile, dropwhile
 
 from tchannel import tracing
+from tchannel.tracing import ClientTracer
 from tornado import gen
 from tornado.iostream import StreamClosedError
 
@@ -389,6 +390,13 @@ class PeerClientOperation(object):
         for k, v in self.headers.iteritems():
             headers.setdefault(k, v)
 
+        if self.tracing_span is None:
+            tracer = ClientTracer(channel=self.tchannel)
+            self.tracing_span, _ = tracer.start_span(
+                service=self.service, endpoint=endpoint,
+                hostport=self._hostport, encoding=self.headers.get('as')
+            )
+
         request = Request(
             service=self.service,
             argstreams=[InMemStream(endpoint), arg2, arg3],
@@ -407,9 +415,10 @@ class PeerClientOperation(object):
             request.ttl = 0
 
         try:
-            response = yield self.send_with_retry(
-                request, peer, retry_limit, connection
-            )
+            with self.tracing_span:  # to ensure span is finished
+                response = yield self.send_with_retry(
+                    request, peer, retry_limit, connection
+                )
         except Exception as e:
             # event: on_exception
             self.tchannel.event_emitter.fire(

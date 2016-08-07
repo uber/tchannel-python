@@ -182,7 +182,7 @@ class RequestDispatcher(object):
         tracer = tracing.ServerTracer(
             tracer=tchannel.tracer, operation_name=request.endpoint
         )
-        tracer.start_basic_span(tracing=request.tracing)
+        tracer.start_basic_span(request)
 
         try:
             # New impl - the handler takes a request and returns a response

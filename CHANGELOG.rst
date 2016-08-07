@@ -1,7 +1,14 @@
 Changes by Version
 ==================
 
-0.26.0 (unreleased)
+0.27.0 (unreleased)
+-------------------
+
+- Native integration with OpenTracing (for real this time)
+- Replace tcollector and explicit trace reporting with OpenTracing
+
+
+0.26.0 (2016-07-13)
 -------------------
 
 - VCR: ``use_cassette`` now uses cached copies of cassettes if their contents

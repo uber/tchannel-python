@@ -26,10 +26,22 @@ import opentracing
 import opentracing_instrumentation
 
 from opentracing.ext import tags
-from tchannel.messages import common
-
+from tchannel.messages import common, Tracing
 
 log = logging.getLogger('tchannel')
+
+# TRACING_KEY_PREFIX is used to prefix all keys used by the OpenTracing Tracer
+# to represent its trace context and baggage. The prefixing is done in order
+# to distinguish tracing headers from the actual application headers and to
+# hide the former from the user code.
+TRACING_KEY_PREFIX = '$tracing$'
+
+
+# ZIPKIN_SPAN_FORMAT is a carrier format specifically designed for interop
+# with TChannel. The inject operation expects a dictionary which is populated
+# with (trace_id, span_id, parent_id, traceflags) attributes.  The extract
+# operation expects either a dictionary or a tuple with the above attributes.
+ZIPKIN_SPAN_FORMAT = 'zipkin-span-format'
 
 
 # noinspection PyMethodMayBeStatic
@@ -92,16 +104,29 @@ class ServerTracer(object):
         self.operation_name = operation_name
         self.span = None
 
-    # noinspection PyMethodMayBeStatic
-    def start_basic_span(self, tracing):
+    def start_basic_span(self, request):
         """
         Start tracing span from the protocol's `tracing` fields.
-
         This will only work if the `tracer` supports Zipkin-style span context.
 
-        :param tracing: common.Tracing
+        :param request: inbound request
+        :type request: tchannel.tornado.request.Request
         """
-        pass  # TODO(ys) implement start_basic_span
+        # noinspection PyBroadException
+        try:
+            context = self.tracer.extract(
+                format=ZIPKIN_SPAN_FORMAT,
+                carrier=request.tracing)
+            self.span = self.tracer.start_span(
+                operation_name=request.endpoint,
+                child_of=context)
+        except opentracing.UnsupportedFormatException:
+            pass  # tracer might not support Zipkin format
+        except:
+            # TODO(ys) log the error once OT issue #30 is addressed
+            # https://github.com/opentracing/opentracing-python/issues/30
+            # log.exception('Cannot extract tracing span from Trace field')
+            pass
 
     def start_span(self, request, headers, peer_host, peer_port):
         """
@@ -112,25 +137,34 @@ class ServerTracer(object):
         :param headers: dictionary containing parsed application headers
         :return:
         """
-        if self.span:
-            # TODO(ys) if self.span is already defined, merge baggage into it
-            return self.span
+        parent_context = None
         # noinspection PyBroadException
-        parent_ref = None
         try:
             if headers:
-                parent = self.tracer.extract(
+                tracing_headers = {
+                    k[len(TRACING_KEY_PREFIX):]: v
+                    for k, v in headers.iteritems()
+                    if k.startswith(TRACING_KEY_PREFIX)
+                }
+                parent_context = self.tracer.extract(
                     format=opentracing.Format.TEXT_MAP,
-                    carrier=headers
+                    carrier=tracing_headers
                 )
-                if parent:
-                    parent_ref = opentracing.child_of(parent)
+                if self.span and parent_context:
+                    # we already started a span from Tracing fields,
+                    # so only copy baggage from the headers.
+                    # The `span` started just above is discarded.
+                    # Once we upgrade to OpenTracing 2.0 (with SpanContext)
+                    # this can be done cleaner, without starting a span.
+                    for k, v in parent_context.baggage.iteritems():
+                        self.span.set_baggage_item(k, v)
         except:
             log.exception('Cannot extract tracing span from headers')
-        self.span = self.tracer.start_span(
-            operation_name=request.endpoint,
-            references=parent_ref
-        )
+        if self.span is None:
+            self.span = self.tracer.start_span(
+                operation_name=request.endpoint,
+                child_of=parent_context
+            )
         self.span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_SERVER)
         if 'cn' in request.headers:
             self.span.set_tag(tags.PEER_SERVICE, request.headers['cn'])
@@ -151,13 +185,13 @@ class ClientTracer(object):
     def __init__(self, channel):
         self.channel = channel
 
-    def start_span(self, service, endpoint, headers,
+    def start_span(self, service, endpoint, headers=None,
                    hostport=None, encoding=None):
         parent_span = self.channel.context_provider.get_current_span()
         parent_ctx = parent_span.context if parent_span else None
         span = self.channel.tracer.start_span(
             operation_name=endpoint,
-            references=opentracing.child_of(parent_ctx)
+            child_of=parent_ctx
         )
         span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
         span.set_tag(tags.PEER_SERVICE, service)
@@ -170,10 +204,14 @@ class ClientTracer(object):
         if isinstance(headers, dict):
             # noinspection PyBroadException
             try:
+                tracing_headers = {}
                 self.channel.tracer.inject(
-                    span.context, opentracing.Format.TEXT_MAP, headers)
+                    span.context, opentracing.Format.TEXT_MAP, tracing_headers)
+                for k, v in tracing_headers.iteritems():
+                    headers[TRACING_KEY_PREFIX + k] = v
             except:
                 log.exception('Failed to inject tracing span into headers')
+
         return span, headers
 
 
@@ -189,9 +227,28 @@ def set_peer_host_port(span, hostport):
 
 
 def span_to_tracing_field(span):
+    """
+    Inject the span into Trace field, if Zipkin format is supported
+    :param span: OpenTracing Span
+    """
     if span is None:
         return common.random_tracing()
-    # TODO(ys) if tracer is Zipkin compatible, try to convert span to Tracing
+    # noinspection PyBroadException
+    try:
+        carrier = {}
+        span.tracer.inject(span, ZIPKIN_SPAN_FORMAT, carrier)
+        tracing = Tracing(span_id=carrier['span_id'],
+                          trace_id=carrier['trace_id'],
+                          parent_id=carrier['parent_id'],
+                          traceflags=carrier['traceflags'])
+        return tracing
+    except opentracing.UnsupportedFormatException:
+        pass  # it's possible tracer does not support Zipkin format
+    except:
+        # TODO(ys) log the error once OT issue #30 is addressed
+        # https://github.com/opentracing/opentracing-python/issues/30
+        # log.exception('Failed to inject tracing span into headers')
+        pass
     return common.random_tracing()
 
 

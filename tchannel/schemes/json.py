@@ -112,22 +112,21 @@ class JsonArgScheme(object):
         headers = serializer.serialize_header(headers)
         body = serializer.serialize_body(body)
 
-        with span:
-            response = yield self._tchannel.call(
-                scheme=self.NAME,
-                service=service,
-                arg1=endpoint,
-                arg2=headers,
-                arg3=body,
-                timeout=timeout,
-                retry_on=retry_on,
-                retry_limit=retry_limit,
-                hostport=hostport,
-                shard_key=shard_key,
-                trace=trace,
-                tracing_span=span,
-                routing_delegate=routing_delegate,
-            )
+        response = yield self._tchannel.call(
+            scheme=self.NAME,
+            service=service,
+            arg1=endpoint,
+            arg2=headers,
+            arg3=body,
+            timeout=timeout,
+            retry_on=retry_on,
+            retry_limit=retry_limit,
+            hostport=hostport,
+            shard_key=shard_key,
+            trace=trace,
+            tracing_span=span,  # span is finished in PeerClientOperation.send
+            routing_delegate=routing_delegate,
+        )
 
         # deserialize
         response.headers = serializer.deserialize_header(response.headers)
