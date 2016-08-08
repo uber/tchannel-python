@@ -68,7 +68,6 @@ def patched_bind_unused_port(reuse_port=False):
 tornado.testing.bind_unused_port = patched_bind_unused_port
 
 
-# noinspection PyShadowingNames
 @pytest.yield_fixture
 def tracer():
     reporter = InMemoryReporter()
@@ -257,6 +256,11 @@ class HttpHandler(tornado.web.RequestHandler):
 
 
 @pytest.mark.parametrize(
+    # The call tree in this test is determined by the first three params.
+    # Strictly speaking, similar permutations can be built with crossdock
+    # tests and be encoded as a set of instructions to a fewer number of
+    # endpoints, and the unit test can exercise just the Python subset.
+    # TODO per above, consider converting this to a crossdock unit test.
     'endpoint,transport,encoding,enabled,expect_spans,expect_baggage', [
         # tchannel(json)->tchannel(json)
         ('endpoint1', 'tchannel', 'json', True, 5, True),

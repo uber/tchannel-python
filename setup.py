@@ -56,7 +56,7 @@ setup(
         'thriftrw>=0.4,<2',
         'threadloop>=1,<2',
 
-        # tracing deps - pinned due to upcoming API changes
+        # tracing deps
         'opentracing>=1.1,<1.2',
         'opentracing_instrumentation>=2,<3',
     ],
