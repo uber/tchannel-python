@@ -77,11 +77,10 @@ def random_tracing():
     """
     Create new Tracing() tuple with random IDs.
     """
-    new_id = _uniq_id()
     return Tracing(
-        span_id=new_id,
+        span_id=_uniq_id(),
         parent_id=0,
-        trace_id=new_id,
+        trace_id=_uniq_id(),
         traceflags=0)
 
 
