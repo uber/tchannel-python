@@ -191,7 +191,7 @@ def generate_method(service_module, service_name, method_name):
                     arg3=body,  # body
                     headers=self.protocol_headers,
                 )
-            body = yield response.get_body()
+                body = yield response.get_body()
         else:
             with span:
                 response = yield self.tchannel.call(
@@ -206,7 +206,7 @@ def generate_method(service_module, service_name, method_name):
                     # TODO: Need to handle these!
                     # headers=self.protocol_headers,
                 )
-            body = response.body
+                body = response.body
 
         call_result = serializer.deserialize_body(body)
 
