@@ -24,7 +24,6 @@ from tchannel.messages.common import StreamState, FlagsType
 from tchannel.tornado import Request, Response
 from tchannel.tornado.message_factory import MessageFactory
 from tchannel.tornado.response import StatusCode
-from tchannel.zipkin.trace import Trace
 
 
 def test_build_raw_request_message():
@@ -50,7 +49,6 @@ def test_build_raw_response_message():
         flags=FlagsType.none,
         code=StatusCode.ok,
         headers={},
-        tracing=Trace(),
         id=1111,
     )
     resp.state = StreamState.init

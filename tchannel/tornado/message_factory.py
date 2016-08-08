@@ -36,12 +36,9 @@ from ..messages.call_response_continue import CallResponseContinueMessage
 from ..messages.common import CHECKSUM_MSG_TYPES
 from ..messages.common import FlagsType
 from ..messages.common import StreamState
-from ..messages.common import Tracing
 from ..messages.common import generate_checksum
 from ..messages.common import verify_checksum
 from ..messages.error import ErrorMessage
-from ..zipkin.annotation import Endpoint
-from ..zipkin.trace import Trace
 from .request import Request
 from .response import Response
 from .stream import InMemStream
@@ -54,11 +51,7 @@ def build_raw_error_message(protocol_exception):
     message = ErrorMessage(
         id=protocol_exception.id,
         code=protocol_exception.code,
-        tracing=Tracing(
-            protocol_exception.tracing.span_id,
-            protocol_exception.tracing.parent_span_id,
-            protocol_exception.tracing.trace_id,
-            protocol_exception.tracing.traceflags),
+        tracing=protocol_exception.tracing,
         description=protocol_exception.description,
     )
 
@@ -99,10 +92,7 @@ class MessageFactory(object):
             message = CallRequestMessage(
                 flags=request.flags,
                 ttl=request.ttl * 1000,
-                tracing=Tracing(request.tracing.span_id,
-                                request.tracing.parent_span_id,
-                                request.tracing.trace_id,
-                                request.tracing.traceflags),
+                tracing=request.tracing,
                 service=request.service,
                 headers=request.headers,
                 checksum=request.checksum,
@@ -141,10 +131,7 @@ class MessageFactory(object):
             message = CallResponseMessage(
                 flags=response.flags,
                 code=response.code,
-                tracing=Tracing(response.tracing.span_id,
-                                response.tracing.parent_span_id,
-                                response.tracing.trace_id,
-                                response.tracing.traceflags),
+                tracing=response.tracing,
                 headers=response.headers,
                 checksum=response.checksum,
                 args=args
@@ -183,7 +170,7 @@ class MessageFactory(object):
         return args
 
     def build_request(self, message):
-        """Build request object from protocol level message info
+        """Build inbound request object from protocol level message info.
 
         It is allowed to take incompleted CallRequestMessage. Therefore the
         created request may not contain whole three arguments.
@@ -194,21 +181,11 @@ class MessageFactory(object):
 
         args = self.prepare_args(message)
 
-        tracing = Trace(
-            trace_id=message.tracing.trace_id,
-            span_id=message.tracing.span_id,
-            parent_span_id=message.tracing.parent_id,
-            endpoint=Endpoint(self.remote_host,
-                              self.remote_host_port,
-                              message.service),
-            traceflags=message.tracing.traceflags
-        )
-
         # TODO decide what to pass to Request from message
         req = Request(
             flags=message.flags,
             ttl=message.ttl / 1000.0,
-            tracing=tracing,
+            tracing=message.tracing,
             service=message.service,
             headers=message.headers,
             checksum=message.checksum,

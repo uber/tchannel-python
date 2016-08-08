@@ -23,6 +23,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from tchannel.tracing import ClientTracer
 from tornado import gen
 
 from . import THRIFT
@@ -66,6 +67,7 @@ class ThriftArgScheme(object):
 
     def __init__(self, tchannel):
         self._tchannel = tchannel
+        self.tracer = ClientTracer(channel=tchannel)
 
     @gen.coroutine
     def __call__(
@@ -124,6 +126,11 @@ class ThriftArgScheme(object):
         if not headers:
             headers = {}
 
+        span, headers = self.tracer.start_span(
+            service=request.service, endpoint=request.endpoint,
+            headers=headers, hostport=hostport, encoding='thrift'
+        )
+
         serializer = request.get_serializer()
 
         # serialize
@@ -150,6 +157,7 @@ class ThriftArgScheme(object):
             hostport=hostport or request.hostport,
             shard_key=shard_key,
             trace=trace,
+            tracing_span=span,  # span is finished in PeerClientOperation.send
             routing_delegate=routing_delegate,
         )
 

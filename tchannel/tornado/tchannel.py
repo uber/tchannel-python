@@ -22,6 +22,8 @@ from __future__ import absolute_import
 
 import inspect
 import logging
+
+import opentracing
 import os
 import socket
 import sys
@@ -34,7 +36,6 @@ import tornado.tcpserver
 from tornado.netutil import bind_sockets
 
 from . import hyperbahn
-from ..context import RequestContextProvider
 from ..deprecate import deprecate
 from ..enum import enum
 from ..errors import AlreadyListeningError
@@ -50,6 +51,7 @@ from ..schemes import DEFAULT_NAMES
 from ..schemes import JSON
 from ..serializer.json import JsonSerializer
 from ..serializer.raw import RawSerializer
+from ..tracing import TracingContextProvider
 from .connection import StreamConnection
 from .connection import INCOMING
 from .dispatch import RequestDispatcher
@@ -76,7 +78,7 @@ class TChannel(object):
     def __init__(self, name, hostport=None, process_name=None,
                  known_peers=None, trace=False, dispatcher=None,
                  reuse_port=False, context_provider_fn=None,
-                 _from_new_api=False):
+                 tracer=None, _from_new_api=False):
         """Build or re-use a TChannel.
 
         :param name:
@@ -98,25 +100,28 @@ class TChannel(object):
             Defaults to an empty list.
 
         :param trace:
-            Flag to turn on/off zipkin trace. It can be a bool variable or
-            a function that return true or false.
+            Flag to turn on/off distributed tracing. It can be a bool
+            variable or a function that return true or false.
+
+        :param tracer:
+            An instance of OpenTracing Tracer (http://opentracing.io).
+            If not provided, a global `opentracing.tracer` will be used.
 
         :param context_provider_fn:
             A getter function to retrieve an instance of
-            context.RequestContextProvider used to manage
-            thread-local request context.
+            ``tracing.TracingContextProvider`` used to manage tracing span
+            in a thread-local request context.
         """
 
         self._state = State.ready
         if context_provider_fn:
             self.context_provider_fn = context_provider_fn
         else:
-            context_provider = RequestContextProvider()
+            context_provider = TracingContextProvider()
             self.context_provider_fn = lambda: context_provider
 
         if not dispatcher:
-            self._handler = RequestDispatcher(
-                context_provider_fn=lambda: self.context_provider_fn())
+            self._handler = RequestDispatcher()
         else:
             self._handler = dispatcher
 
@@ -139,6 +144,7 @@ class TChannel(object):
 
         self.name = name
         self._trace = trace
+        self._tracer = tracer
 
         # register event hooks
         self.event_emitter = EventEmitter()
@@ -168,6 +174,17 @@ class TChannel(object):
             return self._trace()
         else:
             return self._trace
+
+    @property
+    def tracer(self):
+        if self._tracer:
+            return self._tracer
+        else:
+            return opentracing.tracer
+
+    @property
+    def context_provider(self):
+        return self.context_provider_fn()
 
     def advertise(
         self,

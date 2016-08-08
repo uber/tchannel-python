@@ -20,6 +20,7 @@
 
 from __future__ import absolute_import
 
+import random
 import zlib
 from collections import namedtuple
 
@@ -64,6 +65,24 @@ tracing_rw = rw.instance(
     ("trace_id", rw.number(8)),     # trace_id:8
     ("traceflags", rw.number(1)),   # traceflags:1
 )
+
+
+# TODO: cython
+def _uniq_id():
+    """Create a random 64-bit unsigned long."""
+    return random.getrandbits(64)
+
+
+def random_tracing():
+    """
+    Create new Tracing() tuple with random IDs.
+    """
+    new_id = _uniq_id()
+    return Tracing(
+        span_id=new_id,
+        parent_id=0,
+        trace_id=new_id,
+        traceflags=0)
 
 
 ChecksumType = enum(

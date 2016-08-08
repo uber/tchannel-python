@@ -57,8 +57,7 @@ class PatchedClientOperation(object):
         hostport=None,
         service=None,
         arg_scheme=None,
-        retry=None,
-        parent_tracing=None,
+        **kwargs
     ):
         self.vcr_hostport = vcr_hostport
         self.hostport = hostport or ''
@@ -69,9 +68,8 @@ class PatchedClientOperation(object):
     @gen.coroutine
     def send(self, arg1, arg2, arg3,
              headers=None,
-             traceflag=None,
-             retry_limit=None,
-             ttl=None):
+             ttl=None,
+             **kwargs):
         arg1, arg2, arg3 = map(maybe_stream, [arg1, arg2, arg3])
 
         endpoint = yield read_full(arg1)

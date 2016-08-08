@@ -26,12 +26,13 @@ import json
 import logging
 
 from threading import Lock
+
 from tornado import gen
 
 from . import schemes
 from . import transport
 from . import retry
-from .context import RequestContextProvider
+from . import tracing
 from .errors import AlreadyListeningError
 from .glossary import DEFAULT_TIMEOUT
 from .health import health
@@ -39,6 +40,7 @@ from .health import Meta
 from .response import Response, TransportHeaders
 from .tornado import TChannel as DeprecatedTChannel
 from .tornado.dispatch import RequestDispatcher as DeprecatedDispatcher
+from .tracing import TracingContextProvider
 
 log = logging.getLogger('tchannel')
 
@@ -83,7 +85,7 @@ class TChannel(object):
 
     def __init__(self, name, hostport=None, process_name=None,
                  known_peers=None, trace=False, reuse_port=False,
-                 context_provider=None):
+                 context_provider=None, tracer=None):
         """
         **Note:** In general only one ``TChannel`` instance should be used at a
         time. Multiple ``TChannel`` instances are not advisable and could
@@ -100,7 +102,7 @@ class TChannel(object):
             Hyperbahn you callers do not need to know your port.
         """
 
-        self.context_provider = context_provider or RequestContextProvider()
+        self.context_provider = context_provider or TracingContextProvider()
 
         # until we move everything here,
         # lets compose the old tchannel
@@ -110,9 +112,8 @@ class TChannel(object):
             process_name=process_name,
             known_peers=known_peers,
             trace=trace,
-            dispatcher=DeprecatedDispatcher(
-                _handler_returns_response=True,
-                context_provider_fn=lambda: self.context_provider),
+            tracer=tracer,
+            dispatcher=DeprecatedDispatcher(_handler_returns_response=True),
             reuse_port=reuse_port,
             _from_new_api=True,
             context_provider_fn=lambda: self.context_provider,
@@ -132,6 +133,7 @@ class TChannel(object):
         # advertise().
         self._advertise_response = None
         self._advertise_lock = Lock()
+        tracing.api_check(tracer=tracer)
 
     def is_listening(self):
         return self._dep_tchannel.is_listening()
@@ -139,6 +141,10 @@ class TChannel(object):
     @property
     def hooks(self):
         return self._dep_tchannel.hooks
+
+    @property
+    def tracer(self):
+        return self._dep_tchannel.tracer
 
     @gen.coroutine
     def call(
@@ -154,7 +160,8 @@ class TChannel(object):
         routing_delegate=None,
         hostport=None,
         shard_key=None,
-        trace=None,
+        tracing_span=None,
+        trace=None,  # to trace or not, defaults to self._dep_tchannel.trace
     ):
         """Make low-level requests to TChannel services.
 
@@ -163,7 +170,7 @@ class TChannel(object):
         :py:class:`tchannel.schemes.ThriftArgScheme`.
         """
 
-        # TODO - dont use asserts for public API
+        # TODO - don't use asserts for public API
         assert format, "format is required"
         assert service, "service is required"
         assert arg1, "arg1 is required"
@@ -181,7 +188,8 @@ class TChannel(object):
             retry_limit = retry.DEFAULT_RETRY_LIMIT
 
         # TODO - allow filters/steps for serialization, tracing, etc...
-        context = self.context_provider.get_current_context()
+
+        tracing.apply_trace_flag(tracing_span, trace, self._dep_tchannel.trace)
 
         # calls tchannel.tornado.peer.PeerClientOperation.__init__
         operation = self._dep_tchannel.request(
@@ -189,7 +197,7 @@ class TChannel(object):
             hostport=hostport,
             arg_scheme=scheme,
             retry=retry_on,
-            parent_tracing=context.parent_tracing if context else None
+            tracing_span=tracing_span
         )
 
         # fire operation
@@ -202,10 +210,6 @@ class TChannel(object):
         if routing_delegate:
             transport_headers[transport.ROUTING_DELEGATE] = routing_delegate
 
-        # Fall back to our original TChannel's default if ``trace`` wasn't
-        # specified.
-        traceflag = self._dep_tchannel.trace if trace is None else trace
-
         response = yield operation.send(
             arg1=arg1,
             arg2=arg2,
@@ -213,7 +217,6 @@ class TChannel(object):
             headers=transport_headers,
             retry_limit=retry_limit,
             ttl=timeout,
-            traceflag=traceflag,
         )
 
         # unwrap response
