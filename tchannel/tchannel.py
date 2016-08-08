@@ -27,7 +27,6 @@ import logging
 
 from threading import Lock
 
-from tchannel import tracing
 from tornado import gen
 
 from . import schemes
