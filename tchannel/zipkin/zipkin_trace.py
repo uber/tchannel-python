@@ -24,7 +24,10 @@ from tchannel.event import EventHook
 
 
 class ZipkinTraceHook(EventHook):
-    """Deprecated no-op hook kept only for backwards compatibility."""
+    """
+    .. deprecated:: 0.27.0
+        Deprecated no-op hook kept only for backwards compatibility.
+    """
 
     DEFAULT_RATE = 0.01
 

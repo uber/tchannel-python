@@ -27,12 +27,12 @@ import logging
 
 from threading import Lock
 
-from tchannel import tracing
 from tornado import gen
 
 from . import schemes
 from . import transport
 from . import retry
+from . import tracing
 from .errors import AlreadyListeningError
 from .glossary import DEFAULT_TIMEOUT
 from .health import health
@@ -133,6 +133,7 @@ class TChannel(object):
         # advertise().
         self._advertise_response = None
         self._advertise_lock = Lock()
+        tracing.api_check(tracer=tracer)
 
     def is_listening(self):
         return self._dep_tchannel.is_listening()
