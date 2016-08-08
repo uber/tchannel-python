@@ -265,3 +265,9 @@ def apply_trace_flag(span, trace, default_trace):
     trace = trace() if callable(trace) else trace
     if trace is False and span:
         span.set_tag(tags.SAMPLING_PRIORITY, 0)
+
+
+def api_check(tracer):
+    tracer = tracer or opentracing.tracer
+    assert not hasattr(tracer, 'join'), \
+        'This version of TChannel requires opentracing>=1.1'
