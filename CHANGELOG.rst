@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.27.0 (unreleased)
+0.27.0 (2016-08-08)
 -------------------
 
 - Native integration with OpenTracing (for real this time)
