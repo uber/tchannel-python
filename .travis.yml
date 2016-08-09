@@ -10,6 +10,10 @@ services:
 #
 language: python
 env:
+  global:
+    - DOCKER_COMPOSE_VERSION=1.8.0
+    - COMMIT=${TRAVIS_COMMIT::8}
+  matrix:
     - TOX_ENV=py27-tornado42
     - TOX_ENV=py27-tornado43
     - TOX_ENV=pypy-tornado42
@@ -18,6 +22,10 @@ env:
     - TOX_ENV=flake8
     - TOX_ENV=docs
     - TOX_ENV=benchmark
+    - TOX_ENV=crossdock
+
+before_install:
+  - make crossdock_install_ci
 
 install:
   - make install
@@ -27,4 +35,3 @@ script:
 
 after_success:
   - coveralls -v
-
