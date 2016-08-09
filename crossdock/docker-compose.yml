@@ -21,7 +21,7 @@ services:
             - REPORT=list
 
     go:
-        image: crossdock_go
+        image: tchannelhub/xdock-go:crossdock-in-travis
         ports:
             - "8080-8082"
 
