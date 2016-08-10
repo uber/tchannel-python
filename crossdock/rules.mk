@@ -38,11 +38,13 @@ ifeq ($(TOX_ENV), crossdock)
 	sudo mv docker-compose /usr/local/bin
 	docker-compose version
 else
-	@echo Skipping installation of Docker
+	true
 endif
 
 .PHONY: crossdock_logs_ci
 crossdock_logs_ci:
-ifdef SHOULD_XDOCK
+ifeq ($(TOX_ENV), crossdock)
 	docker-compose -f $(XDOCK_YAML) logs
+else
+	true
 endif

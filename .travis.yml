@@ -32,6 +32,7 @@ install:
 
 script:
   - make test_ci
+  - make crossdock_logs_ci
 
 after_success:
   - coveralls -v
