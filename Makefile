@@ -14,6 +14,8 @@ TEST_LOG_FILE=test-server.log
 
 .DEFAULT_GOAL := test-lint
 
+-include crossdock/rules.mk
+
 
 env/bin/activate:
 	virtualenv env
@@ -46,7 +48,11 @@ test: clean
 
 .PHONY: test_ci
 test_ci: clean
+ifeq ($(TOX_ENV), crossdock)
+	$(MAKE) crossdock
+else
 	tox -e $(TOX_ENV) -- tests
+endif
 
 .PHONY: benchmark
 benchmark:
