@@ -71,16 +71,14 @@ def tracer():
         tracer.close()
 
 
-@pytest.mark.parametrize('s2_encoding,s3_encoding,sampled', [
-    ('json', 'json', True),
-    ('json', 'thrift', True),
-    ('thrift', 'json', True),
-    ('thrift', 'thrift', True),
-    ('json', 'json', False),
-    ('json', 'thrift', False),
-    ('thrift', 'json', False),
-    ('thrift', 'thrift', False),
-])
+PERMUTATIONS = []
+for s2 in ['json', 'thrift']:
+    for s3 in ['json', 'thrift']:
+        for sampled in [True, False]:
+            PERMUTATIONS.append((s2, s3, sampled))
+
+
+@pytest.mark.parametrize('s2_encoding,s3_encoding,sampled', PERMUTATIONS)
 @pytest.mark.gen_test
 def test_trace_propagation(
         s2_encoding, s3_encoding, sampled,

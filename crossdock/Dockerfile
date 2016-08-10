@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN python setup.py install
 
 COPY crossdock ${APPDIR}/crossdock/
-COPY crossdock/setup_crossdock.py ${APPDIR}
+COPY crossdock/setup.py ${APPDIR}/setup_crossdock.py
 RUN python setup_crossdock.py install
 
 CMD ["crossdock"]
