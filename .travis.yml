@@ -13,6 +13,10 @@ env:
   global:
     - DOCKER_COMPOSE_VERSION=1.8.0
     - COMMIT=${TRAVIS_COMMIT::8}
+    # DOCKER_PASS
+    - secure: jmujcA176F+2qIGThWJi2RVmAUf8bhqjri6FJJenknwHsl5gs3UXkgtux6h2C02IOvyj97Ng6GN5WIDRObhKcnke2M6KBKguWh9CapX5XgAEci9i1HYUG9bWrlzwYvWuj/VLZJwmzoprCVJExzRVghw9jWmDv8TTQs6T8RJuWORMN9nn51ovm+4FrMoOVQj4mUBEvU+mag+0i5INsJ2JZyXUpx2qTu05urjsEUtJxFq3dLSsEKM2y9oKRmJTO57xhGSS0ew+QRvr8h15HRUydqW5kmaTbLRCX2vuXLSlU9iMUdQxYsrht5i8NoGriv+uoxHaa/s904BwefMXWqmV76EXSKSypXBzBu2QhTvTX/wusnibiriMwkLLd0Xl+1bRqs5A+U+csi8u2R7Uim6wuWOCpg/ce6S/BWMWQtdkt90IY0a2cm2furp7g5kSqPShLz3wbKeD7d7GoYAcL53jI713ruaJBO+KJkr8IqyP7yk2KXa3l97OoaA9h9BYYgYd2fX9NQ6wHUA2qsNloJFydgGoGQ5jbG3da3x7kN7wHzOyNYOiB0LPejnQG66OrxWBvkcGR7zeEGIm+GicbwGZ03EebLl0LnXnvmSE5jJtcnjFQRLc4QLIdWViwTaZgll9h9A43GEum08JMqpKg/tWg1h+CnpC/dyizNSPGNqA5yg=
+    # DOCKER_USER
+    - secure: zTYWdKexitzOizfPCxZ/O7LwSy0B8P0iwwzHueXnVC/Z/8tR0lPorqfy8pY1Ctc5yRuFMDMrmk+HHcb1ox+QoBcWrSZwmR5GAe5Uf7Hy/qzngqGb4qg6cAtUEIzPQN8PGNI0sun50WiiZV4/M05pCL5IKYgilsfKE8ecBXmEu9iMyH7f1U9h7KVQoxe1VaOZHhSz549xUnug5H4Xq+ou62MxDhkLHMkBf9BsFyHWNbw06YIbbArho8V8Hmz28y3ejsjtRzPGS+BHhsX9lCek7MI9NNM5MWar1ZRhmU6qShmoRl9H0eG3bgs5/8iUQWLQQeEgEr8DgFcVYfHAavJqBenyir7Qok+9PBuP5lc/SvNgLmG5pHsUX+Py0luJzyTqDoFn+2TV+zfFYVdWpMnXrYKyE+NGL7QSvhfPby4EzAMA1KeS3QkK9F+1LPU7U6+Q92+cQ69GZGaVG8tAdy/XpJw+q+PSjflNxRVXkJp1mqGkyU07h5bGwCj6GE1FvE160QiFVg0Tz7rNGLRmYPRLAxk8gCc6E+rMljF+/LoLWdYohFfRoPe2K0l8rsi/wqsX4xLp22oWr29woKF40lyIokTLcv1sDo8xwMSeNA0ledUTREGb33fWoWoB/ZJDAnKZMY1SWUEi+owGtW3aRJlN5auOoPoe7LxMf3HlzyojEaQ=
   matrix:
     - TOX_ENV=crossdock
     - TOX_ENV=py27-tornado42
@@ -36,3 +40,17 @@ script:
 
 after_success:
   - coveralls -v
+
+after_success:
+- export REPO=tchannelhub/xdock-py
+- export PR=https://api.github.com/repos/$TRAVIS_REPO_SLUG/pulls/$TRAVIS_PULL_REQUEST
+- export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo `curl -s $PR | jq -r .head.ref`; fi)
+- export TAG=`if [ "$BRANCH" == "master" ]; then echo "latest"; else echo $BRANCH; fi`
+- echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, REPO=$REPO, PR=$PR, BRANCH=$BRANCH, TAG=$TAG"
+- export DOCKER=$(if [ "$TOX_ENV" == "crossdock" ]; then echo docker; else echo true; fi)
+- $DOCKER login -u $DOCKER_USER -p $DOCKER_PASS
+- $DOCKER build -f crossdock/Dockerfile -t $REPO:$COMMIT .
+- $DOCKER tag $REPO:$COMMIT $REPO:$TAG
+- $DOCKER tag $REPO:$COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
+- $DOCKER push $REPO
+
