@@ -4,7 +4,7 @@ Changes by Version
 0.27.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Bug fix: set Trace.parent_id to 0 if it's None
 
 
 0.27.0 (2016-08-08)
