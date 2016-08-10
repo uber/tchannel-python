@@ -233,7 +233,7 @@ def span_to_tracing_field(span):
         span.tracer.inject(span, ZIPKIN_SPAN_FORMAT, carrier)
         tracing = Tracing(span_id=carrier['span_id'],
                           trace_id=carrier['trace_id'],
-                          parent_id=carrier['parent_id'],
+                          parent_id=carrier['parent_id'] or 0L,
                           traceflags=carrier['traceflags'])
         return tracing
     except opentracing.UnsupportedFormatException:
