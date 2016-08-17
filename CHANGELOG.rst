@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.27.2 (unreleased)
+0.27.2 (2016-08-17)
 -------------------
 
 - VCR should ignore tracing headers when matching requests. This will allow
