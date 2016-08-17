@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.27.2 (unreleased)
+0.28.0 (unreleased)
 -------------------
 
 - Don't send more Hyperbahn advertise requests if an existing request is
