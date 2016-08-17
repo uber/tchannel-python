@@ -23,9 +23,9 @@ from __future__ import absolute_import
 import os
 import json
 import pytest
-import tornado
+from tornado import gen
 
-from tchannel.errors import NoAvailablePeerError
+from tchannel.errors import NoAvailablePeerError, UnexpectedError
 from tchannel.tornado import TChannel
 from tchannel.tornado import hyperbahn
 
@@ -107,25 +107,172 @@ def test_request():
         )
 
 
-@pytest.mark.gen_test
-def test_advertise():
-    server = TChannel(name="test_server")
+class Fakebahn(object):
 
-    @server.register('ad', 'json')
-    @tornado.gen.coroutine
-    def ad(request, response):
+    def __init__(self, handle):
+        self.tchannel = TChannel(name='hyperbahn')
+        self.count = 0  # number of ad requests received
+
+        @self.tchannel.register('ad', 'json')
+        @gen.coroutine
+        def ad(request, response):
+            self.count += 1
+            yield handle(request, response)
+
+    @property
+    def hostport(self):
+        return self.tchannel.hostport
+
+    def start(self):
+        self.tchannel.listen()
+
+    def stop(self):
+        self.tchannel.close()
+
+
+@pytest.yield_fixture
+def echobahn(io_loop):
+    """A Hyperbahn that just echoes requests back."""
+
+    @gen.coroutine
+    def echo(request, response):
         body = yield request.get_body()
         response.write_body(body)
 
-    server.listen()
+    server = Fakebahn(echo)
+    try:
+        server.start()
+        yield server
+    finally:
+        server.stop()
+
+
+@pytest.mark.gen_test
+def test_advertise(echobahn):
     channel = TChannel(name='test')
 
-    response = yield hyperbahn.advertise(
-        channel,
-        'test', [server.hostport]
-    )
+    response = yield hyperbahn.advertise(channel, 'test', [echobahn.hostport])
     result = yield response.get_body()
     assert (
         result == '{"services": [{"serviceName": "test", "cost": 0}]}' or
         result == '{"services": [{"cost": 0, "serviceName": "test"}]}'
     )
+
+
+@pytest.mark.gen_test
+def test_advertiser_stop(echobahn):
+    adv = hyperbahn.Advertiser(
+        'foo', TChannel('foo', known_peers=[echobahn.hostport]),
+        interval_secs=0.2,
+        interval_max_jitter_secs=0.0,
+    )
+    yield adv.start()
+    assert 1 == echobahn.count
+
+    yield gen.sleep(0.25)
+    assert 2 == echobahn.count
+
+    adv.stop()
+
+    yield gen.sleep(0.25)
+    assert 2 == echobahn.count
+
+    adv.stop()  # no-op
+    assert 2 == echobahn.count
+
+
+@pytest.mark.gen_test
+def test_advertiser_fail_to_start():
+
+    @gen.coroutine
+    def fail(request, response):
+        raise Exception('great sadness')
+
+    hb = Fakebahn(fail)
+    try:
+        hb.start()
+        adv = hyperbahn.Advertiser(
+            'foo', TChannel('foo', known_peers=[hb.hostport]),
+        )
+
+        with pytest.raises(UnexpectedError) as exc_info:
+            yield adv.start()
+
+        assert 'great sadness' in str(exc_info)
+        assert 1 == hb.count
+    finally:
+        hb.stop()
+
+
+@pytest.mark.gen_test
+def test_advertiser_fail():
+    @gen.coroutine
+    def fail(request, response):
+        body = yield request.get_body()
+        if hb.count == 1:
+            # fail only the first request
+            response.status_code = 1
+        response.write_body(body)
+
+    hb = Fakebahn(fail)
+    try:
+        hb.start()
+        adv = hyperbahn.Advertiser(
+            'foo', TChannel('foo', known_peers=[hb.hostport]),
+            interval_secs=0.2,
+            interval_max_jitter_secs=0.0,
+        )
+
+        yield adv.start()
+        assert 1 == hb.count
+
+        yield gen.sleep(0.25)
+        assert 2 == hb.count
+    finally:
+        hb.stop()
+
+
+@pytest.mark.gen_test
+def test_advertiser_start_twice(echobahn):
+    adv = hyperbahn.Advertiser(
+        'foo', TChannel('foo', known_peers=[echobahn.hostport]),
+    )
+    yield adv.start()
+
+    with pytest.raises(Exception) as exc_info:
+        yield adv.start()
+
+    assert 'already running' in str(exc_info)
+    assert 1 == echobahn.count
+
+
+@pytest.mark.gen_test
+def test_advertiser_intermediate_failure():
+
+    @gen.coroutine
+    def handle(request, response):
+        body = yield request.get_body()
+        if hb.count == 2:
+            # fail the second request only
+            raise Exception('great sadness')
+        response.write_body(body)
+
+    hb = Fakebahn(handle)
+    try:
+        hb.start()
+        adv = hyperbahn.Advertiser(
+            'foo', TChannel('foo', known_peers=[hb.hostport]),
+            interval_secs=0.2,
+            interval_max_jitter_secs=0.0,
+        )
+
+        yield adv.start()
+        assert 1 == hb.count
+
+        yield gen.sleep(0.25)
+        assert 2 == hb.count
+
+        yield gen.sleep(0.25)
+        assert 3 == hb.count
+    finally:
+        hb.stop()

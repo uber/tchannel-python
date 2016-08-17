@@ -20,90 +20,140 @@
 
 from __future__ import absolute_import
 
+import sys
 import json
 import logging
 import random
-import time
 
 import tornado.gen
 import tornado.ioloop
 
-from ..errors import TimeoutError
 from .response import StatusCode
 
-EXPO_BASE = 1.4  # try this first
-MAX_DELAY = 10  # sec
-MAX_ATTEMPT = 7  # pow(1.4, 8) > 10
 DELAY = 3 * 60 * 1000  # ms delay time for successful advertise
-FIRST_ADVERTISE_TIME = 30  # sec
+PER_ATTEMPT_TIMEOUT = 2.0  # seconds
+FIRST_ADVERTISE_TIME = PER_ATTEMPT_TIMEOUT
+DEFAULT_INTERVAL_MAX_JITTER_SECS = 5
 
 log = logging.getLogger('tchannel')
 
 
-def _prepare_next_ad(attempt_counter):
-    delay_time = random.uniform(
-        0, min(MAX_DELAY, EXPO_BASE ** attempt_counter)
-    )
-    attempt_counter = min(attempt_counter, MAX_ATTEMPT)
-    return attempt_counter, delay_time
+class Advertiser(object):
+    """Advertiser controls the advertise loop for Hyperbahn.
 
+    :param service:
+        Name to advertise as
+    :param tchannel:
+        ``tchannel.tornado.TChannel`` instance to use to advertise
+    :param io_loop:
+        IOLoop to schedule asynchronous operations. The current IOLoop will be
+        used if one isn't specified.
+    :param interval_secs:
+        Interval (in milliseconds) at which new ``ad`` requests are broadcast.
+        Defaults to 3 minutes.
+    :param ttl_secs:
+        Time (in seconds) to wait for a single ``ad`` request. Defaults to 2
+        seconds.
+    :param interval_max_jitter_secs:
+        Variance allowed in the interval per request. Defaults to 5 seconds.
+        The jitter applies to the initial advertise request as well.
+    """
 
-@tornado.gen.coroutine
-def _advertise(tchannel, service):
-    response = None
-    try:
-        response = yield tchannel.request(service='hyperbahn').send(
-            arg1='ad',  # advertise
-            arg2='',
-            arg3=json.dumps({
-                'services': [
-                    {
-                        'serviceName': service,
-                        'cost': 0,
-                    }
-                ]
-            }),
-            headers={'as': 'json'},
-            retry_limit=0,
-            ttl=2.0,
-        )
-    except Exception as e:  # Big scope to keep it alive.
-        log.info('Failed to register with Hyperbahn: %s', e, exc_info=True)
-    else:
-        if response.code != StatusCode.ok:
-            log.info('Failed to register with Hyperbahn: %s', response)
-        else:
-            log.info('Successfully registered with Hyperbahn')
+    def __init__(self, service, tchannel, interval_secs=None, ttl_secs=None,
+                 interval_max_jitter_secs=None, io_loop=None):
+        if interval_secs is None:
+            interval_secs = DELAY / 1000.0
+        if ttl_secs is None:
+            ttl_secs = PER_ATTEMPT_TIMEOUT
+        if interval_max_jitter_secs is None:
+            interval_max_jitter_secs = DEFAULT_INTERVAL_MAX_JITTER_SECS
 
-    raise tornado.gen.Return(response)
+        self.service = service
+        self.tchannel = tchannel
 
+        self.interval_secs = interval_secs
+        self.ttl_secs = ttl_secs
+        self.interval_max_jitter_secs = interval_max_jitter_secs
+        self.running = False
+        self.io_loop = io_loop
+        self._next_ad = None
 
-@tornado.gen.coroutine
-def _advertise_with_backoff(tchannel, service, timeout=None):
-    # first advertise rule apply here.
-    attempt_counter = 0
-    start = time.time()
+    def start(self):
+        """Starts the advertise loop.
 
-    while True:
-        if timeout and time.time() - start > timeout:
-            raise TimeoutError(
-                "Failed to register with Hyperbahn due to timeout.",
+        Returns the result of the first ad request.
+        """
+        if self.running:
+            raise Exception('Advertiser is already running')
+        if self.io_loop is None:
+            self.io_loop = tornado.ioloop.IOLoop.current()
+
+        self.running = True
+        answer = tornado.gen.Future()
+        self._schedule_ad(0, answer)
+        return answer
+
+    def stop(self):
+        self.running = False
+        if self._next_ad is not None:
+            t, self._next_ad = self._next_ad, None
+            self.io_loop.remove_timeout(t)
+
+    def _schedule_ad(self, delay=None, response_future=None):
+        """Schedules an ``ad`` request.
+
+        :param delay:
+            Time in seconds to wait before making the ``ad`` request. Defaults
+            to self.interval_secs. Regardless of value, a jitter of
+            self.interval_max_jitter_secs is applied to this.
+        :param response_future:
+            If non-None, the result of the advertise request is filled into
+            this future.
+        """
+        if not self.running:
+            return
+
+        if delay is None:
+            delay = self.interval_secs
+
+        delay += random.uniform(0, self.interval_max_jitter_secs)
+        self._next_ad = self.io_loop.call_later(delay, self._ad,
+                                                response_future)
+
+    @tornado.gen.coroutine
+    def _ad(self, response_future=None):
+        self._next_ad = None
+        try:
+            response = yield self.tchannel.request(service='hyperbahn').send(
+                arg1='ad',  # advertise
+                arg2='',
+                arg3=json.dumps({
+                    'services': [
+                        {
+                            'serviceName': self.service,
+                            'cost': 0,
+                        }
+                    ]
+                }),
+                headers={'as': 'json'},
+                retry_limit=0,
+                ttl=self.ttl_secs,
             )
+        except Exception as e:
+            log.info('Failed to register with Hyperbahn: %s', e, exc_info=True)
+            if response_future is not None:
+                response_future.set_exc_info(sys.exc_info())
+        else:
+            if response.code != StatusCode.ok:
+                log.info('Failed to register with Hyperbahn: %s', response)
+            else:
+                log.info('Successfully registered with Hyperbahn')
+            if response_future is not None:
+                response_future.set_result(response)
+        finally:
+            self.io_loop.spawn_callback(self._schedule_ad)
 
-        response = yield _advertise(tchannel, service)
 
-        if response is not None and response.code is StatusCode.ok:
-            break
-
-        attempt_counter += 1
-        attempt_counter, delay_time = _prepare_next_ad(attempt_counter)
-
-        yield tornado.gen.sleep(delay_time)
-
-    raise tornado.gen.Return(response)
-
-
-@tornado.gen.coroutine
 def advertise(tchannel, service, routers=None, timeout=None, router_file=None):
     """Advertise with Hyperbahn.
 
@@ -128,16 +178,8 @@ def advertise(tchannel, service, routers=None, timeout=None, router_file=None):
         # TChannel already knows about some of the routers.
         tchannel.peers.get(router)
 
-    result = yield _advertise_with_backoff(
-        tchannel, service, timeout=timeout
-    )
+    adv = Advertiser(service, tchannel, ttl_secs=timeout)
+    return adv.start()
 
-    advertise_loop = tornado.ioloop.PeriodicCallback(
-        lambda: _advertise_with_backoff(tchannel, service, timeout=None),
-        DELAY,
-    )
-    advertise_loop.start()
-
-    raise tornado.gen.Return(result)
 
 advertize = advertise  # just in case
