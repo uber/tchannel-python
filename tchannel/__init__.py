@@ -22,7 +22,7 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals
 )
 
-__version__ = '0.28.0'
+__version__ = '0.28.1.dev0'
 # Update setup.py when changing this. zest.releaser doesn't support updating
 # both of them yet.
 
