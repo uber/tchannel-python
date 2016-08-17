@@ -22,6 +22,8 @@ from __future__ import absolute_import
 
 import os
 import os.path
+import json
+
 from itertools import chain
 from collections import deque
 from collections import namedtuple
@@ -33,6 +35,8 @@ from .exceptions import RequestNotFoundError
 from .exceptions import UnsupportedVersionError
 from .record_modes import RecordMode
 from . import proxy
+from tchannel import tracing
+from tchannel.serializer.thrift import ThriftSerializer
 
 __all__ = ['Cassette', 'DEFAULT_MATCHERS']
 
@@ -66,6 +70,62 @@ def attrmatcher(name):
 
     return matcher
 
+
+def filter_headers(hs):
+    return {
+        k: v for k, v in hs.iteritems()
+        if not k.startswith(tracing.TRACING_KEY_PREFIX)
+    }
+
+
+def json_headers_matcher(l, r):
+    try:
+        left = json.loads(l)  # raises ValueError
+        right = json.loads(r)
+
+        if not isinstance(left, dict) or not isinstance(right, dict):
+            return left == right
+
+        return filter_headers(left) == filter_headers(right)
+    except ValueError:
+        # fall back to matching values
+        return l == r
+
+
+def thrift_headers_matcher(l, r):
+    serializer = ThriftSerializer(None)
+    try:
+        left = serializer.deserialize_header(l)
+        right = serializer.deserialize_header(r)
+
+        return filter_headers(left) == filter_headers(right)
+    except Exception:
+        return l == r
+
+
+_HEADER_MATCHERS = {
+    proxy.ArgScheme.JSON: json_headers_matcher,
+    proxy.ArgScheme.THRIFT: thrift_headers_matcher,
+}
+
+
+def headers_matcher(left, right):
+    """A matcher that matches if the headers match.
+
+    This ignores the tracing headers if we know how to parse the application
+    headers.
+    """
+    if left.argScheme != right.argScheme:
+        return False
+
+    m = _HEADER_MATCHERS.get(left.argScheme)
+    if m is None:
+        # We don't know how to parse these headers. Just match the headers
+        # as-is.
+        return left.headers == right.headers
+    return m(left.headers, right.headers)
+
+
 # A dictionary from matcher name to matcher.
 #
 # A matcher is a function that takes two arguments and returns true if they
@@ -74,10 +134,12 @@ def attrmatcher(name):
 # The dictionary contains all known matchers.
 _MATCHERS = {
     n: attrmatcher(n) for n in (
-        'serviceName', 'hostPort', 'endpoint', 'headers', 'body', 'argScheme',
+        'serviceName', 'hostPort', 'endpoint', 'body', 'argScheme',
         'transportHeaders',
     )
 }
+
+_MATCHERS['headers'] = headers_matcher
 
 
 DEFAULT_MATCHERS = (

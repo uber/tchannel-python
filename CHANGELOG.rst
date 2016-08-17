@@ -1,6 +1,14 @@
 Changes by Version
 ==================
 
+0.27.2 (unreleased)
+-------------------
+
+- VCR should ignore tracing headers when matching requests. This will allow
+  replaying requests with or without tracing regardless of whether the original
+  request was recorded with it.
+
+
 0.27.1 (2016-08-10)
 -------------------
 
