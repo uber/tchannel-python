@@ -1,0 +1,19 @@
+interactions:
+- request:
+    argScheme: 1
+    body: '"world"'
+    endpoint: !!python/unicode 'hello'
+    headers: '{"$tracing$uber-trace-id": "ca18ff55ca2d44ac:ca18ff55ca2d44ac:0:1"}'
+    hostPort: localhost:54324
+    knownPeers: []
+    serviceName: !!python/unicode 'hello_service'
+    transportHeaders:
+    - key: as
+      value: json
+    - key: cn
+      value: client
+  response:
+    body: '"world"'
+    code: 0
+    headers: '{}'
+version: 1

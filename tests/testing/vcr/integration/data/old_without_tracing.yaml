@@ -1,0 +1,19 @@
+interactions:
+- request:
+    argScheme: 1
+    body: '"world"'
+    endpoint: !!python/unicode 'hello'
+    headers: '{}'
+    hostPort: localhost:58493
+    knownPeers: []
+    serviceName: !!python/unicode 'hello_service'
+    transportHeaders:
+    - key: as
+      value: json
+    - key: cn
+      value: client
+  response:
+    body: '"world"'
+    code: 0
+    headers: '{}'
+version: 1
