@@ -20,18 +20,50 @@
 
 from __future__ import absolute_import
 
+import os
 import pytest
 from tornado import gen
 from functools import partial
+
+from jaeger_client import Tracer, ConstSampler
+from jaeger_client.reporter import InMemoryReporter
 
 from tchannel.errors import UnexpectedError, TimeoutError
 from tchannel.thrift import client_for
 from tchannel.testing import vcr
 
 
-@pytest.fixture(params=[True, False], ids=('old', 'new'))
-def use_old_api(request):
+@pytest.yield_fixture
+def tracer():
+    reporter = InMemoryReporter()
+    tracer = Tracer(
+        service_name='test-tracer',
+        sampler=ConstSampler(True),
+        reporter=reporter,
+    )
+    try:
+        yield tracer
+    finally:
+        tracer.close()
+
+
+@pytest.fixture(params=['old', 'new', 'new,tracing'])
+def api(request):
     return request.param
+
+
+@pytest.fixture
+def use_old_api(api):
+    return api == 'old'
+
+
+@pytest.fixture
+def trace_kwargs(api, tracer):
+    kwargs = {}
+    if 'tracing' in api.split(','):
+        kwargs['trace'] = True
+        kwargs['tracer'] = tracer
+    return kwargs
 
 
 @pytest.fixture
@@ -46,7 +78,7 @@ def get_body(use_old_api):
 
 
 @pytest.fixture
-def call(mock_server, use_old_api):
+def call(mock_server, use_old_api, trace_kwargs):
     if use_old_api:
         from tchannel.tornado import TChannel
 
@@ -63,8 +95,7 @@ def call(mock_server, use_old_api):
         return old_f
     else:
         from tchannel import TChannel
-
-        channel = TChannel('test-client')
+        channel = TChannel('test-client', **trace_kwargs)
 
         def new_f(endpoint, body, headers=None, service=None, scheme=None,
                   ttl=None):
@@ -83,7 +114,7 @@ def call(mock_server, use_old_api):
 
 
 @pytest.fixture
-def thrift_client(thrift_service, mock_server, use_old_api):
+def thrift_client(thrift_service, mock_server, use_old_api, trace_kwargs):
     if use_old_api:
         from tchannel.tornado import TChannel
 
@@ -99,7 +130,7 @@ def thrift_client(thrift_service, mock_server, use_old_api):
             'myservice', thrift_service, hostport=mock_server.hostport
         )
         return mk_fake_client(
-            TChannel('thrift-client'),
+            TChannel('thrift-client', **trace_kwargs),
             myservice
         )
 
@@ -320,3 +351,95 @@ def test_record_success_with_ttl_timeout(tmpdir, mock_server, call, get_body):
             assert 'world' == (yield get_body(response))
 
     assert cass.play_count == 0
+
+
+@pytest.mark.gen_test
+@pytest.mark.parametrize('tracing_before, tracing_after', [
+    (True, True),
+    (True, False),
+    (False, True),
+    (False, False),
+], ids=['trace-trace', 'trace-notrace', 'notrace-trace', 'notrace-notrace'])
+def test_vcr_with_tracing(
+    tmpdir, mock_server, tracer, tracing_before, tracing_after
+):
+    from tchannel import TChannel
+
+    mock_server.expect_call('hello', 'json').and_write('world').once()
+
+    path = tmpdir.join('data.yaml')
+
+    if tracing_before:
+        ch = TChannel('client', trace=True, tracer=tracer)
+    else:
+        ch = TChannel('client')
+
+    with vcr.use_cassette(str(path)) as cass:
+        response = yield ch.json(
+            hostport=mock_server.hostport,
+            service='hello_service',
+            endpoint='hello',
+            body='world',
+        )
+        assert 'world' == response.body
+
+    assert cass.play_count == 0
+    assert path.check(file=True)
+
+    if tracing_after:
+        ch = TChannel('client', trace=True, tracer=tracer)
+    else:
+        ch = TChannel('client')
+
+    with vcr.use_cassette(str(path), record_mode=vcr.RecordMode.NONE) as cass:
+        response = yield ch.json(
+            hostport=mock_server.hostport,
+            service='hello_service',
+            endpoint='hello',
+            body='world',
+        )
+        assert 'world' == response.body
+
+    assert cass.play_count == 1
+
+
+@pytest.mark.gen_test
+def test_old_recording_with_tracing(mock_server, tracer):
+    from tchannel import TChannel
+
+    # an existing recording that contains tracing information
+    path = os.path.join(
+        os.path.dirname(__file__), 'data', 'old_with_tracing.yaml'
+    )
+    ch = TChannel('client', trace=True, tracer=tracer)
+
+    mock_server.expect_call('hello', 'json').and_write('world').once()
+    with vcr.use_cassette(path, record_mode=vcr.RecordMode.NONE):
+        response = yield ch.json(
+            hostport=mock_server.hostport,
+            service='hello_service',
+            endpoint='hello',
+            body='world',
+        )
+        assert 'world' == response.body
+
+
+@pytest.mark.gen_test
+def test_old_recording_without_tracing(mock_server, tracer):
+    from tchannel import TChannel
+
+    # an existing recording that does not contain tracing information
+    path = os.path.join(
+        os.path.dirname(__file__), 'data', 'old_without_tracing.yaml'
+    )
+    ch = TChannel('client', trace=True, tracer=tracer)
+
+    mock_server.expect_call('hello', 'json').and_write('world').once()
+    with vcr.use_cassette(path, record_mode=vcr.RecordMode.NONE):
+        response = yield ch.json(
+            hostport=mock_server.hostport,
+            service='hello_service',
+            endpoint='hello',
+            body='world',
+        )
+        assert 'world' == response.body
