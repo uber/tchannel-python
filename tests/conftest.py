@@ -46,6 +46,19 @@ class _MockConnection(object):
         pass
 
 
+@pytest.yield_fixture(autouse=True)
+def _reduce_ad_jitter():
+    from tchannel.tornado import hyperbahn
+    # For all tests, reduce jitter to 0.5 seconds so they don't take too long
+    # to run.
+    original = hyperbahn.DEFAULT_INTERVAL_MAX_JITTER_SECS
+    try:
+        hyperbahn.DEFAULT_INTERVAL_MAX_JITTER_SECS = 0.5
+        yield
+    finally:
+        hyperbahn.DEFAULT_INTERVAL_MAX_JITTER_SECS = original
+
+
 @pytest.fixture
 def connection():
     """Make a mock connection."""

@@ -1,10 +1,14 @@
 Changes by Version
 ==================
 
-0.27.3 (unreleased)
+0.28.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Don't send more Hyperbahn advertise requests if an existing request is
+  ongoing.
+- Add jitter between Hyperbahn consecutive advertise requests.
+- If the initial advertise request fails, propagate the original error instead
+  of a timeout error.
 
 
 0.27.2 (2016-08-17)
