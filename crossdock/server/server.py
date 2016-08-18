@@ -69,6 +69,7 @@ def register_tchannel_handlers(tchannel):
     @tchannel.thrift.register(thrift_service.SimpleService, method='Call')
     @tornado.gen.coroutine
     def thrift_trace_handler(request):
+        logging.info('Received thrift request: %s', request.body.arg.s2)
         req = json.loads(request.body.arg.s2)
         res = yield _process_request(req)
         data = thrift_service.Data(b1=False, i3=0, s2=json.dumps(res))
@@ -89,6 +90,7 @@ def register_tchannel_handlers(tchannel):
 
 def observe_span():
     span = get_current_span()
+    logging.info('Observed span: %s', span)
     if span is None:
         return api.ObservedSpan(traceId='missing', sampled=False, baggage='')
     return api.ObservedSpan(
