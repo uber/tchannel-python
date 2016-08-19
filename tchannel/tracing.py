@@ -114,12 +114,15 @@ class ServerTracer(object):
         """
         # noinspection PyBroadException
         try:
-            context = self.tracer.extract(
-                format=ZIPKIN_SPAN_FORMAT,
-                carrier=request.tracing)
-            self.span = self.tracer.start_span(
-                operation_name=request.endpoint,
-                child_of=context)
+            # Currently Java does not populate Tracing field, so do not
+            # mistaken it for a real trace ID.
+            if request.tracing.trace_id:
+                context = self.tracer.extract(
+                    format=ZIPKIN_SPAN_FORMAT,
+                    carrier=request.tracing)
+                self.span = self.tracer.start_span(
+                    operation_name=request.endpoint,
+                    child_of=context)
         except opentracing.UnsupportedFormatException:
             pass  # tracer might not support Zipkin format
         except:
