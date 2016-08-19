@@ -2,7 +2,6 @@ Changes by Version
 ==================
 
 0.28.1 (unreleased)
--------------------
 
 - Nothing changed yet.
 
@@ -15,6 +14,12 @@ Changes by Version
 - Add jitter between Hyperbahn consecutive advertise requests.
 - If the initial advertise request fails, propagate the original error instead
   of a timeout error.
+
+
+0.27.3 (2016-08-19)
+-------------------
+
+- Ignore tracing fields with empty/zero trace ID.
 
 
 0.27.2 (2016-08-17)
