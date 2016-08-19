@@ -24,7 +24,7 @@ import pytest
 from tchannel import thrift
 from tchannel import TChannel as AsyncTchannel
 from tchannel.sync import TChannel
-from tchannel.errors import TimeoutError, BadRequestError
+from tchannel.errors import UnexpectedError, BadRequestError
 
 
 @pytest.mark.integration
@@ -104,7 +104,7 @@ def test_failing_advertise_should_raise(mock_server):
     routers = [mock_server.tchannel.hostport]
     client = TChannel('test-client')
 
-    with pytest.raises(TimeoutError):
+    with pytest.raises(UnexpectedError):
         future = client.advertise(routers, timeout=0.1)
         future.result()
 
