@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.27.3 (unreleased)
+0.27.3 (2016-08-19)
 -------------------
 
 - Ignore tracing fields with empty/zero trace ID.
