@@ -39,7 +39,7 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    packages=find_packages(exclude=['tests', 'tests.*']),
+    packages=find_packages(exclude=['crossdock', 'tests', 'tests.*']),
     package_data={
         '': ['*.thrift'],
     },
