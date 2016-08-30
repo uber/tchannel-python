@@ -4,7 +4,7 @@ Changes by Version
 0.28.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Change default setting for tracing to be enabled.
 
 
 0.28.1 (2016-08-19)
