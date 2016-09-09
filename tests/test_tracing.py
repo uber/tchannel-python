@@ -50,6 +50,8 @@ from tchannel.errors import BadRequestError
 from tchannel.event import EventHook
 from tornado import netutil
 from tornado.httpclient import HTTPRequest
+from tchannel import tracing
+
 
 BAGGAGE_KEY = b'baggage'
 
@@ -178,6 +180,7 @@ def register(tchannel, thrift_service, http_client, base_url):
             service='test-service',
             endpoint='raw2',
             hostport=host_port,
+            headers='some value that will not be parsed as a dict',
         )
         res = yield res
         print 'result', res
@@ -339,7 +342,8 @@ def test_trace_propagation(
         (r"/", HttpHandler, {'client_channel': tchannel})
     ])
 
-    with mock.patch('opentracing.tracer', tracer):
+    with mock.patch('opentracing.tracer', tracer),\
+            mock.patch.object(tracing.log, 'exception') as log_exception:
         assert opentracing.tracer == tracer  # sanity check that patch worked
 
         span = tracer.start_span('root')
@@ -390,6 +394,7 @@ def test_trace_propagation(
                     raise NotImplementedError(
                         'unknown transport %s' % transport)
             response = yield response_future
+        assert log_exception.call_count == 0
 
     body = response.body
     if expect_baggage:
