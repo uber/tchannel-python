@@ -1,6 +1,12 @@
 Changes by Version
 ==================
 
+0.28.2 (unreleased)
+-------------------
+
+- Bug fix: Tracing headers will no longer be added for raw requests if the
+  headers are unparsed.
+
 0.28.1 (2016-08-19)
 -------------------
 
