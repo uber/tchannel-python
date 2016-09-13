@@ -10,6 +10,13 @@ Changes by Version
   ``thrift()`` methods of ``TChannel``.
 
 
+0.28.2 (2016-09-12)
+-------------------
+
+- Bug fix: Tracing headers will no longer be added for raw requests if the
+  headers are unparsed.
+
+
 0.28.1 (2016-08-19)
 -------------------
 
