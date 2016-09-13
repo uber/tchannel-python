@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.29.0 (unreleased)
+0.29.0 (2016-09-12)
 -------------------
 
 - Change default setting for tracing to be enabled.
