@@ -4,7 +4,7 @@ Changes by Version
 0.29.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Pass span.kind tag when calling start_span(), not after the span was started.
 
 
 0.29.0 (2016-09-12)
