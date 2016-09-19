@@ -122,7 +122,9 @@ class ServerTracer(object):
                     carrier=request.tracing)
                 self.span = self.tracer.start_span(
                     operation_name=request.endpoint,
-                    child_of=context)
+                    child_of=context,
+                    tags={tags.SPAN_KIND: tags.SPAN_KIND_RPC_SERVER},
+                )
         except opentracing.UnsupportedFormatException:
             pass  # tracer might not support Zipkin format
         except:
@@ -160,9 +162,9 @@ class ServerTracer(object):
         if self.span is None:
             self.span = self.tracer.start_span(
                 operation_name=request.endpoint,
-                child_of=parent_context
+                child_of=parent_context,
+                tags={tags.SPAN_KIND: tags.SPAN_KIND_RPC_SERVER},
             )
-        self.span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_SERVER)
         if 'cn' in request.headers:
             self.span.set_tag(tags.PEER_SERVICE, request.headers['cn'])
         if peer_host:
