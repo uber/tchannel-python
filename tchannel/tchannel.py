@@ -292,7 +292,7 @@ class TChannel(object):
             return decorator(handler)
 
     def advertise(self, routers=None, name=None, timeout=None,
-                  router_file=None):
+                  router_file=None, jitter=None):
         """Advertise with Hyperbahn.
 
         After a successful advertisement, Hyperbahn will establish long-lived
@@ -320,6 +320,11 @@ class TChannel(object):
         :param timeout:
             The timeout (in sec) for the initial advertise attempt.
             Defaults to 30 seconds.
+
+        :param jitter:
+            Variance allowed in the interval per request. Defaults to 5
+            seconds.  The jitter applies to the initial advertise request as
+            well.
 
         :param router_file:
             The host file that contains the routers information. The file

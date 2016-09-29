@@ -191,7 +191,8 @@ class TChannel(object):
         routers=None,
         name=None,
         timeout=None,
-        router_file=None
+        router_file=None,
+        jitter=None,
     ):
         """Make a service available on the Hyperbahn routing mesh.
 
@@ -221,7 +222,14 @@ class TChannel(object):
         if not self.is_listening():
             self.listen()
 
-        return hyperbahn.advertise(self, name, routers, timeout, router_file)
+        return hyperbahn.advertise(
+            self,
+            name,
+            routers,
+            timeout,
+            router_file,
+            jitter,
+        )
 
     @property
     def closed(self):
