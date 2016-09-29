@@ -1,10 +1,11 @@
 Changes by Version
 ==================
 
-0.29.1 (unreleased)
+0.30.0 (unreleased)
 -------------------
 
 - Pass span.kind tag when calling start_span(), not after the span was started.
+- Add jitter argument to advertise().
 
 
 0.29.0 (2016-09-12)

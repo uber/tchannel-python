@@ -154,7 +154,8 @@ class Advertiser(object):
             self.io_loop.spawn_callback(self._schedule_ad)
 
 
-def advertise(tchannel, service, routers=None, timeout=None, router_file=None):
+def advertise(tchannel, service, routers=None, timeout=None, router_file=None,
+              jitter=None):
     """Advertise with Hyperbahn.
 
     See :py:class:`tchannel.TChannel.advertise`.
@@ -178,7 +179,8 @@ def advertise(tchannel, service, routers=None, timeout=None, router_file=None):
         # TChannel already knows about some of the routers.
         tchannel.peers.get(router)
 
-    adv = Advertiser(service, tchannel, ttl_secs=timeout)
+    adv = Advertiser(service, tchannel, ttl_secs=timeout,
+                     interval_max_jitter_secs=jitter)
     return adv.start()
 
 
