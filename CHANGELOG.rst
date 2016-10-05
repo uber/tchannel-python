@@ -20,11 +20,23 @@ Changes by Version
 - Support for OpenTracing.
 
 
+0.24.1 (2016-10-05)
+-------------------
+
+- Never send requests to ephemeral peers.
+
+
 0.24.0 (2016-04-19)
 -------------------
 
 - Added ``TChannel.host`` and ``TChannel.port``.
 - Added ``TChannel.close()`` and ``TChannel.is_closed()``.
+
+
+0.23.2 (2016-10-05)
+-------------------
+
+- Never send requests to ephemeral peers.
 
 
 0.23.1 (2016-04-14)
@@ -41,6 +53,12 @@ Changes by Version
 - Added an opt-in feature to use the ``SO_REUSEPORT`` socket option
   for TChannel servers. Use ``reuse_port=True`` when instantiating a
   ``TChannel``.
+
+
+0.22.4 (2016-10-05)
+-------------------
+
+- Never send requests to ephemeral peers.
 
 
 0.22.3 (2016-04-07)
