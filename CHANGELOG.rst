@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.30.1 (unreleased)
+0.30.1 (2016-10-05)
 -------------------
 
 - Relax opentracing upper bound to next major.
