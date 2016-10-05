@@ -4,7 +4,8 @@ Changes by Version
 0.30.1 (unreleased)
 -------------------
 
-- Relax opentracing upper bound to next major
+- Relax opentracing upper bound to next major.
+- Never send requests to ephemeral peers.
 
 
 0.30.0 (2016-09-29)
