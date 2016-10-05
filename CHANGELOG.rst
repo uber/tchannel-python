@@ -5,6 +5,7 @@ Changes by Version
 -------------------
 
 - Never send requests to ephemeral peers.
+- Relax opentracing upper bound to next major.
 
 
 0.29.0 (2016-09-12)
