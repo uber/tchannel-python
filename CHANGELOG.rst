@@ -17,6 +17,13 @@ Changes by Version
   ``thrift()`` methods of ``TChannel``.
 
 
+0.28.3 (2016-10-05)
+-------------------
+
+- Never send requests to ephemeral peers.
+- Relax opentracing upper bound to next major.
+
+
 0.28.2 (2016-09-12)
 -------------------
 
@@ -38,6 +45,13 @@ Changes by Version
 - Add jitter between Hyperbahn consecutive advertise requests.
 - If the initial advertise request fails, propagate the original error instead
   of a timeout error.
+
+
+0.27.4 (2016-10-05)
+-------------------
+
+- Never send requests to ephemeral peers.
+- Relax opentracing upper bound to next major.
 
 
 0.27.3 (2016-08-19)
@@ -67,11 +81,23 @@ Changes by Version
 - Replace tcollector and explicit trace reporting with OpenTracing
 
 
+0.26.1 (2016-10-05)
+-------------------
+
+- Never send requests to ephemeral peers.
+
+
 0.26.0 (2016-07-13)
 -------------------
 
 - VCR: ``use_cassette`` now uses cached copies of cassettes if their contents
   have not changed. This should improve performance for large cassette files.
+
+
+0.25.2 (2016-10-05)
+-------------------
+
+- Never send requests to ephemeral peers.
 
 
 0.25.1 (2016-06-30)
@@ -87,11 +113,23 @@ Changes by Version
 - Support for OpenTracing.
 
 
+0.24.1 (2016-10-05)
+-------------------
+
+- Never send requests to ephemeral peers.
+
+
 0.24.0 (2016-04-19)
 -------------------
 
 - Added ``TChannel.host`` and ``TChannel.port``.
 - Added ``TChannel.close()`` and ``TChannel.is_closed()``.
+
+
+0.23.2 (2016-10-05)
+-------------------
+
+- Never send requests to ephemeral peers.
 
 
 0.23.1 (2016-04-14)
@@ -108,6 +146,12 @@ Changes by Version
 - Added an opt-in feature to use the ``SO_REUSEPORT`` socket option
   for TChannel servers. Use ``reuse_port=True`` when instantiating a
   ``TChannel``.
+
+
+0.22.4 (2016-10-05)
+-------------------
+
+- Never send requests to ephemeral peers.
 
 
 0.22.3 (2016-04-07)
