@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.28.3 (unreleased)
+0.28.3 (2016-10-05)
 -------------------
 
 - Never send requests to ephemeral peers.
