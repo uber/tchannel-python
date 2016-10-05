@@ -284,7 +284,7 @@ def test_outbound_pending_change_propagate(peer):
 
 @pytest.fixture
 def hostports():
-    return ['127.0.0.1:' + str(i) for i in range(100)]
+    return ['127.0.0.1:' + str(i) for i in range(1, 101)]
 
 
 def test_choose(hostports):
@@ -326,3 +326,23 @@ def test_choose_with_target_hostport(hostports):
         peer = peer_group.choose(hostport=target)
         assert target == peer.hostport
         assert peer_group.peer_heap.size() == n
+
+
+@pytest.mark.gen_test
+def test_never_choose_ephemeral():
+    server = TChannel('server')
+    server.listen()
+
+    @server.json.register('hello')
+    def hello(request):
+        return 'hi'
+
+    # make a request to set up the connection betweeen the two.
+    client = TChannel('client')
+    yield client.json('server', 'hello', 'world', hostport=server.hostport)
+    assert [client.hostport] == server._dep_tchannel.peers.hosts
+
+    assert (server._dep_tchannel.peers.choose() is None), (
+        'choose() MUST NOT select the ephemeral peer even if that is the only'
+        'available peer'
+    )
