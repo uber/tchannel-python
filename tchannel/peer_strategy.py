@@ -51,7 +51,7 @@ class PreferIncomingCalculator(RankCalculator):
         :param peer: instance of `tchannel.tornado.peer.Peer`
         :return: rank of the peer
         """
-        if peer.is_ephemeral or not peer.connections:
+        if not peer.connections:
             return self.TIERS[0]
 
         if not peer.has_incoming_connections:
