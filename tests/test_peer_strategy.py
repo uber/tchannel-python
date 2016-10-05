@@ -61,18 +61,3 @@ def test_get_rank_with_imcoming():
     calculator = PreferIncomingCalculator()
     peer.register_incoming_conn(connection)
     assert sys.maxint != calculator.get_rank(peer)
-
-
-@pytest.mark.gen_test
-def test_get_rank_ephemeral():
-    server = TChannel('server')
-    server.listen()
-    connection = yield TornadoConnection.outgoing(server.hostport)
-    connection.direction = INCOMING
-    peer = Peer(TChannel('test'), '10.10.101.21:230')
-    peer.register_incoming_conn(connection)
-
-    peer.host = '0.0.0.0'
-    peer.port = 0
-    calculator = PreferIncomingCalculator()
-    assert sys.maxint == calculator.get_rank(peer)
