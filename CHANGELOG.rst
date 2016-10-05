@@ -4,7 +4,7 @@ Changes by Version
 0.30.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Relax opentracing upper bound to next major
 
 
 0.30.0 (2016-09-29)
