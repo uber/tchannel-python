@@ -234,7 +234,7 @@ class Peer(object):
     @property
     def is_ephemeral(self):
         """Whether this Peer is ephemeral."""
-        return self.host == '0.0.0.0' and self.port == 0
+        return self.host == '0.0.0.0' or self.port == 0
 
     @property
     def connected(self):
@@ -723,5 +723,5 @@ class PeerGroup(object):
             return self.get(hostport)
 
         return self.peer_heap.smallest_peer(
-            (lambda p: p.hostport not in blacklist),
+            (lambda p: p.hostport not in blacklist and not p.is_ephemeral),
         )
