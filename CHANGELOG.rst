@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.30.2 (unreleased)
+0.30.2 (2016-10-12)
 -------------------
 
 - Propagate message sending errors up to the caller. This should greatly reduce
