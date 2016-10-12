@@ -7,6 +7,7 @@ Changes by Version
 - Propagate message sending errors up to the caller. This should greatly reduce
   the number of ``TimeoutError: None`` issues seen by users and show the root
   cause instead.
+- Fail ``TChannel`` instantiation if the service name is empty or None.
 
 
 0.30.1 (2016-10-05)
