@@ -4,7 +4,9 @@ Changes by Version
 0.30.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Propagate message sending errors up to the caller. This should greatly reduce
+  the number of ``TimeoutError: None`` issues seen by users and show the root
+  cause instead.
 
 
 0.30.1 (2016-10-05)
