@@ -65,6 +65,9 @@ OUTGOING = object()
 INCOMING = object()
 
 
+DEFAULT_INIT_TIMEOUT_SECS = 5
+
+
 class TornadoConnection(object):
     """Manages a bi-directional TChannel conversation between two machines.
 
@@ -317,7 +320,7 @@ class TornadoConnection(object):
             self.closed = True
 
     @tornado.gen.coroutine
-    def initiate_handshake(self, headers):
+    def initiate_handshake(self, headers, timeout=None):
         """Initiate a handshake with the remote host.
 
         :param headers:
@@ -326,11 +329,29 @@ class TornadoConnection(object):
             A future that resolves (with a value of None) when the handshake
             is complete.
         """
+        io_loop = IOLoop.current()
+        timeout = timeout or DEFAULT_INIT_TIMEOUT_SECS
+
         self.writer.put(messages.InitRequestMessage(
             version=PROTOCOL_VERSION,
             headers=headers
         ))
-        init_res = yield self.reader.get()
+
+        init_res_future = self.reader.get()
+        timeout_handle = io_loop.call_later(timeout, (
+            lambda: init_res_future.set_exception(errors.TimeoutError(
+                'Handshake with %s:%d timed out. Did not receive an INIT_RES '
+                'after %s seconds' % (
+                    self.remote_host, self.remote_host_port, str(timeout)
+                )
+            ))
+        ))
+        io_loop.add_future(
+            init_res_future,
+            (lambda _: io_loop.remove_timeout(timeout_handle)),
+        )
+
+        init_res = yield init_res_future
         if init_res.message_type != Types.INIT_RES:
             raise errors.InvalidMessageError(
                 "Expected handshake response, got %s" % repr(init_res)
@@ -674,9 +695,7 @@ class StreamConnection(TornadoConnection):
 
 class Reader(object):
 
-    def __init__(self, io_stream, capacity=None):
-        capacity = capacity or 64
-
+    def __init__(self, io_stream):
         self.queue = queues.Queue()
         self.filling = False
         self.io_stream = io_stream
@@ -703,7 +722,7 @@ class Reader(object):
 
         read_message(self.io_stream).add_done_callback(keep_reading)
 
-    def get(self):
+    def get(self, timeout=None):
         """Receive the next message off the wire.
 
         :returns:
@@ -730,9 +749,7 @@ class Reader(object):
 
 class Writer(object):
 
-    def __init__(self, io_stream, capacity=None):
-        capacity = capacity or 64
-
+    def __init__(self, io_stream):
         self.queue = queues.Queue()
         self.draining = False
         self.io_stream = io_stream

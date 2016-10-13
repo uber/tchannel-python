@@ -4,7 +4,7 @@ Changes by Version
 0.30.3 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Time out handshake attempts for outgoing connections after 5 seconds.
 
 
 0.30.2 (2016-10-12)

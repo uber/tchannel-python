@@ -56,6 +56,23 @@ def test_handshake(tornado_pair):
 
 
 @pytest.mark.gen_test
+def test_outgoing_handshake_timeout(tornado_pair):
+    server, client = tornado_pair
+    headers = dummy_headers()
+
+    future = client.initiate_handshake(headers=headers, timeout=0.2)
+    msg = yield server.reader.get()
+    assert msg.message_type == messages.Types.INIT_REQ
+    # The server never responds
+
+    with pytest.raises(TimeoutError) as exc_info:
+        yield future
+    assert 'Handshake with ' in str(exc_info)
+    assert 'timed out.' in str(exc_info)
+    assert 'Did not receive an INIT_RES after 0.2 seconds' in str(exc_info)
+
+
+@pytest.mark.gen_test
 def test_pings(tornado_pair):
     """Verify calls are sent to handler properly."""
     server, client = tornado_pair
