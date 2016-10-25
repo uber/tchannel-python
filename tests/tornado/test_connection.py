@@ -29,7 +29,6 @@ from tornado.iostream import IOStream, StreamClosedError
 
 from tchannel import TChannel
 from tchannel import messages
-from tchannel.tornado.request import Request
 from tchannel.errors import TimeoutError, ReadError
 from tchannel.tornado import connection
 from tchannel.tornado.message_factory import MessageFactory
@@ -277,23 +276,3 @@ def test_reader_read_error():
     future = reader.get()
     with pytest.raises(StreamClosedError):
         yield future
-
-
-@pytest.mark.gen_test
-def test_writer_serialization_error():
-    server = TChannel('server')
-    server.listen()
-
-    conn = yield connection.StreamConnection.outgoing(
-        server.hostport, tchannel=mock.MagicMock()
-    )
-
-    with pytest.raises(AttributeError) as exc_info:
-        yield conn.send_request(Request(
-            id=conn.writer.next_message_id(),
-            service='foo',
-            endpoint='bar',
-            headers={'cn': None},
-        ))
-
-    assert "'NoneType' object has no attribute 'encode'" in str(exc_info)

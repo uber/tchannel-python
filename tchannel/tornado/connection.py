@@ -301,9 +301,12 @@ class TornadoConnection(object):
             message_factory = self.response_message_factory
 
         fragments = message_factory.fragment(message)
-        return tornado.gen.multi(
-            self.writer.put(fragment) for fragment in fragments
-        )
+
+        for fragment in fragments:
+            future = self.writer.put(fragment)
+
+        # We're done writing the message once our last future resolves.
+        return future
 
     def close(self):
         if not self.closed:
@@ -583,13 +586,12 @@ class StreamConnection(TornadoConnection):
             self.remove_pending_outbound()
             response.close_argstreams(force=True)
 
-    def stream_request(self, request, out_future):
+    def stream_request(self, request):
         """send the given request and response is not required"""
         request.close_argstreams()
 
         def on_done(future):
-            if future.exception() and out_future.running():
-                out_future.set_exc_info(future.exc_info())
+            future.exception()  # < to avoid "unconsumed exception" logs
             request.close_argstreams(force=True)
 
         stream_future = self._stream(request, self.request_message_factory)
@@ -615,7 +617,7 @@ class StreamConnection(TornadoConnection):
         future = tornado.gen.Future()
         self._outbound_pending_call[request.id] = future
         self.add_pending_outbound()
-        self.stream_request(request, future).add_done_callback(
+        self.stream_request(request).add_done_callback(
             lambda f: self.remove_pending_outbound()
         )
 
@@ -794,15 +796,10 @@ class Writer(object):
 
     def _enqueue(self, message):
         message.id = message.id or self.next_message_id()
-        done_writing_future = tornado.gen.Future()
 
-        try:
-            payload = messages.RW[message.message_type].write(
-                message, BytesIO()
-            ).getvalue()
-        except Exception:
-            done_writing_future.set_exc_info(sys.exc_info())
-            return done_writing_future
+        payload = messages.RW[message.message_type].write(
+            message, BytesIO()
+        ).getvalue()
 
         f = frame.Frame(
             header=frame.FrameHeader(
@@ -811,12 +808,9 @@ class Writer(object):
             ),
             payload=payload
         )
+        body = frame.frame_rw.write(f, BytesIO()).getvalue()
 
-        try:
-            body = frame.frame_rw.write(f, BytesIO()).getvalue()
-        except Exception:
-            done_writing_future.set_exc_info(sys.exc_info())
-            return done_writing_future
+        done_writing_future = tornado.gen.Future()
 
         def on_queue_error(f):
             if f.exception():
@@ -825,6 +819,7 @@ class Writer(object):
         self.queue.put(
             (body, done_writing_future)
         ).add_done_callback(on_queue_error)
+
         return done_writing_future
 
 ##############################################################################

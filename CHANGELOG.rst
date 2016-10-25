@@ -1,6 +1,12 @@
 Changes by Version
 ==================
 
+0.30.3 (unreleased)
+-------------------
+
+- Revert 0.30.2. The previous release may have introduced a memory leak.
+
+
 0.30.2 (2016-10-12)
 -------------------
 
