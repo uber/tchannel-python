@@ -574,14 +574,3 @@ def test_per_request_caller_name_thrift(thrift_module):
         thrift_module.Service.healthy(), caller_name='bar',
     )
     assert res.body is True
-
-
-@pytest.mark.parametrize("name", [
-    None,
-    "",
-])
-def test_service_name_is_required(name, io_loop):
-    with pytest.raises(AssertionError) as exc_info:
-        TChannel(name)
-
-    assert 'service name cannot be empty or None' in str(exc_info)
