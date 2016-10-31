@@ -234,7 +234,7 @@ class TornadoConnection(object):
                             self.response_message_factory.build(message)
                         )
                         if protocol_exception:
-                            self.event_emitter.fire(
+                            self.tchannel.event_emitter.fire(
                                 EventType.after_receive_error,
                                 protocol_exception,
                             )
@@ -356,7 +356,7 @@ class TornadoConnection(object):
 
         init_res = yield init_res_future
         if init_res.message_type != Types.INIT_RES:
-            raise errors.InvalidMessageError(
+            raise errors.UnexpectedError(
                 "Expected handshake response, got %s" % repr(init_res)
             )
         self._extract_handshake_headers(init_res)
@@ -379,7 +379,7 @@ class TornadoConnection(object):
         """
         init_req = yield self.reader.get()
         if init_req.message_type != Types.INIT_REQ:
-            raise errors.InvalidMessageError(
+            raise errors.UnexpectedError(
                 "You need to shake my hand first. Got %s" % repr(init_req)
             )
         self._extract_handshake_headers(init_req)
@@ -397,12 +397,12 @@ class TornadoConnection(object):
 
     def _extract_handshake_headers(self, message):
         if not message.host_port:
-            raise errors.InvalidMessageError(
+            raise errors.UnexpectedError(
                 'Missing required header: host_port'
             )
 
         if not message.process_name:
-            raise errors.InvalidMessageError(
+            raise errors.UnexpectedError(
                 'Missing required header: process_name'
             )
 
@@ -485,7 +485,7 @@ class TornadoConnection(object):
                 handler(message, self)
             except Exception:
                 # TODO Send error frame back
-                logging.exception("Failed to process %s", repr(message))
+                log.exception("Failed to process %s", repr(message))
 
     def send_error(self, error):
         """Convenience method for writing Error frames up the wire.
