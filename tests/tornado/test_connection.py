@@ -29,11 +29,11 @@ from tornado.iostream import IOStream, StreamClosedError
 
 from tchannel import TChannel
 from tchannel import messages
-from tchannel.tornado.request import Request
 from tchannel.errors import TimeoutError, ReadError
 from tchannel.tornado import connection
 from tchannel.tornado.message_factory import MessageFactory
 from tchannel.tornado.peer import Peer
+from tchannel.tornado.request import Request
 
 
 def dummy_headers():
