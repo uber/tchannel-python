@@ -201,6 +201,60 @@ class TornadoConnection(object):
     def _loop(self):
         io_loop = IOLoop.current()
 
+        def _step():
+            self._loop_running = not self.closed
+            if self.closed:
+                return
+
+            io_loop.add_future(self.reader.get(), _on_message)
+
+        def _on_message(future):
+            # we always schedule a _step call to make sure we never stop
+            # processing messages unless the stream was closed.
+            io_loop.spawn_callback(_step)
+
+            if future.exception():
+                if isinstance(future.exception(), StreamClosedError):
+                    self.close()
+                else:
+                    log.error('Failed to read message',
+                              exc_info=future.exc_info())
+                return
+
+            message = future.result()
+            if message.message_type in self.CALL_REQ_TYPES:
+                self._messages.put(message)
+                return
+
+            if message.id in self._outbound_pending_call:
+                _handle_response(message)
+                return
+
+            if message.id in self._request_tombstones:
+                return  # recently timed out; safe to ignore
+
+            log.info('Unconsumed message %s', message)
+
+        def _handle_response(message):
+            if message.message_type == Types.ERROR:
+                 _handle_error_message(message)
+                 return
+
+            response = self.response_message_factory.build(message)
+
+            # keep continue message in the list pop all other type messages
+            # including error message
+            if (message.message_type in self.CALL_RES_TYPES and
+                        message.flags == FlagsType.fragment):
+                # still streaming, keep it for record
+                future = self._outbound_pending_call.get(message.id)
+            else:
+                future = self._outbound_pending_call.pop(message.id)
+
+            if response and future.running():
+                future.set_result(response)
+                return
+
         def _handle_error_message(message):
             future = self._outbound_pending_call.pop(message.id)
             if future.running():
@@ -218,56 +272,6 @@ class TornadoConnection(object):
                         EventType.after_receive_error,
                         error,
                     )
-
-        def _handle_response(message):
-            if message.message_type == Types.ERROR:
-                return _handle_error_message(message)
-
-            response = self.response_message_factory.build(message)
-
-            # keep continue message in the list pop all other type messages
-            # including error message
-            if (message.message_type in self.CALL_RES_TYPES and
-                    message.flags == FlagsType.fragment):
-                # still streaming, keep it for record
-                future = self._outbound_pending_call.get(message.id)
-            else:
-                future = self._outbound_pending_call.pop(message.id)
-
-            if response and future.running():
-                return future.set_result(response)
-
-        def _on_message(future):
-            # we always schedule a _step call to make sure we never stop
-            # processing messages unless the stream was closed.
-            io_loop.spawn_callback(_step)
-
-            if future.exception():
-                if isinstance(future.exception(), StreamClosedError):
-                    self.close()
-                else:
-                    log.error('Failed to read message',
-                              exc_info=future.exc_info())
-                return
-
-            message = future.result()
-            if message.message_type in self.CALL_REQ_TYPES:
-                return self._messages.put(message)
-
-            if message.id in self._outbound_pending_call:
-                return _handle_response(message)
-
-            if message.id in self._request_tombstones:
-                return  # recently timed out; safe to ignore
-
-            log.info('Unconsumed message %s', message)
-
-        def _step():
-            self._loop_running = not self.closed
-            if self.closed:
-                return
-
-            io_loop.add_future(self.reader.get(), _on_message)
 
         io_loop.spawn_callback(_step)
 
