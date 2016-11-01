@@ -581,7 +581,7 @@ def test_per_request_caller_name_thrift(thrift_module):
     "",
 ])
 def test_service_name_is_required(name, io_loop):
-    with pytest.raises(AssertionError) as exc_info:
+    with pytest.raises(errors.ServiceNameIsRequiredError) as exc_info:
         TChannel(name)
 
     assert 'service name cannot be empty or None' in str(exc_info)

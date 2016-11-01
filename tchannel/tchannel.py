@@ -33,7 +33,7 @@ from . import schemes
 from . import transport
 from . import retry
 from . import tracing
-from .errors import AlreadyListeningError
+from .errors import AlreadyListeningError, ServiceNameIsRequiredError
 from .glossary import DEFAULT_TIMEOUT
 from .health import health
 from .health import Meta
@@ -101,8 +101,8 @@ class TChannel(object):
             not provided an ephemeral port will be used. When advertising on
             Hyperbahn you callers do not need to know your port.
         """
-        assert name, 'service name cannot be empty or None'
-
+        if not name:
+            raise ServiceNameIsRequiredError
         self.context_provider = context_provider or TracingContextProvider()
 
         # until we move everything here,
