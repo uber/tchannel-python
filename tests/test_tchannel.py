@@ -576,11 +576,8 @@ def test_per_request_caller_name_thrift(thrift_module):
     assert res.body is True
 
 
-@pytest.mark.parametrize("name", [
-    None,
-    "",
-])
-def test_service_name_is_required(name, io_loop):
+@pytest.mark.parametrize("name", [None, ""])
+def test_service_name_is_required(name):
     with pytest.raises(errors.ServiceNameIsRequiredError) as exc_info:
         TChannel(name)
 
