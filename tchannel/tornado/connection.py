@@ -237,15 +237,15 @@ class TornadoConnection(object):
 
         def _handle_response(message):
             if message.message_type == Types.ERROR:
-                 _handle_error_message(message)
-                 return
+                _handle_error_message(message)
+                return
 
             response = self.response_message_factory.build(message)
 
             # keep continue message in the list pop all other type messages
             # including error message
             if (message.message_type in self.CALL_RES_TYPES and
-                        message.flags == FlagsType.fragment):
+                    message.flags == FlagsType.fragment):
                 # still streaming, keep it for record
                 future = self._outbound_pending_call.get(message.id)
             else:
