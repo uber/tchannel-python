@@ -273,7 +273,7 @@ class TornadoConnection(object):
                         error,
                     )
 
-        io_loop.spawn_callback(_step)
+        _step()
 
     # Basically, the only difference between send and write is that send
     # sets up a Future to get the response. That's ideal for peers making
