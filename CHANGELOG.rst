@@ -5,6 +5,12 @@ Changes by Version
 -------------------
 
 - Time out handshake attempts for outgoing connections after 5 seconds.
+- Fixed a regression where large requests would block small requests until they
+  were completely written to the wire.
+- Propagate message sending errors up to the caller. This should greatly reduce
+  the number of ``TimeoutError: None`` issues seen by users and show the root
+  cause instead.
+- Fail ``TChannel`` instantiation if the service name is empty or None.
 
 
 0.30.3 (2016-10-24)
