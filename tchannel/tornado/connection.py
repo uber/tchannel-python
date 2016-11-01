@@ -198,68 +198,78 @@ class TornadoConnection(object):
         else:
             return self.reader.get()
 
-    @tornado.gen.coroutine
     def _loop(self):
-        # Receive messages off the wire. All messages are either responses to
-        # outstanding requests or calls.
-        #
-        # Must be started only after the handshake has been performed.
-        self._loop_running = True
+        io_loop = IOLoop.current()
 
-        while not self.closed:
-            try:
-                message = yield self.reader.get()
-            except StreamClosedError:
-                break
+        def _handle_error_message(message):
+            future = self._outbound_pending_call.pop(message.id)
+            if future.running():
+                error = TChannelError.from_code(
+                    message.code,
+                    description=message.description,
+                    id=message.id,
+                    tracing=message.tracing,
+                )
+                future.set_exception(error)
+            else:
+                error = self.response_message_factory.build(message)
+                if error:
+                    self.tchannel.event_emitter.fire(
+                        EventType.after_receive_error,
+                        error,
+                    )
 
-            # TODO: There should probably be a try-catch on the yield.
-            if message.message_type in self.CALL_REQ_TYPES:
-                self._messages.put(message)
-                continue
+        def _handle_response(message):
+            if message.message_type == Types.ERROR:
+                return _handle_error_message(message)
 
-            elif message.id in self._outbound_pending_call:
-                # set exception if receive error message
-                if message.message_type == Types.ERROR:
-                    future = self._outbound_pending_call.pop(message.id)
-                    if future.running():
-                        error = TChannelError.from_code(
-                            message.code,
-                            description=message.description,
-                            id=message.id,
-                            tracing=message.tracing,
-                        )
-                        future.set_exception(error)
-                    else:
-                        protocol_exception = (
-                            self.response_message_factory.build(message)
-                        )
-                        if protocol_exception:
-                            self.tchannel.event_emitter.fire(
-                                EventType.after_receive_error,
-                                protocol_exception,
-                            )
-                    continue
+            response = self.response_message_factory.build(message)
 
-                response = self.response_message_factory.build(message)
+            # keep continue message in the list pop all other type messages
+            # including error message
+            if (message.message_type in self.CALL_RES_TYPES and
+                    message.flags == FlagsType.fragment):
+                # still streaming, keep it for record
+                future = self._outbound_pending_call.get(message.id)
+            else:
+                future = self._outbound_pending_call.pop(message.id)
 
-                # keep continue message in the list
-                # pop all other type messages including error message
-                if (message.message_type in self.CALL_RES_TYPES and
-                        message.flags == FlagsType.fragment):
-                    # still streaming, keep it for record
-                    future = self._outbound_pending_call.get(message.id)
+            if response and future.running():
+                return future.set_result(response)
+
+        def _on_message(future):
+            # we always schedule a _step call to make sure we never stop
+            # processing messages unless the stream was closed.
+            io_loop.spawn_callback(_step)
+
+            if future.exception():
+                if isinstance(future.exception(), StreamClosedError):
+                    self.close()
                 else:
-                    future = self._outbound_pending_call.pop(message.id)
+                    log.error('Failed to read message',
+                              exc_info=future.exc_info())
+                return
 
-                if response and future.running():
-                    future.set_result(response)
-                continue
+            message = future.result()
+            if message.message_type in self.CALL_REQ_TYPES:
+                return self._messages.put(message)
 
-            elif message.id in self._request_tombstones:
-                # Recently timed out. Safe to ignore.
-                continue
+            if message.id in self._outbound_pending_call:
+                return _handle_response(message)
+
+            if message.id in self._request_tombstones:
+                return  # recently timed out; safe to ignore
 
             log.info('Unconsumed message %s', message)
+
+        def _step():
+            self._loop_running = not self.closed
+            if self.closed:
+                return
+
+            io_loop.add_future(self.reader.get(), _on_message)
+
+        io_loop.spawn_callback(_step)
 
     # Basically, the only difference between send and write is that send
     # sets up a Future to get the response. That's ideal for peers making
@@ -747,7 +757,7 @@ class Reader(object):
 
         read_message(self.io_stream).add_done_callback(keep_reading)
 
-    def get(self, timeout=None):
+    def get(self):
         """Receive the next message off the wire.
 
         :returns:

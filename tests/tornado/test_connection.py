@@ -30,6 +30,7 @@ from tornado.iostream import IOStream, StreamClosedError
 from tchannel import TChannel
 from tchannel import messages
 from tchannel.tornado.request import Request
+from tchannel.tornado.response import Response
 from tchannel.errors import TimeoutError, ReadError
 from tchannel.tornado import connection
 from tchannel.tornado.message_factory import MessageFactory
@@ -351,3 +352,58 @@ def test_writer_multiplexing():
 
     yield chunked_future
     assert received['chunked']
+
+
+@pytest.mark.gen_test
+def test_loop_failure(tornado_pair):
+    server, client = tornado_pair
+    headers = dummy_headers()
+
+    # ... yeah
+    server.tchannel = mock.MagicMock()
+    client.tchannel = mock.MagicMock()
+
+    handshake_future = client.initiate_handshake(headers=headers)
+    yield server.expect_handshake(headers=headers)
+    yield handshake_future
+
+    assert client._loop_running
+    assert server._loop_running
+
+    # We'll put an invalid message into the reader queue. This should cause one
+    # iteration of the loop to fail but the system should continue working
+    # afterwards.
+
+    yield server.reader.queue.put(gen.maybe_future(42))  # not a message
+
+    id = client.writer.next_message_id()
+    response_future = client.send_request(Request(
+        id=id,
+        service='server',
+        endpoint='bar',
+        headers={'cn': 'client'},
+    ))
+
+    call_req = yield server.await()
+    assert call_req.message_type == messages.Types.CALL_REQ
+
+    response = Response(id=id)
+    response.close_argstreams(force=True)
+
+    yield server.post_response(response)
+    yield response_future
+
+    assert client._loop_running
+    assert server._loop_running
+
+    client.close()
+
+    # The system needs a little time to recognize that the connections were
+    # closed.
+    yield gen.sleep(0.15)
+
+    assert client.closed
+    assert not client._loop_running
+
+    assert server.closed
+    assert not server._loop_running
