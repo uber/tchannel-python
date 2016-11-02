@@ -33,6 +33,7 @@ from tchannel.errors import TimeoutError, ReadError
 from tchannel.tornado import connection
 from tchannel.tornado.message_factory import MessageFactory
 from tchannel.tornado.peer import Peer
+from tchannel.tornado.request import Request
 
 
 def dummy_headers():
@@ -293,3 +294,60 @@ def test_reader_read_error():
     future = reader.get()
     with pytest.raises(StreamClosedError):
         yield future
+
+
+@pytest.mark.gen_test
+def test_writer_serialization_error():
+    server = TChannel('server')
+    server.listen()
+
+    conn = yield connection.StreamConnection.outgoing(
+        server.hostport, tchannel=mock.MagicMock()
+    )
+
+    with pytest.raises(AttributeError) as exc_info:
+        yield conn.send_request(Request(
+            id=conn.writer.next_message_id(),
+            service='foo',
+            endpoint='bar',
+            headers={'cn': None},
+        ))
+
+    assert "'NoneType' object has no attribute 'encode'" in str(exc_info)
+
+
+@pytest.mark.gen_test
+def test_writer_multiplexing():
+    server = TChannel('server')
+    server.listen()
+
+    received = {'chunked': False, 'singleframe': False}
+
+    @server.raw.register('chunked')
+    def chunked(request):
+        received['chunked'] = True
+        return b'chunked'
+
+    @server.raw.register('singleframe')
+    def singleframe(request):
+        received['singleframe'] = True
+        return b'singleframe'
+
+    client = TChannel('client')
+
+    chunked_future = client.raw(
+        'server', 'chunked',
+        bytes([0x00] * 1024 * 1024),  # 1 MB = 16 frames
+        hostport=server.hostport,
+        timeout=0.5,
+    )
+
+    yield client.raw(
+        'server', 'singleframe', b'\x00',  # single frame
+        hostport=server.hostport,
+    )
+    assert received['singleframe']
+    assert not received['chunked']
+
+    yield chunked_future
+    assert received['chunked']

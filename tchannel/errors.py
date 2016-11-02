@@ -195,3 +195,12 @@ class ValueExpectedError(BadRequestError):
 class SingletonNotPreparedError(TChannelError):
     """Raised when calling get_instance before calling prepare."""
     pass
+
+
+class ServiceNameIsRequiredError(Exception):
+    """Raised when service name is empty or None."""
+
+    def __init__(self):
+        super(ServiceNameIsRequiredError, self).__init__(
+            "service name cannot be empty or None"
+        )
