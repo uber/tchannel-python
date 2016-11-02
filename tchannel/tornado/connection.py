@@ -730,6 +730,7 @@ class StreamConnection(TornadoConnection):
         # while.
         future.set_exception(errors.TimeoutError())
         self._request_tombstones.add(req_id, req_ttl)
+        self._outbound_pending_call.pop(req_id)
 
 
 class Reader(object):
