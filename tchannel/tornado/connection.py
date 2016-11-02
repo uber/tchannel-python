@@ -267,8 +267,9 @@ class TornadoConnection(object):
                 future.set_exception(error)
             else:
                 error = self.response_message_factory.build(message)
-                log.error('Received error frame for %d too late %s',
-                          message.id, error)
+                if error:
+                    log.error('Received error frame for %d too late %s',
+                              message.id, error)
 
         _step()
 
