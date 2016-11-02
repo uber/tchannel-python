@@ -268,10 +268,7 @@ class TornadoConnection(object):
             else:
                 error = self.response_message_factory.build(message)
                 if error:
-                    self.tchannel.event_emitter.fire(
-                        EventType.after_receive_error,
-                        error,
-                    )
+                    log.error('Received error frame %s too late', str(error))
 
         _step()
 
