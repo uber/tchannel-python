@@ -407,3 +407,47 @@ def test_loop_failure(tornado_pair):
 
     assert server.closed
     assert not server._loop_running
+
+
+@pytest.mark.gen_test
+def test_timeout_not_pending(tornado_pair):
+    server, client = tornado_pair
+    headers = dummy_headers()
+
+    server.tchannel = mock.MagicMock()
+    client.tchannel = mock.MagicMock()
+
+    handshake_future = client.initiate_handshake(headers=headers)
+    yield server.expect_handshake(headers=headers)
+    yield handshake_future
+
+    # Make a request that times out and ensure that a late response is
+    # discarded correctly.
+
+    id = client.writer.next_message_id()
+    response_future = client.send_request(Request(
+        id=id,
+        service='server',
+        endpoint='bar',
+        headers={'cn': 'client'},
+        ttl=0.05,
+    ))
+    assert id in client._outbound_pending_call
+
+    call_req = yield server.await()
+    assert call_req.message_type == messages.Types.CALL_REQ
+
+    yield gen.sleep(0.1)  # make the request time out
+
+    assert id in client._request_tombstones
+    assert id not in client._outbound_pending_call
+
+    # late response
+    yield server.write(messages.ErrorMessage(
+        id=id,
+        code=messages.ErrorCode.unexpected,
+        description='great sadness',
+    ))
+
+    with pytest.raises(TimeoutError):
+        yield response_future
