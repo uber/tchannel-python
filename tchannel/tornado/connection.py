@@ -133,9 +133,8 @@ class TornadoConnection(object):
         # Collection of request IDs known to have timed out.
         self._request_tombstones = Cemetery()
 
-        # Whether _loop is running. The loop doesn't run until after the
-        # handshake has been performed.
-        self._loop_running = False
+        # Whether a handshake has been performed.
+        self._handshake_performed = False
 
         self.tchannel = tchannel
         self._close_cb = None
@@ -193,7 +192,7 @@ class TornadoConnection(object):
 
     def await(self):
         """Get the next call to this TChannel."""
-        if self._loop_running:
+        if self._handshake_performed:
             return self._messages.get()
         else:
             return self.reader.get()
@@ -202,7 +201,6 @@ class TornadoConnection(object):
         io_loop = IOLoop.current()
 
         def _step():
-            self._loop_running = not self.closed
             if self.closed:
                 return
 
@@ -284,7 +282,7 @@ class TornadoConnection(object):
         :returns:
             A Future containing the response for the message
         """
-        assert self._loop_running, "Perform a handshake first."
+        assert self._handshake_performed, "Perform a handshake first."
         assert message.message_type in self.CALL_REQ_TYPES, (
             "Message '%s' can't use send" % repr(message)
         )
@@ -393,6 +391,7 @@ class TornadoConnection(object):
                 "Expected handshake response, got %s" % repr(init_res)
             )
         self._extract_handshake_headers(init_res)
+        self._handshake_performed = True
 
         # The receive loop is started only after the handshake has been
         # completed.
@@ -416,6 +415,7 @@ class TornadoConnection(object):
                 "You need to shake my hand first. Got %s" % repr(init_req)
             )
         self._extract_handshake_headers(init_req)
+        self._handshake_performed = True
 
         self.writer.put(
             messages.InitResponseMessage(
@@ -509,7 +509,6 @@ class TornadoConnection(object):
             which happens once this connection is closed.
         """
         assert handler, "handler is required"
-        assert self._loop_running, "Finish the handshake first"
 
         while not self.closed:
             message = yield self.await()
@@ -663,7 +662,7 @@ class StreamConnection(TornadoConnection):
         :returns:
             A Future containing the response for the request
         """
-        assert self._loop_running, "Perform a handshake first."
+        assert self._handshake_performed, "Perform a handshake first."
 
         assert request.id not in self._outbound_pending_call, (
             "Message ID '%d' already being used" % request.id

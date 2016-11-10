@@ -367,8 +367,8 @@ def test_loop_failure(tornado_pair):
     yield server.expect_handshake(headers=headers)
     yield handshake_future
 
-    assert client._loop_running
-    assert server._loop_running
+    assert client._handshake_performed
+    assert server._handshake_performed
 
     # We'll put an invalid message into the reader queue. This should cause one
     # iteration of the loop to fail but the system should continue working
@@ -393,8 +393,8 @@ def test_loop_failure(tornado_pair):
     yield server.post_response(response)
     yield response_future
 
-    assert client._loop_running
-    assert server._loop_running
+    assert client._handshake_performed
+    assert server._handshake_performed
 
     client.close()
 
@@ -403,10 +403,7 @@ def test_loop_failure(tornado_pair):
     yield gen.sleep(0.15)
 
     assert client.closed
-    assert not client._loop_running
-
     assert server.closed
-    assert not server._loop_running
 
 
 @pytest.mark.gen_test

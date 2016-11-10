@@ -4,7 +4,8 @@ Changes by Version
 0.30.5 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed a bug which would cause assertion errors if a connection to a peer
+  disconnected shortly after a handshake.
 
 
 0.30.4 (2016-11-03)
