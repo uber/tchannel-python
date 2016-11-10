@@ -391,6 +391,7 @@ class TornadoConnection(object):
                 "Expected handshake response, got %s" % repr(init_res)
             )
         self._extract_handshake_headers(init_res)
+        self._handshake_performed = True
 
         # The receive loop is started only after the handshake has been
         # completed.
@@ -414,6 +415,7 @@ class TornadoConnection(object):
                 "You need to shake my hand first. Got %s" % repr(init_req)
             )
         self._extract_handshake_headers(init_req)
+        self._handshake_performed = True
 
         self.writer.put(
             messages.InitResponseMessage(
@@ -442,7 +444,6 @@ class TornadoConnection(object):
         self.remote_host_port = int(self.remote_host_port)
         self.remote_process_name = message.process_name
         self.requested_version = message.version
-        self._handshake_performed = True
 
     @classmethod
     @tornado.gen.coroutine
