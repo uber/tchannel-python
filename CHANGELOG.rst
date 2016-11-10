@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.30.5 (unreleased)
+0.30.5 (2016-11-10)
 -------------------
 
 - Fixed a bug which would cause assertion errors if a connection to a peer
