@@ -40,10 +40,10 @@ from tornado.tcpserver import TCPServer
 
 from tchannel.tornado.stream import InMemStream
 from tchannel import TChannel, Request, Response, schemes, errors, thrift
-from tchannel.tornado import connection
 from tchannel.errors import AlreadyListeningError, TimeoutError
 from tchannel.event import EventHook
 from tchannel.response import TransportHeaders
+from tchannel.tornado import connection
 
 # TODO - need integration tests for timeout and retries, use testing.vcr
 
@@ -602,16 +602,12 @@ def test_timeout_during_handshake_is_retried(timeout_server):
 def timeout_server():
 
     class HandshakeTimeoutServer(TCPServer):
-
-        @gen.coroutine
         def handle_stream(self, stream, address):
-            yield gen.sleep(10)
+            return gen.sleep(10)
 
     sockets = bind_sockets(port=0, family=socket.AF_INET)
-
     server = HandshakeTimeoutServer()
     server.add_sockets(sockets)
-
     port = sockets[0].getsockname()[1]
     try:
         yield ('127.0.0.1:%d' % port)
