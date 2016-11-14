@@ -487,7 +487,7 @@ class TornadoConnection(object):
                 'tchannel_language_version': TCHANNEL_LANGUAGE_VERSION,
                 'tchannel_version': TCHANNEL_VERSION,
             })
-        except (StreamClosedError, socket.error) as e:
+        except (StreamClosedError, socket.error, errors.TimeoutError) as e:
             log.warn("Couldn't connect to %s", hostport)
             raise NetworkError(
                 "Couldn't connect to %s" % hostport, e

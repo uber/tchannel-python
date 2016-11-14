@@ -4,7 +4,8 @@ Changes by Version
 0.30.6 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed a bug which would cause handshake timeouts to bubble up to the caller
+  rather than retry a different peer.
 
 
 0.30.5 (2016-11-10)
