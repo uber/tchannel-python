@@ -23,23 +23,27 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import tornado
-import subprocess
-import textwrap
-from mock import MagicMock, patch, ANY
-import socket
-
 import json
 import os
+import socket
+import subprocess
+import textwrap
+
 import psutil
 import pytest
+import tornado
+
+from mock import MagicMock, patch, ANY
 from tornado import gen
+from tornado.netutil import bind_sockets
+from tornado.tcpserver import TCPServer
 
 from tchannel.tornado.stream import InMemStream
 from tchannel import TChannel, Request, Response, schemes, errors, thrift
 from tchannel.errors import AlreadyListeningError, TimeoutError
 from tchannel.event import EventHook
 from tchannel.response import TransportHeaders
+from tchannel.tornado import connection
 
 # TODO - need integration tests for timeout and retries, use testing.vcr
 
@@ -582,3 +586,31 @@ def test_service_name_is_required(name):
         TChannel(name)
 
     assert 'service name cannot be empty or None' in str(exc_info)
+
+
+@pytest.mark.gen_test
+def test_timeout_during_handshake_is_retried(timeout_server):
+    tchannel = TChannel(name='client', known_peers=[timeout_server])
+    # We want the client to look for other peers if an INIT times out rather
+    # than raising a timeout error so we expect a NoAvailablePeerError here.
+    with patch.object(connection, 'DEFAULT_INIT_TIMEOUT_SECS', 0.1):
+        with pytest.raises(errors.NoAvailablePeerError):
+            yield tchannel.raw(service='server', endpoint='endpoint')
+
+
+@pytest.yield_fixture
+def timeout_server():
+
+    class HandshakeTimeoutServer(TCPServer):
+        def handle_stream(self, stream, address):
+            return gen.sleep(10)
+
+    sockets = bind_sockets(port=0, family=socket.AF_INET)
+    server = HandshakeTimeoutServer()
+    server.add_sockets(sockets)
+    port = sockets[0].getsockname()[1]
+    try:
+        yield ('127.0.0.1:%d' % port)
+    finally:
+        for s in sockets:
+            s.close()
