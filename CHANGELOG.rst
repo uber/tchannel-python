@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-0.30.6 (unreleased)
+0.30.6 (2016-11-14)
 -------------------
 
 - Fixed a bug which would cause handshake timeouts to bubble up to the caller
