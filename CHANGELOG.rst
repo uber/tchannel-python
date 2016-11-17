@@ -1,10 +1,10 @@
 Changes by Version
 ==================
 
-0.30.7 (unreleased)
--------------------
+1.0.0 (unreleased)
+------------------
 
-- Nothing changed yet.
+- Committing to existing API. We're calling this a 1.0.
 
 
 0.30.6 (2016-11-14)
