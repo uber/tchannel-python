@@ -702,8 +702,18 @@ class PeerGroup(object):
         """
 
         blacklist = blacklist or set()
+        # We we already have the connection in our peer list, use it. Else
+        # don't add it to our peer list.
+        # Refs https://github.com/uber/tchannel-python/issues/464
         if hostport:
-            return self.get(hostport)
+            if hostport in self.hosts:
+                return self.get(hostport)
+            else:
+                return self.peer_class(
+                    tchannel=self.tchannel,
+                    hostport=hostport,
+                    on_conn_change=self._update_heap,
+                )
 
         return self.peer_heap.smallest_peer(
             (lambda p: p.hostport not in blacklist and not p.is_ephemeral),

@@ -40,6 +40,9 @@ def test_reuse():
     server2 = TChannel('test', hostport2)
     server2.listen()
 
+    server1.peers.add(hostport2)
+    server2.peers.add(hostport1)
+
     @server2.register('hello')
     @gen.coroutine
     def hello(request, response):

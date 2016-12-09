@@ -320,10 +320,11 @@ def test_choose_with_target_hostport(hostports):
     for hp in hostports:
         peer_group.get(hp)
 
-    n = len(hostports) + 1
+    n = len(hostports)
     target = '1.0.0.1:9000'
     for _ in hostports:
         peer = peer_group.choose(hostport=target)
+        assert target not in peer_group.hosts
         assert target == peer.hostport
         assert peer_group.peer_heap.size() == n
 
