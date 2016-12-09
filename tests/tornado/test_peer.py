@@ -324,8 +324,9 @@ def test_choose_with_target_hostport(hostports):
     target = '1.0.0.1:9000'
     for _ in hostports:
         peer = peer_group.choose(hostport=target)
+        assert target in peer_group.hosts
         assert target == peer.hostport
-        assert peer_group.peer_heap.size() == n
+        assert peer_group.peer_heap.size() == n - 1
 
 
 @pytest.mark.gen_test
@@ -346,3 +347,27 @@ def test_never_choose_ephemeral():
         'choose() MUST NOT select the ephemeral peer even if that is the only'
         'available peer'
     )
+
+
+def test_upgrade_target_host_to_direct(hostports):
+    tchannel = TChannel('test')
+    peer_group = tchannel._dep_tchannel.peers
+    for hp in hostports:
+        peer_group.get(hp)
+
+    n = len(hostports)
+    target = '1.0.0.1:9000'
+
+    # Add the peer as a 'direct' peer (not on the heap)
+    peer = peer_group.choose(hostport=target)
+    assert peer.index == -1
+
+    # Upgrade the peer to be on the selection heap
+    peer_group.add(peer.hostport)
+
+    for _ in hostports:
+        peer = peer_group.choose(hostport=target)
+        assert target in peer_group.hosts
+        assert target == peer.hostport
+        assert peer_group.peer_heap.size() == n + 1
+        assert peer.index >= 0
