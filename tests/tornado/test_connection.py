@@ -181,6 +181,10 @@ def test_pending_outgoing():
         return 'hi'
 
     client = TChannel('client')
+
+    # Add this to our shared peer list
+    client._dep_tchannel.peers.add(server.hostport)
+
     yield client.raw(
         hostport=server.hostport,
         body='work',
