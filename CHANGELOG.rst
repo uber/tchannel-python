@@ -4,7 +4,10 @@ Changes by Version
 1.0.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fixed a bug where choosing a hostport directly for a downstream call would
+  add that peer to the "core" peers which are used for regular calls.
+  Now choosing the hostport directly will create a peer but will exclude it
+  from selection.
 
 
 1.0.0 (2016-11-17)
