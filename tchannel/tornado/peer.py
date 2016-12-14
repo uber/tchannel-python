@@ -617,16 +617,17 @@ class PeerGroup(object):
     def get(self, hostport):
         """Get a Peer for the given destination.
 
-        A new Peer is added and returned if one does not already exist for the
-        given host-port. Otherwise, the existing Peer is returned.
+        A new Peer is added to the peer heap and returned if one does
+        not already exist for the given host-port. Otherwise, the
+        existing Peer is returned.
         """
         assert hostport, "hostport is required"
         if hostport not in self._peers:
-            self.add(hostport)
+            self._add(hostport)
 
         return self._peers[hostport]
 
-    def add(self, peer):
+    def _add(self, peer):
         """
         Add an existing Peer to this group and the corresponding peer heap
 
@@ -664,6 +665,10 @@ class PeerGroup(object):
 
     def _add_to_heap(self, peer):
         """Adds a peer to the peer heap"""
+        if peer.index != -1:
+            # The peer is already tracked on the heap
+            return
+
         peer.set_on_conn_change_callback(self._update_heap)
         peer.rank = self.rank_calculator.get_rank(peer)
         self.peer_heap.add_and_shuffle(peer)
@@ -677,7 +682,7 @@ class PeerGroup(object):
         peer.rank = rank
         self.peer_heap.update_peer(peer)
 
-    def get_for_request(self, hostport):
+    def _get_isolated(self, hostport):
         """Get a Peer for the given destination for a request.
 
         A new Peer is added and returned if one does not already exist for the
@@ -687,23 +692,14 @@ class PeerGroup(object):
         """
         assert hostport, "hostport is required"
         if hostport not in self._peers:
-            self.add_direct(hostport)
+            # Add a peer directly from a hostport, do NOT add it to the peer heap
+            peer = self.peer_class(
+                tchannel=self.tchannel,
+                hostport=hostport,
+            )
+            self._peers[peer.hostport] = peer
 
         return self._peers[hostport]
-
-    def add_direct(self, hostport):
-        """
-        Add a peer directly from a hostport, do NOT add it to the peer heap
-        """
-        peer = self.peer_class(
-            tchannel=self.tchannel,
-            hostport=hostport,
-        )
-
-        assert peer.hostport not in self._peers, (
-            "%s already has a peer" % peer.hostport
-        )
-        self._peers[peer.hostport] = peer
 
     @property
     def hosts(self):
@@ -746,7 +742,7 @@ class PeerGroup(object):
 
         blacklist = blacklist or set()
         if hostport:
-            return self.get_for_request(hostport)
+            return self._get_isolated(hostport)
 
         return self.peer_heap.smallest_peer(
             (lambda p: p.hostport not in blacklist and not p.is_ephemeral),

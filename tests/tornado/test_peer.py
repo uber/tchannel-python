@@ -77,7 +77,7 @@ def test_basic_peer_management_operations():
     assert peer_group.remove('localhost:4040') is p
     assert not peer_group.lookup('localhost:4040')
 
-    peer_group.add(p)
+    peer_group.get(p)
     assert peer_group.hosts == ['localhost:4040']
     assert peer_group.peers == [p]
 
@@ -320,13 +320,13 @@ def test_choose_with_target_hostport(hostports):
     for hp in hostports:
         peer_group.get(hp)
 
-    n = len(hostports) + 1
     target = '1.0.0.1:9000'
-    for _ in hostports:
-        peer = peer_group.choose(hostport=target)
-        assert target in peer_group.hosts
-        assert target == peer.hostport
-        assert peer_group.peer_heap.size() == n - 1
+    peer = peer_group.choose(hostport=target)
+    assert target in peer_group.hosts
+    assert target == peer.hostport
+    assert peer_group.peer_heap.size() == len(hostports)
+    assert len(peer_group.hosts) == len(hostports) + 1
+
 
 
 @pytest.mark.gen_test
@@ -355,7 +355,6 @@ def test_upgrade_target_host_to_direct(hostports):
     for hp in hostports:
         peer_group.get(hp)
 
-    n = len(hostports)
     target = '1.0.0.1:9000'
 
     # Add the peer as a 'direct' peer (not on the heap)
@@ -363,11 +362,23 @@ def test_upgrade_target_host_to_direct(hostports):
     assert peer.index == -1
 
     # Upgrade the peer to be on the selection heap
-    peer_group.add(peer.hostport)
+    peer_group.get(peer.hostport)
 
-    for _ in hostports:
-        peer = peer_group.choose(hostport=target)
-        assert target in peer_group.hosts
-        assert target == peer.hostport
-        assert peer_group.peer_heap.size() == n + 1
-        assert peer.index >= 0
+    peer = peer_group.choose(hostport=target)
+    assert target in peer_group.hosts
+    assert target == peer.hostport
+    assert peer_group.peer_heap.size() == len(hostports) + 1
+    assert peer.index >= 0
+
+
+def test_choose_then_get_peer(hostports):
+    tchannel = TChannel('test')
+    peer_group = tchannel._dep_tchannel.peers
+    for hp in hostports:
+        peer_group.get(hp)
+
+    target = '1.0.0.1:9000'
+
+    chosen_peer = peer_group.choose(hostport=target)
+    gotten_peer = peer_group.get(hostport=target)
+    assert chosen_peer == gotten_peer
