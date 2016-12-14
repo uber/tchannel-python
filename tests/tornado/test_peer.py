@@ -77,10 +77,6 @@ def test_basic_peer_management_operations():
     assert peer_group.remove('localhost:4040') is p
     assert not peer_group.lookup('localhost:4040')
 
-    peer_group.get(p)
-    assert peer_group.hosts == ['localhost:4040']
-    assert peer_group.peers == [p]
-
 
 @pytest.mark.parametrize('s, expected', [
     (None, b''),
@@ -328,7 +324,6 @@ def test_choose_with_target_hostport(hostports):
     assert len(peer_group.hosts) == len(hostports) + 1
 
 
-
 @pytest.mark.gen_test
 def test_never_choose_ephemeral():
     server = TChannel('server')
@@ -349,28 +344,6 @@ def test_never_choose_ephemeral():
     )
 
 
-def test_upgrade_target_host_to_direct(hostports):
-    tchannel = TChannel('test')
-    peer_group = tchannel._dep_tchannel.peers
-    for hp in hostports:
-        peer_group.get(hp)
-
-    target = '1.0.0.1:9000'
-
-    # Add the peer as a 'direct' peer (not on the heap)
-    peer = peer_group.choose(hostport=target)
-    assert peer.index == -1
-
-    # Upgrade the peer to be on the selection heap
-    peer_group.get(peer.hostport)
-
-    peer = peer_group.choose(hostport=target)
-    assert target in peer_group.hosts
-    assert target == peer.hostport
-    assert peer_group.peer_heap.size() == len(hostports) + 1
-    assert peer.index >= 0
-
-
 def test_choose_then_get_peer(hostports):
     tchannel = TChannel('test')
     peer_group = tchannel._dep_tchannel.peers
@@ -381,4 +354,35 @@ def test_choose_then_get_peer(hostports):
 
     chosen_peer = peer_group.choose(hostport=target)
     gotten_peer = peer_group.get(hostport=target)
-    assert chosen_peer == gotten_peer
+    assert chosen_peer is gotten_peer
+
+
+def test_get_then_choose_peer(hostports):
+    tchannel = TChannel('test')
+    peer_group = tchannel._dep_tchannel.peers
+    for hp in hostports:
+        peer_group.get(hp)
+
+    target = '1.0.0.1:9000'
+
+    gotten_peer = peer_group.get(hostport=target)
+    chosen_peer = peer_group.choose(hostport=target)
+    assert chosen_peer is gotten_peer
+
+
+def test_multi_get_and_choose_peer(hostports):
+    tchannel = TChannel('test')
+    peer_group = tchannel._dep_tchannel.peers
+    for hp in hostports:
+        peer_group.get(hp)
+
+    target = '1.0.0.1:9000'
+    expected_gotten_peer = peer_group.get(hostport=target)
+    expected_chosen_peer = peer_group.choose(hostport=target)
+    for _ in hostports:
+        gotten_peer = peer_group.get(hostport=target)
+        chosen_peer = peer_group.choose(hostport=target)
+        assert gotten_peer is expected_gotten_peer
+        assert gotten_peer is expected_chosen_peer
+        assert chosen_peer is expected_gotten_peer
+        assert chosen_peer is expected_chosen_peer

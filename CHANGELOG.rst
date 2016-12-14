@@ -4,6 +4,8 @@ Changes by Version
 1.0.1 (unreleased)
 ------------------
 
+- Updated internal APIs to no longer depend on the PeerGroup `add` function
+  and to use the `get` function for creating new peers instead.
 - Fixed a bug where choosing a hostport directly for a downstream call would
   add that peer to the "core" peers which are used for regular calls.
   Now choosing the hostport directly will create a peer but will exclude it

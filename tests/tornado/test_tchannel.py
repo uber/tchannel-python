@@ -25,7 +25,6 @@ import socket
 
 from tchannel.errors import AlreadyListeningError
 from tchannel.tornado import TChannel
-from tchannel.tornado.peer import Peer
 
 
 @pytest.fixture
@@ -33,15 +32,10 @@ def tchannel():
     return TChannel(name='test')
 
 
-@pytest.fixture
-def peer(tchannel):
-    return Peer(tchannel, "localhost:4040")
-
-
 @pytest.mark.gen_test
-def test_peer_caching(tchannel, peer):
+def test_peer_caching(tchannel):
     "Connections are long-lived and should not be recreated."""
-    tchannel.peers.add(peer)
+    peer = tchannel.peers.get("localhost:4040")
     assert tchannel.peers.get("localhost:4040") is peer
 
 

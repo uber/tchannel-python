@@ -622,55 +622,23 @@ class PeerGroup(object):
         existing Peer is returned.
         """
         assert hostport, "hostport is required"
+        assert isinstance(hostport, basestring), "hostport must be a string"
+
         if hostport not in self._peers:
             self._add(hostport)
 
         return self._peers[hostport]
 
-    def _add(self, peer):
-        """
-        Add an existing Peer to this group and the corresponding peer heap
-
-        if a peer instance is passed in, assert that it's not already in the
-        list then add it to the list and heap
-
-        if the hostport is in the peer list, make sure it's added to the heap
-
-        otherwise create a new peer and add it to the list & heap
-        """
-        assert peer, "peer is required"
-
-        if not isinstance(peer, basestring):
-            # Assume non-strings are Peers
-            assert peer.hostport not in self._peers, (
-                "%s already has a peer" % peer.hostport
-            )
-            self._peers[peer.hostport] = peer
-            self._add_to_heap(peer)
-            return
-
-        hostport = peer
-        if hostport in self._peers:
-            # upgrade a direct peer to a heap peer
-            self._add_to_heap(self._peers[hostport])
-            return
-
+    def _add(self, hostport):
+        """Creates a peer from the hostport and adds it to the peer heap"""
         peer = self.peer_class(
             tchannel=self.tchannel,
             hostport=hostport,
             on_conn_change=self._update_heap,
         )
-        self._peers[peer.hostport] = peer
-        self._add_to_heap(peer)
-
-    def _add_to_heap(self, peer):
-        """Adds a peer to the peer heap"""
-        if peer.index != -1:
-            # The peer is already tracked on the heap
-            return
-
-        peer.set_on_conn_change_callback(self._update_heap)
         peer.rank = self.rank_calculator.get_rank(peer)
+        self._peers[peer.hostport] = peer
+
         self.peer_heap.add_and_shuffle(peer)
 
     def _update_heap(self, peer):
@@ -692,7 +660,8 @@ class PeerGroup(object):
         """
         assert hostport, "hostport is required"
         if hostport not in self._peers:
-            # Add a peer directly from a hostport, do NOT add it to the peer heap
+            # Add a peer directly from a hostport, do NOT add it to the peer
+            # heap
             peer = self.peer_class(
                 tchannel=self.tchannel,
                 hostport=hostport,
