@@ -592,18 +592,6 @@ class PeerGroup(object):
             self._peers = {}
             self._resetting = False
 
-    def get(self, hostport):
-        """Get a Peer for the given destination.
-
-        A new Peer is added and returned if one does not already exist for the
-        given host-port. Otherwise, the existing Peer is returned.
-        """
-        assert hostport, "hostport is required"
-        if hostport not in self._peers:
-            self.add(hostport)
-
-        return self._peers[hostport]
-
     def lookup(self, hostport):
         """Look up a Peer for the given host and port.
 
@@ -621,30 +609,36 @@ class PeerGroup(object):
         """
         assert hostport, "hostport is required"
         peer = self._peers.pop(hostport, None)
-        if peer:
+        peer_in_heap = peer and peer.index != -1
+        if peer_in_heap:
             self.peer_heap.remove_peer(peer)
         return peer
 
-    def add(self, peer):
-        """Add an existing Peer to this group.
+    def get(self, hostport):
+        """Get a Peer for the given destination.
 
-        A peer for the given host-port must not already exist in the group.
+        A new Peer is added to the peer heap and returned if one does
+        not already exist for the given host-port. Otherwise, the
+        existing Peer is returned.
         """
-        assert peer, "peer is required"
+        assert hostport, "hostport is required"
+        assert isinstance(hostport, basestring), "hostport must be a string"
 
-        if isinstance(peer, basestring):
-            # Assume strings are host-ports
-            peer = self.peer_class(
-                tchannel=self.tchannel,
-                hostport=peer,
-                on_conn_change=self._update_heap,
-            )
+        if hostport not in self._peers:
+            self._add(hostport)
 
-        assert peer.hostport not in self._peers, (
-            "%s already has a peer" % peer.hostport
+        return self._peers[hostport]
+
+    def _add(self, hostport):
+        """Creates a peer from the hostport and adds it to the peer heap"""
+        peer = self.peer_class(
+            tchannel=self.tchannel,
+            hostport=hostport,
+            on_conn_change=self._update_heap,
         )
         peer.rank = self.rank_calculator.get_rank(peer)
         self._peers[peer.hostport] = peer
+
         self.peer_heap.add_and_shuffle(peer)
 
     def _update_heap(self, peer):
@@ -655,6 +649,26 @@ class PeerGroup(object):
 
         peer.rank = rank
         self.peer_heap.update_peer(peer)
+
+    def _get_isolated(self, hostport):
+        """Get a Peer for the given destination for a request.
+
+        A new Peer is added and returned if one does not already exist for the
+        given host-port. Otherwise, the existing Peer is returned.
+
+        **NOTE** new peers will not be added to the peer heap.
+        """
+        assert hostport, "hostport is required"
+        if hostport not in self._peers:
+            # Add a peer directly from a hostport, do NOT add it to the peer
+            # heap
+            peer = self.peer_class(
+                tchannel=self.tchannel,
+                hostport=hostport,
+            )
+            self._peers[peer.hostport] = peer
+
+        return self._peers[hostport]
 
     @property
     def hosts(self):
@@ -681,12 +695,6 @@ class PeerGroup(object):
             hostport=hostport,
             **kwargs)
 
-    def _connected_peers(self, hostports):
-        for hostport in hostports:
-            peer = self.get(hostport)
-            if peer.connected:
-                yield peer
-
     def choose(self, hostport=None, blacklist=None):
         """Choose a Peer that matches the given criteria.
 
@@ -703,7 +711,7 @@ class PeerGroup(object):
 
         blacklist = blacklist or set()
         if hostport:
-            return self.get(hostport)
+            return self._get_isolated(hostport)
 
         return self.peer_heap.smallest_peer(
             (lambda p: p.hostport not in blacklist and not p.is_ephemeral),

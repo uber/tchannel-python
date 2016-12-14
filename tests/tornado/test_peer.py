@@ -77,10 +77,6 @@ def test_basic_peer_management_operations():
     assert peer_group.remove('localhost:4040') is p
     assert not peer_group.lookup('localhost:4040')
 
-    peer_group.add(p)
-    assert peer_group.hosts == ['localhost:4040']
-    assert peer_group.peers == [p]
-
 
 @pytest.mark.parametrize('s, expected', [
     (None, b''),
@@ -320,12 +316,12 @@ def test_choose_with_target_hostport(hostports):
     for hp in hostports:
         peer_group.get(hp)
 
-    n = len(hostports) + 1
     target = '1.0.0.1:9000'
-    for _ in hostports:
-        peer = peer_group.choose(hostport=target)
-        assert target == peer.hostport
-        assert peer_group.peer_heap.size() == n
+    peer = peer_group.choose(hostport=target)
+    assert target in peer_group.hosts
+    assert target == peer.hostport
+    assert peer_group.peer_heap.size() == len(hostports)
+    assert len(peer_group.hosts) == len(hostports) + 1
 
 
 @pytest.mark.gen_test
@@ -346,3 +342,47 @@ def test_never_choose_ephemeral():
         'choose() MUST NOT select the ephemeral peer even if that is the only'
         'available peer'
     )
+
+
+def test_choose_then_get_peer(hostports):
+    tchannel = TChannel('test')
+    peer_group = tchannel._dep_tchannel.peers
+    for hp in hostports:
+        peer_group.get(hp)
+
+    target = '1.0.0.1:9000'
+
+    chosen_peer = peer_group.choose(hostport=target)
+    gotten_peer = peer_group.get(hostport=target)
+    assert chosen_peer is gotten_peer
+
+
+def test_get_then_choose_peer(hostports):
+    tchannel = TChannel('test')
+    peer_group = tchannel._dep_tchannel.peers
+    for hp in hostports:
+        peer_group.get(hp)
+
+    target = '1.0.0.1:9000'
+
+    gotten_peer = peer_group.get(hostport=target)
+    chosen_peer = peer_group.choose(hostport=target)
+    assert chosen_peer is gotten_peer
+
+
+def test_multi_get_and_choose_peer(hostports):
+    tchannel = TChannel('test')
+    peer_group = tchannel._dep_tchannel.peers
+    for hp in hostports:
+        peer_group.get(hp)
+
+    target = '1.0.0.1:9000'
+    expected_gotten_peer = peer_group.get(hostport=target)
+    expected_chosen_peer = peer_group.choose(hostport=target)
+    for _ in hostports:
+        gotten_peer = peer_group.get(hostport=target)
+        chosen_peer = peer_group.choose(hostport=target)
+        assert gotten_peer is expected_gotten_peer
+        assert gotten_peer is expected_chosen_peer
+        assert chosen_peer is expected_gotten_peer
+        assert chosen_peer is expected_chosen_peer

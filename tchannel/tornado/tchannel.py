@@ -152,7 +152,7 @@ class TChannel(object):
 
         if known_peers:
             for peer_hostport in known_peers:
-                self.peers.add(peer_hostport)
+                self.peers.get(peer_hostport)
 
         # server created from calling listen()
         self._server = None
