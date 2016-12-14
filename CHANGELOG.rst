@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-1.0.1 (unreleased)
+1.0.1 (2016-12-14)
 ------------------
 
 - Add `str` functions to Peer and PeerClientOperation for easier debugging in
