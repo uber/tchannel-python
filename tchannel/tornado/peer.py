@@ -125,6 +125,9 @@ class Peer(object):
         # callback is called when there is a change in connections.
         self._on_conn_change_cb = on_conn_change
 
+    def __str__(self):
+        return "<Peer host=%s port=%s>" % (str(self.host), str(self.port))
+
     def set_on_conn_change_callback(self, cb):
         self._on_conn_change_cb = cb
 
@@ -292,6 +295,12 @@ class PeerClientOperation(object):
         # keep all arguments for retry purpose.
         # not retry if hostport is set.
         self._hostport = hostport
+
+    def __str__(self):
+        return "<PeerClientOperation peer_group=%s hostport=%s>" % (
+            str(self.peer_group),
+            str(self._hostport),
+        )
 
     def _choose(self, blacklist=None):
         peer = self.peer_group.choose(

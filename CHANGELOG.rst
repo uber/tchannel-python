@@ -4,6 +4,8 @@ Changes by Version
 1.0.1 (unreleased)
 ------------------
 
+- Add `str` functions to Peer and PeerClientOperation for easier debugging in
+  exc_info
 - Updated internal APIs to no longer depend on the PeerGroup `add` function
   and to use the `get` function for creating new peers instead.
 - Fixed a bug where choosing a hostport directly for a downstream call would
