@@ -164,6 +164,8 @@ class TornadoConnection(object):
             'A close_callback has already been set for this connection.'
         )
         self._close_cb = stack_context.wrap(cb)
+        if self.closed:
+            self._close_cb()
 
     def _on_close(self):
         self.closed = True

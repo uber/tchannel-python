@@ -106,6 +106,25 @@ def test_close_callback_is_called():
 
 
 @pytest.mark.gen_test
+def test_close_callback_is_called_immediately_if_already_closed():
+    server = TChannel('server')
+    server.listen()
+
+    cb_future = tornado.gen.Future()
+
+    conn = yield connection.StreamConnection.outgoing(
+        server.hostport, tchannel=mock.MagicMock()
+    )
+    conn.close()
+
+    yield gen.moment
+
+    conn.set_close_callback(lambda: cb_future.set_result(True))
+
+    assert (yield cb_future)
+
+
+@pytest.mark.gen_test
 def test_local_timeout_unconsumed_message():
     """Verify that if the client has a local timeout and the server eventually
     sends the message, the client does not log an "Unconsumed message"
