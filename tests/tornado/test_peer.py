@@ -193,7 +193,10 @@ def test_peer_connection_failure_exhausted_peers():
 @pytest.mark.gen_test
 def test_peer_incoming_connections_are_preferred(request):
     incoming = mock.MagicMock()
+    incoming.closed = False
+
     outgoing = mock.MagicMock()
+    outgoing.closed = False
 
     peer = tpeer.Peer(mock.MagicMock(), 'localhost:4040')
     with mock.patch(

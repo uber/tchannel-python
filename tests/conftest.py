@@ -32,6 +32,7 @@ class _MockConnection(object):
         self.buff = bytearray()
         self.remote_host = "0.0.0.0"
         self.remote_host_port = "0"
+        self.closed = False
 
     def write(self, payload, callback=None):
         self.buff.extend(payload)

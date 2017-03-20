@@ -4,8 +4,10 @@ Changes by Version
 1.0.2 (unreleased)
 ------------------
 
-- Clear `next` reference of nodes once they have been pulled from message 
-  queues.
+- Fixed a race condition where the on_close callback for tchannel connections
+  would not be called if the connection was already closed.
+- Fixed a bug where the reference to the `next` node would not be cleared when
+  nodes were pulled from message queues (Introducing a potential memory leak).
 
 
 1.0.1 (2016-12-14)
