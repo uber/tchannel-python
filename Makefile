@@ -51,6 +51,7 @@ test_ci: clean
 ifeq ($(TOX_ENV), crossdock)
 	$(MAKE) crossdock
 else
+	pip install --upgrade setuptools
 	tox -e $(TOX_ENV) -- tests
 endif
 

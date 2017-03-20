@@ -23,7 +23,6 @@ from __future__ import (
 )
 
 import threading
-from collections import namedtuple
 
 from tornado.ioloop import IOLoop
 from tornado.queues import QueueEmpty
@@ -32,7 +31,17 @@ from tornado.concurrent import Future
 __all__ = ['Queue', 'QueueEmpty']
 
 
-Node = namedtuple('Node', 'value next')
+class Node(object):
+    __slots__ = ('value', 'next')
+
+    def __init__(self, value, next):
+        self.value = value
+        self.next = next
+
+    def __str__(self):
+        return "Node(value=%s, next=%s)" % (self.value, self.next)
+
+    __repr__ = __str__
 
 
 class Queue(object):
@@ -141,7 +150,9 @@ class Queue(object):
             new_get.set_result(hole)
             raise QueueEmpty
 
-        value, new_hole = hole.result()
+        node = hole.result()
+        value = node.value
+        new_hole, node.next = node.next, None
         new_get.set_result(new_hole)
         return value
 
@@ -162,7 +173,9 @@ class Queue(object):
             if future.exception():  # pragma: no cover (never happens)
                 return answer.set_exc_info(future.exc_info())
 
-            value, new_hole = future.result()
+            node = future.result()
+            value = node.value
+            new_hole, node.next = node.next, None
             new_get.set_result(new_hole)
             answer.set_result(value)
 
