@@ -4,7 +4,8 @@ Changes by Version
 1.0.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Clear `next` reference of nodes once they have been pulled from message 
+  queues.
 
 
 1.0.1 (2016-12-14)
