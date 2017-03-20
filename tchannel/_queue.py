@@ -23,7 +23,6 @@ from __future__ import (
 )
 
 import threading
-from collections import namedtuple
 
 from tornado.ioloop import IOLoop
 from tornado.queues import QueueEmpty
