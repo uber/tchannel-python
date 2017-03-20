@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-1.0.2 (unreleased)
+1.0.2 (2017-03-20)
 ------------------
 
 - Fixed a race condition where the on_close callback for tchannel connections
