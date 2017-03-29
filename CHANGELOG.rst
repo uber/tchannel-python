@@ -4,7 +4,7 @@ Changes by Version
 1.0.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Added messages with ttl, service, and hostport information to TimeoutErrors
 
 
 1.0.2 (2017-03-20)

@@ -713,7 +713,11 @@ class StreamConnection(TornadoConnection):
         io_loop = IOLoop.current()
         t = io_loop.call_later(
             request.ttl,
-            self._request_timed_out, request.id, request.service, request.ttl, future,
+            self._request_timed_out,
+            request.id,
+            request.service,
+            request.ttl,
+            future,
         )
         io_loop.add_future(future, lambda f: io_loop.remove_timeout(t))
         # If the future finished before the timeout, we want the IOLoop to
@@ -727,7 +731,8 @@ class StreamConnection(TornadoConnection):
         # Fail the ongoing request and leave a tombstone behind for a short
         # while.
         future.set_exception(errors.TimeoutError(
-            'request to service %s through %s:%d timed out after %s seconds' % (
+            'request to service %s through %s:%d timed out '
+            'after %s seconds' % (
                 str(req_service),
                 str(self.remote_host),
                 self.remote_host_port,
