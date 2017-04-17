@@ -3,6 +3,11 @@ sudo: required
 services:
     - docker
 
+addons:
+  apt:
+    packages:
+    - thrift-compiler
+
 #
 # testing multiple subdirectories
 # @see https://lord.io/blog/2014/travis-multiple-subdirs/
