@@ -140,6 +140,10 @@ Changes by Version
 - Add jitter between Hyperbahn consecutive advertise requests.
 - If the initial advertise request fails, propagate the original error instead
   of a timeout error.
+- VCR should ignore tracing headers when matching requests. This will allow
+  replaying requests with or without tracing regardless of whether the original
+  request was recorded with it.
+
 
 
 0.27.4 (2016-10-05)
