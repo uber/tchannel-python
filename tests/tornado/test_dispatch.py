@@ -51,7 +51,8 @@ def req():
 @pytest.fixture
 def connection():
     connection = mock.MagicMock()
-    connection.tchannel.event_emitter.fire.return_value = tornado.gen.maybe_future(None)
+    connection.tchannel.event_emitter.fire.return_value = \
+        tornado.gen.maybe_future(None)
     return connection
 
 
