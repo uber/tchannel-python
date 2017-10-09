@@ -633,7 +633,7 @@ class StreamConnection(TornadoConnection):
             yield self._stream(response, self.response_message_factory)
 
             # event: send_response
-            self.tchannel.event_emitter.fire(
+            yield self.tchannel.event_emitter.fire(
                 EventType.after_send_response,
                 response,
             )

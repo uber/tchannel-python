@@ -23,6 +23,7 @@ from __future__ import absolute_import
 import mock
 import pytest
 from mock import MagicMock
+from tornado.gen import maybe_future
 
 from tchannel import TChannel
 from tchannel import schemes
@@ -34,6 +35,7 @@ from tchannel.event import EventType
 
 
 @pytest.mark.parametrize('event_name', EventType._fields)
+@pytest.mark.gen_test
 def test_event_hook(event_name):
     event_value = getattr(EventType, event_name)
     mock_hook = MagicMock(spec=EventHook)
@@ -41,10 +43,11 @@ def test_event_hook(event_name):
     event_emitter = EventEmitter()
     event_emitter.register_hook(mock_hook)
 
-    event_emitter.fire(event_value, None)
+    yield event_emitter.fire(event_value, None)
     assert getattr(mock_hook, event_name).called is True
 
 
+@pytest.mark.gen_test
 def test_decorator_registration():
     event_emitter = EventEmitter()
     registrar = EventRegistrar(event_emitter)
@@ -60,7 +63,7 @@ def test_decorator_registration():
     def bar():
         called[1] = True
 
-    event_emitter.fire(EventType.before_send_request)
+    yield event_emitter.fire(EventType.before_send_request)
 
     assert called[0] is True
     assert called[1] is True
@@ -73,7 +76,7 @@ def test_after_send_error_event_called():
     with mock.patch(
         'tchannel.event.EventEmitter.fire', autospec=True,
     ) as mock_fire:
-        mock_fire.return_value = None
+        mock_fire.return_value = maybe_future(None)
         with pytest.raises(BadRequestError):
             yield tchannel.call(
                 scheme=schemes.RAW,
