@@ -109,6 +109,7 @@ class RawArgScheme(object):
         yield self._tchannel._dep_tchannel.event_emitter.fire(
             EventType.before_serialize_request_headers,
             headers,
+            service,
         )
 
         response = yield self._tchannel.call(

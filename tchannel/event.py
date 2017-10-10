@@ -63,7 +63,7 @@ class EventHook(object):
 
     """
 
-    def before_serialize_request_headers(self, headers):
+    def before_serialize_request_headers(self, headers, service):
         """Called before an outgoing request is serialized.
         Only to be used for modifying application headers.
         """
