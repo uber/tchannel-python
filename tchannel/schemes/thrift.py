@@ -136,8 +136,8 @@ class ThriftArgScheme(object):
             headers=headers, hostport=hostport, encoding='thrift'
         )
 
-        yield self.tchannel.event_emitter.fire(
-            EventType.before_send_request_headers,
+        yield self._tchannel._dep_tchannel.event_emitter.fire(
+            EventType.before_serialize_request_headers,
             headers,
         )
         serializer = request.get_serializer()

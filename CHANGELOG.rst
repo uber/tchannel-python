@@ -5,7 +5,7 @@ Changes by Version
 ------------------
 
 - Hook methods can now be implemented as coroutines.
-- Added a new event (`before_send_request_headers`) that can be hooked. This
+- Added a new event (`before_serialize_request_headers`) that can be hooked. This
   is intended to allow application headers to be modified before requests are
   sent.
 

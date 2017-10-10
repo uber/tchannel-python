@@ -113,8 +113,8 @@ class JsonArgScheme(object):
             hostport=hostport, encoding='json'
         )
 
-        yield self.tchannel.event_emitter.fire(
-            EventType.before_send_request_headers,
+        yield self._tchannel._dep_tchannel.event_emitter.fire(
+            EventType.before_serialize_request_headers,
             headers,
         )
 
