@@ -28,6 +28,7 @@ import logging
 from collections import deque
 from itertools import takewhile, dropwhile
 
+import six
 from tchannel import tracing
 from tchannel.tracing import ClientTracer
 from tornado import gen
@@ -430,10 +431,11 @@ class PeerClientOperation(object):
                 )
         except Exception as e:
             # event: on_exception
+            exc_info = sys.exc_info()
             yield self.tchannel.event_emitter.fire(
                 EventType.on_exception, request, e,
             )
-            raise
+            six.reraise(*exc_info)
 
         log.debug("Got response %s", response)
 
@@ -461,11 +463,12 @@ class PeerClientOperation(object):
             )
             raise network_error
         except TChannelError as error:
+            exc_info = sys.exc_info()
             # event: after_receive_error
             yield self.tchannel.event_emitter.fire(
                 EventType.after_receive_error, req, error,
             )
-            raise
+            six.reraise(*exc_info)
         # event: after_receive_response
         yield self.tchannel.event_emitter.fire(
             EventType.after_receive_response, req, response,

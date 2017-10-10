@@ -59,6 +59,9 @@ setup(
         # tracing deps
         'opentracing>=1.1,<2',
         'opentracing_instrumentation>=2,<3',
+
+        # python 3 compat
+        'six',
     ],
     extras_require={
         'vcr': ['PyYAML', 'mock', 'wrapt'],
