@@ -22,6 +22,7 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals
 )
 
+from ..event import EventType
 from . import RAW
 
 
@@ -102,6 +103,10 @@ class RawArgScheme(object):
 
         :rtype: Response
         """
+        yield self.tchannel.event_emitter.fire(
+            EventType.before_send_request_headers,
+            headers,
+        )
 
         return self._tchannel.call(
             scheme=self.NAME,
