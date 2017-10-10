@@ -533,9 +533,11 @@ class TornadoConnection(object):
         error_message = build_raw_error_message(error)
         write_future = self.writer.put(error_message)
         write_future.add_done_callback(
-            lambda f: self.tchannel.event_emitter.fire(
-                EventType.after_send_error,
-                error,
+            lambda f: IOLoop.current().add_callback(
+                self.tchannel.event_emitter.fire(
+                    EventType.after_send_error,
+                    error,
+                )
             )
         )
         return write_future
