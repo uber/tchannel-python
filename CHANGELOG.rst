@@ -4,7 +4,10 @@ Changes by Version
 1.1.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Hook methods can now be implemented as coroutines.
+- Added a new event (`before_serialize_request_headers`) that can be hooked. This
+  is intended to allow application headers to be modified before requests are
+  sent.
 
 
 1.1.0 (2017-04-10)

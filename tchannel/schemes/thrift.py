@@ -26,6 +26,7 @@ from __future__ import unicode_literals
 from tchannel.tracing import ClientTracer
 from tornado import gen
 
+from ..event import EventType
 from . import THRIFT
 
 
@@ -135,6 +136,11 @@ class ThriftArgScheme(object):
             headers=headers, hostport=hostport, encoding='thrift'
         )
 
+        yield self._tchannel._dep_tchannel.event_emitter.fire(
+            EventType.before_serialize_request_headers,
+            headers,
+            request.service,
+        )
         serializer = request.get_serializer()
 
         # serialize

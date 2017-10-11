@@ -23,6 +23,7 @@ from __future__ import absolute_import
 import mock
 import pytest
 import tornado.concurrent
+import tornado.gen
 
 from tchannel.event import EventType
 from tchannel.messages.error import ErrorCode
@@ -49,7 +50,10 @@ def req():
 
 @pytest.fixture
 def connection():
-    return mock.MagicMock()
+    connection = mock.MagicMock()
+    connection.tchannel.event_emitter.fire.return_value = \
+        tornado.gen.maybe_future(None)
+    return connection
 
 
 @pytest.mark.gen_test

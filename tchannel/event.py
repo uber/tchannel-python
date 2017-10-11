@@ -24,6 +24,7 @@ import sys
 import collections
 import functools
 import logging
+import tornado
 
 from .enum import enum
 
@@ -35,6 +36,7 @@ EventType = enum(
     'EventType',
     before_send_request=0x00,
     after_send_request=0x01,
+    before_serialize_request_headers=0x02,
     before_send_response=0x10,
     after_send_response=0x11,
     before_receive_request=0x20,
@@ -60,6 +62,13 @@ class EventHook(object):
                 ....
 
     """
+
+    def before_serialize_request_headers(self, headers, service):
+        """Called before an outgoing request is serialized.
+        Only to be used for modifying application headers.
+        """
+        pass
+
     def before_send_request(self, request):
         """Called before any part of a ``CALL_REQ`` message is sent."""
         pass
@@ -141,10 +150,13 @@ class EventEmitter(object):
                 event_value = getattr(EventType, event_type)
                 self.register_hook(func, event_value)
 
+    @tornado.gen.coroutine
     def fire(self, event, *args, **kwargs):
         for hook in self.hooks[event]:
             try:
-                hook(*args, **kwargs)
+                possible_future = hook(*args, **kwargs)
+                if tornado.concurrent.is_future(possible_future):
+                    yield possible_future
             except Exception:
                 log.error("error calling hook", exc_info=sys.exc_info())
 

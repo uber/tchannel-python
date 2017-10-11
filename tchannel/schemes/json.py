@@ -24,7 +24,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from tornado import gen
+
 from . import JSON
+from ..event import EventType
 from ..serializer.json import JsonSerializer
 from ..tracing import ClientTracer
 
@@ -109,6 +111,12 @@ class JsonArgScheme(object):
         span, headers = self.tracer.start_span(
             service=service, endpoint=endpoint, headers=headers,
             hostport=hostport, encoding='json'
+        )
+
+        yield self._tchannel._dep_tchannel.event_emitter.fire(
+            EventType.before_serialize_request_headers,
+            headers,
+            service,
         )
 
         # serialize

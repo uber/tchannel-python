@@ -134,7 +134,8 @@ class RequestDispatcher(object):
 
         tchannel = connection.tchannel
 
-        tchannel.event_emitter.fire(EventType.before_receive_request, request)
+        yield tchannel.event_emitter.fire(
+            EventType.before_receive_request, request)
 
         handler = self.get_endpoint(request.endpoint)
 
@@ -266,7 +267,7 @@ class RequestDispatcher(object):
                 connection.request_message_factory.remove_buffer(response.id)
 
                 connection.send_error(error)
-                tchannel.event_emitter.fire(
+                yield tchannel.event_emitter.fire(
                     EventType.on_exception,
                     request,
                     error,

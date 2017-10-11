@@ -380,7 +380,10 @@ def test_loop_failure(tornado_pair):
 
     # ... yeah
     server.tchannel = mock.MagicMock()
+    server.tchannel.event_emitter.fire.return_value = gen.maybe_future(None)
+
     client.tchannel = mock.MagicMock()
+    client.tchannel.event_emitter.fire.return_value = gen.maybe_future(None)
 
     handshake_future = client.initiate_handshake(headers=headers)
     yield server.expect_handshake(headers=headers)

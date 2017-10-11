@@ -22,6 +22,9 @@ from __future__ import (
     absolute_import, division, print_function, unicode_literals
 )
 
+from tornado import gen
+
+from ..event import EventType
 from . import RAW
 
 
@@ -33,6 +36,7 @@ class RawArgScheme(object):
     def __init__(self, tchannel):
         self._tchannel = tchannel
 
+    @gen.coroutine
     def __call__(
         self,
         service,
@@ -102,8 +106,13 @@ class RawArgScheme(object):
 
         :rtype: Response
         """
+        yield self._tchannel._dep_tchannel.event_emitter.fire(
+            EventType.before_serialize_request_headers,
+            headers,
+            service,
+        )
 
-        return self._tchannel.call(
+        response = yield self._tchannel.call(
             scheme=self.NAME,
             service=service,
             arg1=endpoint,
@@ -118,6 +127,8 @@ class RawArgScheme(object):
             routing_delegate=routing_delegate,
             caller_name=caller_name,
         )
+
+        raise gen.Return(response)
 
     def register(self, endpoint, **kwargs):
 
