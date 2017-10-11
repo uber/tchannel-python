@@ -154,7 +154,9 @@ class EventEmitter(object):
     def fire(self, event, *args, **kwargs):
         for hook in self.hooks[event]:
             try:
-                yield tornado.gen.maybe_future(hook(*args, **kwargs))
+                possible_future = hook(*args, **kwargs)
+                if tornado.concurrent.is_future(possible_future):
+                    yield possible_future
             except Exception:
                 log.error("error calling hook", exc_info=sys.exc_info())
 
