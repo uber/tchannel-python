@@ -1,6 +1,12 @@
 Changes by Version
 ==================
 
+1.2.1 (unreleased)
+------------------
+
+- Nothing changed yet.
+
+
 1.2.0 (2017-10-19)
 ------------------
 
