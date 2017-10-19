@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-1.1.1 (unreleased)
+1.2.0 (2017-10-19)
 ------------------
 
 - Hook methods can now be implemented as coroutines.
