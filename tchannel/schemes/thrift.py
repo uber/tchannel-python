@@ -133,7 +133,8 @@ class ThriftArgScheme(object):
 
         span, headers = self.tracer.start_span(
             service=request.service, endpoint=request.endpoint,
-            headers=headers, hostport=hostport, encoding='thrift'
+            headers=headers, hostport=hostport, encoding='thrift',
+            request=request
         )
 
         yield self._tchannel._dep_tchannel.event_emitter.fire(
