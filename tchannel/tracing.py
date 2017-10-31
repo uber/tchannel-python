@@ -20,15 +20,13 @@
 
 from __future__ import absolute_import
 
-import abc
 import logging
 
 import opentracing
 import opentracing_instrumentation
-from opentracing_instrumentation.interceptors import OpenTracingInterceptor
+from opentracing_instrumentation.interceptors import ClientInterceptors
 from opentracing.ext import tags
 from tchannel.messages import common, Tracing
-import six
 
 log = logging.getLogger('tchannel')
 
@@ -177,67 +175,6 @@ class ServerTracer(object):
         if 'as' in request.headers:
             self.span.set_tag('as', request.headers['as'])
         return self.span
-
-
-class ClientInterceptors(object):
-    """
-    Client interceptors executed between span creation and injection.
-
-    Implementations of ``OpenTracingInterceptor`` can be added
-    and are executed in order in which they are added, after child
-    span for current request is created, but before the span baggage
-    contents are injected into the outbound request.
-
-    A code sample of expected usage:
-
-    from tchannel.tracing import ClientInterceptors
-
-    from my_project.interceptors import CustomOpenTracingInterceptor
-
-    my_interceptor = CustomOpenTracingInterceptor()
-    ClientInterceptors.append(my_interceptor)
-
-    """
-
-    _interceptors = []
-
-    @classmethod
-    def append(cls, interceptor):
-        """
-        Add interceptor to the end of the internal list.
-
-        Note: Raises ``ValueError`` if interceptor
-              does not extend ``OpenTracingInterceptor``
-        """
-        cls._check(interceptor)
-        cls._interceptors.append(interceptor)
-
-    @classmethod
-    def insert(cls, index, interceptor):
-        """
-        Add interceptor to the given index in the internal list.
-
-        Note: Raises ``ValueError`` if interceptor
-              does not extend ``OpenTracingInterceptor``
-        """
-        cls._check(interceptor)
-        cls._interceptors.insert(index, interceptor)
-
-    @classmethod
-    def _check(cls, interceptor):
-        if not isinstance(interceptor, OpenTracingInterceptor):
-            raise ValueError('ClientInterceptors only accepts instances '
-                             'of OpenTracingInterceptor')
-
-    @classmethod
-    def get_interceptors(cls):
-        """Return a list of interceptors."""
-        return cls._interceptors
-
-    @classmethod
-    def clear(cls):
-        """Clear the internal list of interceptors."""
-        del cls._interceptors[:]
 
 
 class ClientTracer(object):
