@@ -20,12 +20,15 @@
 
 from __future__ import absolute_import
 
+import abc
 import logging
 
 import opentracing
 import opentracing_instrumentation
-
+from opentracing_instrumentation.interceptors import OpenTracingInterceptor
 from opentracing.ext import tags
+import six
+
 from tchannel.messages import common, Tracing
 
 log = logging.getLogger('tchannel')
@@ -67,6 +70,7 @@ class TracingContextProvider(object):
 
     There's currently no way to disable Span tracking via ``StackContext``.
     """
+
     def get_current_span(self):
         """
         :return: The current :py:class:`Span` for this thread/request.
@@ -212,6 +216,41 @@ class ClientTracer(object):
                 log.exception('Failed to inject tracing span into headers')
 
         return span, headers
+
+
+@six.add_metaclass(abc.ABCMeta)
+class TChannelOpenTracingClientInterceptor(OpenTracingInterceptor):
+    """
+    Extends the abstract OpenTracing Interceptor class, with some TChannel
+    specific attributes.
+
+    Subclasses are expected to provide a full implementation of
+    the ``process(..)`` method which is passed a span object, and optional
+    arguments for the current request headers, service name and
+    the encoding scheme.
+
+    A code sample of expected usage:
+
+    .. code-block:: python
+
+        from tchannel.tracing import TChannelOpenTracingClientInterceptor
+
+        class CustomOpenTracingInterceptor(
+            TChannelOpenTracingClientInterceptor):
+
+            def process(self, span, headers=None, service=None, encoding=None):
+
+                .....
+
+    .. warning:: When overriding, note the location of invokation of the
+    interceptors; call time and the arguments passed may vary between
+    the respective encoding schemes.
+    """
+
+    @abc.abstractmethod
+    def process(self, span, headers=None, service=None, encoding=None):
+        """Fire the interceptor."""
+        pass
 
 
 def set_peer_host_port(span, hostport):
