@@ -23,9 +23,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from tchannel.tracing import ClientTracer
+from opentracing_instrumentation.interceptors import ClientInterceptors
 from tornado import gen
 
+from tchannel.tracing import (
+    ClientTracer, TChannelOpenTracingClientInterceptor)
 from ..event import EventType
 from . import THRIFT
 
@@ -133,8 +135,7 @@ class ThriftArgScheme(object):
 
         span, headers = self.tracer.start_span(
             service=request.service, endpoint=request.endpoint,
-            headers=headers, hostport=hostport, encoding='thrift',
-            request=request
+            headers=headers, hostport=hostport, encoding='thrift'
         )
 
         yield self._tchannel._dep_tchannel.event_emitter.fire(
@@ -142,8 +143,15 @@ class ThriftArgScheme(object):
             headers,
             request.service,
         )
-        serializer = request.get_serializer()
 
+        # fire interceptors
+        for interceptor in ClientInterceptors.get_interceptors():
+            if isinstance(interceptor, TChannelOpenTracingClientInterceptor):
+                interceptor.process(span=span, request=request,
+                                    headers=headers, service=request.service,
+                                    encoding='thrift')
+
+        serializer = request.get_serializer()
         # serialize
         try:
             headers = serializer.serialize_header(headers=headers)

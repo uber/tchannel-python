@@ -20,12 +20,15 @@
 
 from __future__ import absolute_import
 
+import abc
 import logging
 
 import opentracing
 import opentracing_instrumentation
-from opentracing_instrumentation.interceptors import ClientInterceptors
+from opentracing_instrumentation.interceptors import OpenTracingInterceptor
 from opentracing.ext import tags
+import six
+
 from tchannel.messages import common, Tracing
 
 log = logging.getLogger('tchannel')
@@ -186,7 +189,7 @@ class ClientTracer(object):
         self.channel = channel
 
     def start_span(self, service, endpoint, headers=None,
-                   hostport=None, encoding=None, request=None):
+                   hostport=None, encoding=None):
         parent_span = self.channel.context_provider.get_current_span()
         parent_ctx = parent_span.context if parent_span else None
         span = self.channel.tracer.start_span(
@@ -198,10 +201,6 @@ class ClientTracer(object):
         set_peer_host_port(span, hostport)
         if encoding:
             span.set_tag('as', encoding)
-
-        # fire interceptors
-        for interceptor in ClientInterceptors.get_interceptors():
-            interceptor.process(request=request, span=span)
 
         if headers is None:
             headers = {}
@@ -217,6 +216,43 @@ class ClientTracer(object):
                 log.exception('Failed to inject tracing span into headers')
 
         return span, headers
+
+
+@six.add_metaclass(abc.ABCMeta)
+class TChannelOpenTracingClientInterceptor(OpenTracingInterceptor):
+    """
+    Extends the abstract OpenTracing Interceptor class, with some TChannel
+    specific attributes.
+
+    Subclasses are expected to provide a full implementation of
+    the ``process(..)`` method which is passed a span object, and optional
+    arguments for the request, current request headers, service name and
+    the encoding scheme.
+
+    A code sample of expected usage:
+
+    .. code-block:: python
+
+        from tchannel.tracing import TChannelOpenTracingClientInterceptor
+
+        class CustomOpenTracingInterceptor(
+            TChannelOpenTracingClientInterceptor):
+
+            def process(self, span, request=None, headers=None,
+                service=None, encoding=None):
+
+                .....
+
+    .. warning:: When overriding, note the location of invokation of the
+    interceptors; call time and the arguments passed may vary between
+    the respective encoding schemes.
+    """
+
+    @abc.abstractmethod
+    def process(self, span, request=None, headers=None,
+                service=None, encoding=None):
+        """Fire the interceptor."""
+        pass
 
 
 def set_peer_host_port(span, hostport):

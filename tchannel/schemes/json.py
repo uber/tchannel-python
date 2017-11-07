@@ -23,12 +23,13 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from opentracing_instrumentation.interceptors import ClientInterceptors
 from tornado import gen
 
 from . import JSON
 from ..event import EventType
 from ..serializer.json import JsonSerializer
-from ..tracing import ClientTracer
+from ..tracing import ClientTracer, TChannelOpenTracingClientInterceptor
 
 
 class JsonArgScheme(object):
@@ -118,6 +119,12 @@ class JsonArgScheme(object):
             headers,
             service,
         )
+
+        # fire interceptors
+        for interceptor in ClientInterceptors.get_interceptors():
+            if isinstance(interceptor, TChannelOpenTracingClientInterceptor):
+                interceptor.process(span=span, headers=headers,
+                                    service=service, encoding='json')
 
         # serialize
         serializer = JsonSerializer()
