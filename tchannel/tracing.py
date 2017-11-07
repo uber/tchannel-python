@@ -226,7 +226,7 @@ class TChannelOpenTracingClientInterceptor(OpenTracingInterceptor):
 
     Subclasses are expected to provide a full implementation of
     the ``process(..)`` method which is passed a span object, and optional
-    arguments for the request, current request headers, service name and
+    arguments for the current request headers, service name and
     the encoding scheme.
 
     A code sample of expected usage:
@@ -238,8 +238,7 @@ class TChannelOpenTracingClientInterceptor(OpenTracingInterceptor):
         class CustomOpenTracingInterceptor(
             TChannelOpenTracingClientInterceptor):
 
-            def process(self, span, request=None, headers=None,
-                service=None, encoding=None):
+            def process(self, span, headers=None, service=None, encoding=None):
 
                 .....
 
@@ -249,8 +248,7 @@ class TChannelOpenTracingClientInterceptor(OpenTracingInterceptor):
     """
 
     @abc.abstractmethod
-    def process(self, span, request=None, headers=None,
-                service=None, encoding=None):
+    def process(self, span, headers=None, service=None, encoding=None):
         """Fire the interceptor."""
         pass
 

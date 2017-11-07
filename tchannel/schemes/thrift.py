@@ -147,9 +147,8 @@ class ThriftArgScheme(object):
         # fire interceptors
         for interceptor in ClientInterceptors.get_interceptors():
             if isinstance(interceptor, TChannelOpenTracingClientInterceptor):
-                interceptor.process(span=span, request=request,
-                                    headers=headers, service=request.service,
-                                    encoding='thrift')
+                interceptor.process(span=span, headers=headers,
+                                    service=request.service, encoding='thrift')
 
         serializer = request.get_serializer()
         # serialize
