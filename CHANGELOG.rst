@@ -4,7 +4,7 @@ Changes by Version
 1.2.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Added OpenTracing client interceptor support for outbound requests.
 
 
 1.2.0 (2017-10-19)
