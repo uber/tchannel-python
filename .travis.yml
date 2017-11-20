@@ -20,8 +20,6 @@ env:
   matrix:
     - TOX_ENV=py27-tornado42
     - TOX_ENV=py27-tornado43
-    - TOX_ENV=pypy-tornado42
-    - TOX_ENV=pypy-tornado43
     - TOX_ENV=crossdock
     - TOX_ENV=cover
     - TOX_ENV=flake8
