@@ -480,9 +480,6 @@ def test_span_tags(encoding, operation, tracer, thrift_service):
     trace_ids = set([s.trace_id for s in spans])
     assert 1 == len(trace_ids), \
         'all spans must have the same trace_id: %s' % trace_ids
-    span_ids = set([s.span_id for s in spans])
-    assert 2 == len(span_ids), \
-        'must have two unique span IDs, root span and RPC span: %s' % span_ids
     parent = child = None
     for s in spans:
         if s.tags is None:
