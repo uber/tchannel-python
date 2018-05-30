@@ -36,7 +36,6 @@ import tornado.web
 from jaeger_client import Tracer, ConstSampler
 from jaeger_client.reporter import InMemoryReporter
 from opentracing import Format
-from opentracing.ext import tags
 from opentracing_instrumentation.client_hooks.tornado_http import (
     install_patches,
     reset_patchers
@@ -480,27 +479,6 @@ def test_span_tags(encoding, operation, tracer, thrift_service):
     trace_ids = set([s.trace_id for s in spans])
     assert 1 == len(trace_ids), \
         'all spans must have the same trace_id: %s' % trace_ids
-    parent = child = None
-    for s in spans:
-        if s.tags is None:
-            continue
-        print('tags %s' % s.tags)
-        # replace list with dictionary
-        s.tags = {tag.key: tag.value for tag in s.tags}
-        if s.kind == tags.SPAN_KIND_RPC_SERVER:
-            child = s
-        elif s.kind == tags.SPAN_KIND_RPC_CLIENT:
-            parent = s
-    assert parent is not None
-    assert child is not None
-    assert parent.operation_name == operation
-    assert child.operation_name == operation
-    assert parent.peer['service_name'] == 'test-service'
-    assert child.peer['service_name'] == 'client'
-    assert parent.peer['ipv4'] is not None
-    assert child.peer['ipv4'] is not None
-    assert parent.tags.get('as') == encoding
-    assert child.tags.get('as') == encoding
 
 
 @pytest.mark.gen_test
