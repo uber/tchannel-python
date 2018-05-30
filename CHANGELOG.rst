@@ -4,7 +4,8 @@ Changes by Version
 1.3.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fixed a bug which caused servers to send requests to peers that sent requests
+  to them.
 
 
 1.3.0 (2017-11-20)

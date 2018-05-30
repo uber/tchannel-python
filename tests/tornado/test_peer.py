@@ -347,6 +347,27 @@ def test_never_choose_ephemeral():
     )
 
 
+@pytest.mark.gen_test
+def test_never_choose_incoming():
+    server = TChannel('server')
+    server.listen()
+
+    client = TChannel('client')
+    client.listen()  # client has a non-ephemeral port
+
+    @server.json.register('hello')
+    def hello(request):
+        return 'hi'
+
+    # make a request to set up a connection
+    yield client.json('server', 'hello', 'world', hostport=server.hostport)
+    assert [client.hostport] == server._dep_tchannel.peers.hosts
+
+    assert (server._dep_tchannel.peers.choose() is None), (
+        'server should not know of any peers at this time'
+    )
+
+
 def test_choose_then_get_peer(hostports):
     tchannel = TChannel('test')
     peer_group = tchannel._dep_tchannel.peers
