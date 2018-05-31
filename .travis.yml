@@ -24,7 +24,6 @@ env:
     - TOX_ENV=cover
     - TOX_ENV=flake8
     - TOX_ENV=docs
-    - TOX_ENV=benchmark
 
 before_install:
   - make crossdock_install_ci
