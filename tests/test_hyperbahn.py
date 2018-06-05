@@ -56,7 +56,7 @@ def client(io_loop):
 
 @pytest.yield_fixture
 def routers(server, io_loop):
-    routers = [TChannel('hyperbahn') for i in range(5)]
+    routers = [TChannel('hyperbahn') for i in xrange(5)]
 
     # Generates an ad function for routers[i].
     def ad_for(me):
