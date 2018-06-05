@@ -44,6 +44,9 @@ def server(io_loop):
 @pytest.yield_fixture
 def client(io_loop):
     client = TChannel('client')
+    # The client listens for incoming connections so that the server doesn't
+    # treat is as an ephemeral client. This is needed to exercise the p2p use
+    # case.
     client.listen()
     try:
         yield client
