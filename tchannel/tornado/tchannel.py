@@ -508,7 +508,13 @@ class TChannelServer(tornado.tcpserver.TCPServer):
             conn.remote_host_port,
             conn.remote_process_name)
 
-        self.tchannel.peers.get(
+        # For new incoming connections, we use _get_isolated instead of get()
+        # so that the new incoming peer doesn't get added to the peer heap if
+        # it's not already there.  This makes the new peer unavailable as a
+        # router for outgoing RPCs. Only peers that were explicitly added to
+        # the peer heap elsewhere in the system will be considered as routers
+        # for outgoing RPCs.
+        self.tchannel.peers._get_isolated(
             "%s:%s" % (conn.remote_host,
                        conn.remote_host_port)
         ).register_incoming_conn(conn)

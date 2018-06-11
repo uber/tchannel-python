@@ -69,7 +69,6 @@ class Peer(object):
         'chosen_count',
         'on_conn_change',
         'connections',
-        'is_incoming',
 
         '_connecting',
         '_on_conn_change_cb',
@@ -105,9 +104,6 @@ class Peer(object):
         #: are added to the left side of the deque and outgoing connections to
         #: the right side.
         self.connections = deque()
-
-        # Whether this peer has incoming connections only.
-        self.is_incoming = False
 
         # This contains a future to the TornadoConnection if we're already in
         # the process of making an outgoing connection to the peer. This
@@ -196,7 +192,6 @@ class Peer(object):
         self.connections.append(conn)
         self._set_on_close_cb(conn)
         self._on_conn_change()
-        self.is_incoming = False
 
     def register_incoming_conn(self, conn):
         """Add incoming connection into the heap."""
@@ -205,10 +200,6 @@ class Peer(object):
         self.connections.appendleft(conn)
         self._set_on_close_cb(conn)
         self._on_conn_change()
-
-        # This is an incoming-only peer if it's already an incoming-only peer,
-        # or if this is the only connection on it.
-        self.is_incoming = self.is_incoming or len(self.connections) == 1
 
     def _on_conn_change(self):
         """Function will be called any time there is connection changes."""
@@ -736,11 +727,6 @@ class PeerGroup(object):
         if hostport:
             return self._get_isolated(hostport)
 
-        def should_send_requests(p):
-            return not (
-                p.hostport in blacklist or
-                p.is_ephemeral or
-                p.is_incoming
-            )
-
-        return self.peer_heap.smallest_peer(should_send_requests)
+        return self.peer_heap.smallest_peer(
+            (lambda p: p.hostport not in blacklist and not p.is_ephemeral),
+        )
