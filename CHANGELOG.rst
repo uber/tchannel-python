@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-1.3.1 (unreleased)
+1.3.1 (2018-06-11)
 ------------------
 
 - Fixed a bug which caused servers to send requests to peers that sent requests
