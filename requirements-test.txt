@@ -1,5 +1,5 @@
 # Testing and coverage
-pytest>=2,<3
+pytest>=3
 pytest-cov
 pytest-timeout
 pytest-tornado
