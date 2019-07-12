@@ -39,13 +39,13 @@ script:
 after_success:
   - coveralls -v
 
-after_success:
-- export REPO=tchannelhub/xdock-py
-- export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
-- export TAG=`if [ "$BRANCH" == "master" ]; then echo "latest"; else echo $BRANCH; fi`
-- export DOCKER=$(if [ "$TOX_ENV" == "crossdock" ]; then echo docker; else echo true; fi)
-- $DOCKER login -u $DOCKER_USER -p $DOCKER_PASS
-- $DOCKER build -f crossdock/Dockerfile -t $REPO:$COMMIT .
-- $DOCKER tag $REPO:$COMMIT $REPO:$TAG
-- $DOCKER tag $REPO:$COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
-- $DOCKER push $REPO
+#after_success:
+#- export REPO=tchannelhub/xdock-py
+#- export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+#- export TAG=`if [ "$BRANCH" == "master" ]; then echo "latest"; else echo $BRANCH; fi`
+#- export DOCKER=$(if [ "$TOX_ENV" == "crossdock" ]; then echo docker; else echo true; fi)
+#- $DOCKER login -u $DOCKER_USER -p $DOCKER_PASS
+#- $DOCKER build -f crossdock/Dockerfile -t $REPO:$COMMIT .
+#- $DOCKER tag $REPO:$COMMIT $REPO:$TAG
+#- $DOCKER tag $REPO:$COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
+#- $DOCKER push $REPO
