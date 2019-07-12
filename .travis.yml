@@ -9,6 +9,7 @@ services:
 # @see https://www.dominicrodger.com/tox-and-travis.html
 #
 language: python
+python: 2.7
 env:
   global:
     - DOCKER_COMPOSE_VERSION=1.8.0
