@@ -36,7 +36,7 @@ class PreferIncomingCalculator(RankCalculator):
     # 0: ephemeral peers or unconnected peers
     # 1: peers with only outgoing connections
     # 2: peers with incoming connections
-    TIERS = [sys.maxint, sys.maxint / 2, 0]
+    TIERS = [sys.maxsize, sys.maxsize / 2, 0]
 
     def get_rank(self, peer):
         """Calculate the peer rank based on connections.

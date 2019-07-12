@@ -115,7 +115,7 @@ class Peer(object):
         if rank is not None:
             self.rank = rank
         else:
-            self.rank = sys.maxint
+            self.rank = sys.maxsize
         # index records the position of the peer in the peer heap
         self.index = -1
         # order maintains the push order of the peer in the heap.
@@ -497,7 +497,7 @@ class PeerClientOperation(object):
                     )
 
                     if not connection:
-                        raise typ, error, tb
+                        six.reraise(typ, error, tb)
                 finally:
                     del tb  # for GC
 
