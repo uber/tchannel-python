@@ -43,7 +43,14 @@ def interface_ip(interface):
 
 def local_ip():
     """Get the local network IP of this machine"""
-    ip = socket.gethostbyname(socket.gethostname())
+    ip = '127.0.0.1'
+    try:
+        ip = socket.gethostbyname(socket.gethostname())
+    except socket.gaierror:
+        try:
+            ip = socket.gethostbyname(socket.gethostname() + '.local')
+        except socket.gaierror:
+            pass
     if ip.startswith('127.'):
         # Check eth0, eth1, eth2, en0, ...
         interfaces = [

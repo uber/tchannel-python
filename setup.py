@@ -62,6 +62,7 @@ setup(
 
         # python 3 compat
         'six',
+        'future'
     ],
     extras_require={
         'vcr': ['PyYAML', 'mock', 'wrapt'],
