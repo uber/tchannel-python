@@ -75,7 +75,7 @@ def tracer():
     report_func = reporter.report_span
 
     def log_and_report(span):
-        print 'Reporting span %s' % span
+        print('Reporting span %s' % span)
         report_func(span)
 
     reporter.report_span = log_and_report
@@ -173,7 +173,7 @@ def register(tchannel, thrift_service, http_client, base_url):
     @tchannel.thrift.register(thrift_service.X, method='thrift4')
     @tornado.gen.coroutine
     def thrift4(request):
-        print 'thrift4 hit'
+        print('thrift4 hit')
         host_port = request.body.hostport
         res = tchannel.raw(
             service='test-service',
@@ -182,7 +182,7 @@ def register(tchannel, thrift_service, http_client, base_url):
             headers='some value that will not be parsed as a dict',
         )
         res = yield res
-        print 'result', res
+        print('result', res)
         raise tornado.gen.Return(Response(res.body))
 
     @tchannel.raw.register('raw2')

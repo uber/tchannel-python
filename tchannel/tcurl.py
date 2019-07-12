@@ -262,9 +262,9 @@ def main(argv=None):
         )
 
     if not args.raw:
-        print json.dumps(result.body, default=_dictify)
+        print(json.dumps(result.body, default=_dictify))
     else:
-        print result.body
+        print(result.body)
 
     raise tornado.gen.Return(result)
 
@@ -273,11 +273,11 @@ def main(argv=None):
 def _catch_errors(future, verbose, exit=sys.exit):
     try:
         result = yield future
-    except Exception, e:
+    except Exception as e:
         if verbose:
             traceback.print_exc(file=sys.stderr)
         else:
-            print >> sys.stderr, str(e)
+            print(str(e), file=sys.stderr)
         exit(1)
 
     raise tornado.gen.Return(result)
