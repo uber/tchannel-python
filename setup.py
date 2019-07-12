@@ -50,7 +50,7 @@ setup(
 
         # external deps
         'crcmod>=1,<2',
-        'tornado>=4.3,<5',
+        'tornado>=4.3,<6',
 
         # tchannel deps
         'thriftrw>=0.4,<2',
@@ -62,6 +62,7 @@ setup(
 
         # python 3 compat
         'six',
+        'future'
     ],
     extras_require={
         'vcr': ['PyYAML', 'mock', 'wrapt'],
