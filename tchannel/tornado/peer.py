@@ -636,7 +636,7 @@ class PeerGroup(object):
         existing Peer is returned.
         """
         assert hostport, "hostport is required"
-        assert isinstance(hostport, six.string_types), "hostport must be a string" #noqa
+        assert isinstance(hostport, six.string_types), "hostport must be a string"  # noqa
 
         if hostport not in self._peers:
             self._add(hostport)
