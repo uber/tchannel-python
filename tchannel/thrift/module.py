@@ -31,6 +31,7 @@ from tchannel.errors import OneWayNotSupportedError
 from tchannel.serializer.thrift import ThriftSerializer
 
 from .reflection import get_service_methods, get_module_name
+import six
 
 
 @deprecated(
@@ -97,7 +98,7 @@ def thrift_request_builder(service, thrift_module, hostport=None,
     methods = _create_methods(thrift_module)
 
     # then attach to instane
-    for name, method in methods.iteritems():
+    for name, method in six.iteritems(methods):
         method = types.MethodType(method, maker, ThriftRequestMaker)
         setattr(maker, name, method)
 

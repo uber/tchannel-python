@@ -32,6 +32,7 @@ from tchannel.messages.common import ChecksumType
 from tchannel.messages.common import FlagsType
 from tchannel.tornado import TChannel
 from tchannel.tornado.connection import StreamConnection
+from six.moves import range
 
 
 @tornado.gen.coroutine
@@ -108,7 +109,7 @@ def test_invalid_message_during_streaming(mock_server):
     )
 
     resp_future = connection.send(callrequest)
-    for _ in xrange(10):
+    for _ in range(10):
         yield connection.write(callreqcontinue)
 
     # bypass the default checksum calculation

@@ -56,7 +56,7 @@ def peers(request):
 def mock_peer(rank=None):
     peer = mock.MagicMock()
     peer.index = -1
-    peer.rank = rank if rank is not None else random.randint(0, sys.maxint)
+    peer.rank = rank if rank is not None else random.randint(0, sys.maxsize)
     return peer
 
 
@@ -174,7 +174,7 @@ def test_heap_fuzz(peer_heap):
             if len(peer_heap) <= 0:
                 continue
             p = peer_heap.peers[random.randint(0, len(peer_heap) - 1)]
-            p.rank = random.randint(0, sys.maxint)
+            p.rank = random.randint(0, sys.maxsize)
             peer_heap.update_peer(p)
 
         if peer_heap.size():
@@ -184,7 +184,7 @@ def test_heap_fuzz(peer_heap):
 
 
 def smallest(ps):
-    m = sys.maxint
+    m = sys.maxsize
     for peer in ps:
         if peer.rank < m:
             m = peer.rank

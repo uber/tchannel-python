@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import absolute_import
 import pytest
 from tchannel.serializer.thrift import ThriftSerializer
 from tests.data.generated.ThriftTest.ThriftTest import (

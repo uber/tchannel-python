@@ -397,7 +397,7 @@ class PeerClientOperation(object):
 
         # set default transport headers
         headers = headers or {}
-        for k, v in self.headers.iteritems():
+        for k, v in self.headers.items():
             headers.setdefault(k, v)
 
         if self.tracing_span is None:
@@ -636,7 +636,7 @@ class PeerGroup(object):
         existing Peer is returned.
         """
         assert hostport, "hostport is required"
-        assert isinstance(hostport, basestring), "hostport must be a string"
+        assert isinstance(hostport, six.string_types), "hostport must be a string"
 
         if hostport not in self._peers:
             self._add(hostport)
@@ -687,12 +687,12 @@ class PeerGroup(object):
     @property
     def hosts(self):
         """Get all host-ports managed by this PeerGroup."""
-        return self._peers.keys()
+        return list(self._peers.keys())
 
     @property
     def peers(self):
         """Get all Peers managed by this PeerGroup."""
-        return self._peers.values()
+        return list(self._peers.values())
 
     def request(self, service, hostport=None, **kwargs):
         """Initiate a new request through this PeerGroup.

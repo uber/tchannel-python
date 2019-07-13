@@ -42,6 +42,7 @@ from ..messages.error import ErrorMessage
 from .request import Request
 from .response import Response
 from .stream import InMemStream
+from six.moves import range
 
 log = logging.getLogger('tchannel')
 

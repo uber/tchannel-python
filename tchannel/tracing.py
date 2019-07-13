@@ -151,7 +151,7 @@ class ServerTracer(object):
             if headers and hasattr(headers, 'iteritems'):
                 tracing_headers = {
                     k[len(TRACING_KEY_PREFIX):]: v
-                    for k, v in headers.iteritems()
+                    for k, v in headers.items()
                     if k.startswith(TRACING_KEY_PREFIX)
                 }
                 parent_context = self.tracer.extract(
@@ -161,7 +161,7 @@ class ServerTracer(object):
                 if self.span and parent_context:
                     # we already started a span from Tracing fields,
                     # so only copy baggage from the headers.
-                    for k, v in parent_context.baggage.iteritems():
+                    for k, v in parent_context.baggage.items():
                         self.span.set_baggage_item(k, v)
         except:
             log.exception('Cannot extract tracing span from headers')
@@ -212,7 +212,7 @@ class ClientTracer(object):
                 tracing_headers = {}
                 self.channel.tracer.inject(
                     span.context, opentracing.Format.TEXT_MAP, tracing_headers)
-                for k, v in tracing_headers.iteritems():
+                for k, v in six.iteritems(tracing_headers):
                     headers[TRACING_KEY_PREFIX + k] = v
             except:
                 log.exception('Failed to inject tracing span into headers')

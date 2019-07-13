@@ -24,6 +24,6 @@ import collections
 
 
 def enum(class_name, **values):
-    class_type = collections.namedtuple(class_name, values.keys())
+    class_type = collections.namedtuple(class_name, list(values.keys()))
     instance = class_type(**values)
     return instance

@@ -29,6 +29,7 @@ from tchannel.messages.common import ChecksumType
 from tchannel.messages.common import Tracing
 from tchannel.messages.common import checksum_rw
 from tchannel.messages.common import tracing_rw
+from six.moves import range
 
 
 @pytest.mark.parametrize('typ, value', [
@@ -51,7 +52,7 @@ def test_checksum_read(bs, typ, value):
 
 
 def test_tracing_round_trip():
-    for i in xrange(100):
+    for i in range(100):
         t = Tracing(
             random.randint(0, 100000),
             random.randint(0, 100000),

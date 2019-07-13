@@ -34,6 +34,7 @@ from tchannel.tornado.stream import maybe_stream
 from tchannel.tornado.stream import read_full
 
 from . import proxy
+from six.moves import map
 
 
 _TChannel_request = TChannel.request
@@ -70,7 +71,7 @@ class PatchedClientOperation(object):
              headers=None,
              ttl=None,
              **kwargs):
-        arg1, arg2, arg3 = map(maybe_stream, [arg1, arg2, arg3])
+        arg1, arg2, arg3 = list(map(maybe_stream, [arg1, arg2, arg3]))
 
         endpoint = yield read_full(arg1)
 

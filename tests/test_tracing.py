@@ -20,11 +20,12 @@
 
 from __future__ import absolute_import
 
+from __future__ import print_function
 import json
 import socket
 import time
 import traceback
-import urllib
+import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
 
 import mock
 import opentracing
@@ -50,6 +51,8 @@ from tchannel.event import EventHook
 from tornado import netutil
 from tornado.httpclient import HTTPRequest
 from tchannel import tracing
+import six
+from six.moves import range
 
 
 BAGGAGE_KEY = b'baggage'
@@ -75,7 +78,7 @@ def tracer():
     report_func = reporter.report_span
 
     def log_and_report(span):
-        print('Reporting span %s' % span)
+        print(('Reporting span %s' % span))
         report_func(span)
 
     reporter.report_span = log_and_report
@@ -182,7 +185,7 @@ def register(tchannel, thrift_service, http_client, base_url):
             headers='some value that will not be parsed as a dict',
         )
         res = yield res
-        print('result', res)
+        print(('result', res))
         raise tornado.gen.Return(Response(res.body))
 
     @tchannel.raw.register('raw2')
@@ -207,8 +210,8 @@ class HttpHandler(tornado.web.RequestHandler):
     def _get_span(self):
         try:
             carrier = {}
-            for k, v in self.request.headers.iteritems():
-                carrier[k] = urllib.unquote(v)
+            for k, v in six.iteritems(self.request.headers):
+                carrier[k] = six.moves.urllib.parse.unquote(v)
             span_ctx = opentracing.tracer.extract(Format.TEXT_MAP, carrier)
             span = opentracing.tracer.start_span(
                 operation_name='server',
@@ -466,7 +469,7 @@ def test_span_tags(encoding, operation, tracer, thrift_service):
                 raise ValueError('Unknown encoding %s' % encoding)
         res = yield res  # cannot yield in StackContext
     res = res.body
-    if isinstance(res, basestring):
+    if isinstance(res, six.string_types):
         res = json.loads(res)
     assert res == {'bender': 'is great'}
     for i in range(1000):

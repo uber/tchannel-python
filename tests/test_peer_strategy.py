@@ -36,7 +36,7 @@ def test_get_rank_no_connection():
     server.listen()
     peer = Peer(TChannel('test'), '10.10.101.21:230')
     calculator = PreferIncomingCalculator()
-    assert sys.maxint == calculator.get_rank(peer)
+    assert sys.maxsize == calculator.get_rank(peer)
 
 
 @pytest.mark.gen_test
@@ -60,4 +60,4 @@ def test_get_rank_with_imcoming():
     peer = Peer(TChannel('test'), '10.10.101.21:230')
     calculator = PreferIncomingCalculator()
     peer.register_incoming_conn(connection)
-    assert sys.maxint != calculator.get_rank(peer)
+    assert sys.maxsize != calculator.get_rank(peer)

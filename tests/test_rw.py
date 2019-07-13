@@ -304,7 +304,7 @@ def test_switch(switch_rw, cases, width, value, bs):
     (rw.number(1), []),
     (rw.number(2), [1]),
     (rw.number(4), [1, 2, 3]),
-    (rw.number(8), range(7)),
+    (rw.number(8), list(range(7))),
     (rw.len_prefixed_string(rw.number(1)), [10, 97]),
     (rw.chain(rw.number(1), rw.number(2)), [1, 2]),
     (rw.switch(rw.number(1), {0: rw.number(2)}), [0, 1]),
