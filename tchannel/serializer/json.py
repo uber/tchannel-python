@@ -33,7 +33,8 @@ class JsonSerializer(object):
         headers = headers or {}
 
         for k, v in six.iteritems(headers):
-            if not (isinstance(k, six.string_types) and isinstance(v, six.string_types)):
+            if not (isinstance(k, six.string_types) and
+                    isinstance(v, six.string_types)):
                 raise ValueError(
                     'headers must be a map[string]string (a shallow dict '
                     'where keys and values are strings)'

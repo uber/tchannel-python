@@ -25,7 +25,6 @@ import json
 import socket
 import time
 import traceback
-import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
 
 import mock
 import opentracing
@@ -52,7 +51,6 @@ from tornado import netutil
 from tornado.httpclient import HTTPRequest
 from tchannel import tracing
 import six
-from six.moves import range
 
 
 BAGGAGE_KEY = b'baggage'
