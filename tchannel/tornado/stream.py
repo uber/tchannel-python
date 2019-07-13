@@ -129,7 +129,7 @@ class InMemStream(Stream):
                     future.set_exception(self.exception)
                 return future
 
-            chunk = ""
+            chunk = b""
 
             while len(self._stream) and len(chunk) < common.MAX_PAYLOAD_SIZE:
                 chunk += self._stream.popleft()
