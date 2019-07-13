@@ -122,12 +122,16 @@ def compute_checksum(checksum_type, args, csum=0):
         return None
     elif checksum_type == ChecksumType.crc32:
         for arg in args:
+            if isinstance(arg, str):
+                arg = arg.encode('utf-8')
             csum = zlib.crc32(arg, csum) & 0xffffffff
     # TODO figure out farm32 cross platform issue
     elif checksum_type == ChecksumType.farm32:
         raise NotImplementedError()
     elif checksum_type == ChecksumType.crc32c:
         for arg in args:
+            if isinstance(arg, str):
+                arg = arg.encode('utf-8')
             csum = crc32c(arg, csum)
     else:
         raise InvalidChecksumError()
