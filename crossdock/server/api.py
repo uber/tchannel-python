@@ -62,7 +62,7 @@ def downstream_from_dict(json):
 
 def namedtuple_to_dict(tpl):
     json = {}
-    for k, v in tpl._asdict().iteritems():
+    for k, v in tpl._asdict().items():
         if hasattr(v, '_asdict'):
             v = namedtuple_to_dict(v)
         json[k] = v
