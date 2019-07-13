@@ -178,7 +178,7 @@ def test_roundtrip_message(message_class, message_rw, attrs):
 
 @pytest.mark.parametrize('message_rw, byte_stream', [
     (messages.error_rw, bytearray(
-        [1] + [0] * 25 + [0, 2] + list('hi')))
+        [1] + [0] * 25 + [0, 2] + list(b'hi')))
 ])
 def test_parse_message(message_rw, byte_stream):
     """Verify all messages parse properly."""
