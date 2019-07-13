@@ -33,7 +33,7 @@ futures
 flake8==2.2.5
 
 # Optional dependency, but must be tested er'ry time
-thrift==0.12.0
+thrift==0.11.0
 
 # Smarter decorators
 wrapt>=1.10,<1.11
