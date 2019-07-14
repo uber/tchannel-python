@@ -18,6 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import absolute_import
+from __future__ import print_function
 import json
 
 from tornado import gen, ioloop
@@ -55,5 +57,5 @@ assert resp.body == {
     'resp': 'body',
 }
 
-print json.dumps(resp.body)
-print json.dumps(resp.headers)
+print(json.dumps(resp.body))
+print(json.dumps(resp.headers))

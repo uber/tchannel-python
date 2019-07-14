@@ -20,6 +20,7 @@
 
 from __future__ import print_function
 
+from __future__ import absolute_import
 from tornado import gen, ioloop
 
 from tchannel import TChannel, Response

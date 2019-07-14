@@ -19,11 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import threading
 
 from tornado import gen, ioloop
 from tchannel import TChannel, thrift
+from six.moves import range
 
 tchannel = TChannel('thrift-benchmark-client')
 service = thrift.load(
@@ -37,7 +40,7 @@ local.requests = 0
 
 
 def report_work():
-    print local.requests
+    print(local.requests)
     sys.stdout.flush()
     local.requests = 0
 
@@ -63,7 +66,7 @@ if __name__ == '__main__':
     sys.stderr.write('using concurrency %s\n' % concurrency)
     sys.stderr.flush()
 
-    for _ in xrange(concurrency):
+    for _ in range(concurrency):
         do_work()
 
     ioloop.PeriodicCallback(report_work, 1000).start()

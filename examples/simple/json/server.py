@@ -18,6 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import absolute_import
+from __future__ import print_function
 from tornado import ioloop
 
 from tchannel import TChannel, Response
@@ -37,6 +39,6 @@ def endpoint(request):
 
 tchannel.listen()
 
-print tchannel.hostport
+print(tchannel.hostport)
 
 ioloop.IOLoop.current().start()

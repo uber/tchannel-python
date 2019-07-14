@@ -18,10 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import absolute_import
+from __future__ import print_function
 import json
 
 from tchannel import thrift
 from tchannel.sync import TChannel
+from six.moves import range
 
 tchannel = TChannel('thrift-client')
 service = thrift.load(
@@ -39,7 +42,7 @@ def make_requests():
         headers={
             'req': 'header',
         },
-    ) for _ in xrange(20)]
+    ) for _ in range(20)]
 
     # Fan-in
     for future in futures:
@@ -55,5 +58,5 @@ assert resp.headers == {
 }
 assert resp.body == 'resp' * 100000
 
-print resp.body[:4]
-print json.dumps(resp.headers)
+print(resp.body[:4])
+print(json.dumps(resp.headers))

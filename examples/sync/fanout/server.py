@@ -20,6 +20,7 @@
 
 from __future__ import absolute_import
 
+from __future__ import print_function
 from tornado import gen, ioloop
 from tchannel import TChannel, Response, thrift
 
@@ -39,6 +40,6 @@ def testString(request):
 
 tchannel.listen()
 
-print tchannel.hostport
+print(tchannel.hostport)
 
 ioloop.IOLoop.current().start()
