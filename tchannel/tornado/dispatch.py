@@ -128,7 +128,7 @@ class RequestDispatcher(object):
         # user still tries read from it, it will return empty.
         chunk = yield request.argstreams[0].read()
         while chunk:
-            if six.PY3:
+            if six.PY3 and isinstance(chunk, str):
                 chunk = chunk.encode('utf-8')
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
