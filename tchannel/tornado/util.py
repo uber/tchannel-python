@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
-
+import six
 import tornado
 import tornado.gen
 
@@ -33,6 +33,8 @@ def get_arg(context, index):
         arg = ""
         chunk = yield context.argstreams[index].read()
         while chunk:
+            if six.PY3 and isinstance(chunk, bytes):
+                chunk = chunk.decode('utf8')
             arg += chunk
             chunk = yield context.argstreams[index].read()
 
