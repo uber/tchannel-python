@@ -95,6 +95,8 @@ class Peer(object):
             there are connection changes in the peer.
         """
         assert hostport, "hostport is required"
+        if six.PY3 and not isinstance(hostport, str):
+            hostport.decode('utf8')
 
         self.tchannel = tchannel
         self.host, port = hostport.rsplit(':', 1)
