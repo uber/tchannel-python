@@ -23,6 +23,7 @@ import json
 import os
 import subprocess
 import sys
+import six
 
 import psutil
 import pytest
@@ -60,10 +61,16 @@ def popen(path, wait_for_listen=False):
 
 def dump_std_streams(name, process):
     sys.stdout.write('----- %s stdout ----\n' % name)
-    sys.stdout.writelines(process.stdout.readlines())
+    for this_line in process.stdout.readlines():
+        if six.PY3:
+            this_line = this_line.decode('utf8')
+        sys.stdout.writelines(this_line)
 
     sys.stderr.write('----- %s stderr ----\n' % name)
-    sys.stderr.writelines(process.stderr.readlines())
+    for this_line in process.stderr.readlines():
+        if six.PY3:
+            this_line = this_line.decode('utf8')
+        sys.stderr.writelines(this_line)
 
 
 @pytest.mark.parametrize(

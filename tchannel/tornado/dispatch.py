@@ -23,6 +23,7 @@ from __future__ import absolute_import
 import logging
 import sys
 from collections import namedtuple
+import six
 
 import tornado
 import tornado.gen
@@ -127,6 +128,8 @@ class RequestDispatcher(object):
         # user still tries read from it, it will return empty.
         chunk = yield request.argstreams[0].read()
         while chunk:
+            if six.PY3:
+                chunk = chunk.encode('utf-8')
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
 
