@@ -129,12 +129,12 @@ class InMemStream(Stream):
                     future.set_exception(self.exception)
                 return future
 
-            chunk = ""
+            chunk = b""
 
             while len(self._stream) and len(chunk) < common.MAX_PAYLOAD_SIZE:
                 new_chunk = self._stream.popleft()
-                if six.PY3 and isinstance(new_chunk, bytes):
-                    new_chunk.decode('utf8')
+                if six.PY3 and isinstance(new_chunk, str):
+                    new_chunk = new_chunk.encode('utf8')
                 chunk += new_chunk
 
             future.set_result(chunk)
