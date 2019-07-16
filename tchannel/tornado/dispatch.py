@@ -129,10 +129,12 @@ class RequestDispatcher(object):
         chunk = yield request.argstreams[0].read()
         while chunk:
             if six.PY3:
-                if isinstance(chunk, str) and isinstance(request.endpoint, bytes):
+                if isinstance(chunk, str) and \
+                        isinstance(request.endpoint, bytes) or \
+                        isinstance(request.endpoint, str) and \
+                        isinstance(chunk, bytes):
                     chunk = chunk.encode('utf8')
-                if isinstance(request.endpoint, str) and isinstance(chunk, bytes):
-                    chunk = chunk.decode('utf8')
+
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
 
