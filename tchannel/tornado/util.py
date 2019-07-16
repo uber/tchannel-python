@@ -34,7 +34,7 @@ def get_arg(context, index):
         chunk = yield context.argstreams[index].read()
         while chunk:
             if six.PY3 and isinstance(chunk, bytes):
-                chunk = chunk.decode('utf8')
+                chunk = chunk.decode('utf8', errors='surrogateescape')
             arg += chunk
             chunk = yield context.argstreams[index].read()
 

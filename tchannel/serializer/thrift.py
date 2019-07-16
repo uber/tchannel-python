@@ -22,6 +22,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+import six
 
 from tchannel.schemes import THRIFT
 
@@ -103,4 +104,6 @@ class ThriftRWSerializer(ThriftSerializer):
         return self.module.dumps(obj)
 
     def deserialize_body(self, body):
+        if six.PY3 and isinstance(body, str):
+            body = body.encode('utf8')
         return self.module.loads(self.deserialize_type, body)
