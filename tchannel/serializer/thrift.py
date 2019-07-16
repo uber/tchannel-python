@@ -107,5 +107,5 @@ class ThriftRWSerializer(ThriftSerializer):
 
     def deserialize_body(self, body):
         if six.PY3 and isinstance(body, str):
-            body = body.encode('utf8')
+            body = body.encode('utf8', errors='surrogateescape')
         return self.module.loads(self.deserialize_type, body)
