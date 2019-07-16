@@ -151,7 +151,10 @@ def test_parse_invalid_args(input, message, capsys):
         parse_args(input)
 
     # Arg parse always dies with an error code of 2.
-    assert e.value.message == 2
+    if six.PY2:
+        assert e.value.message == 2
+    if six.PY3:
+        assert e.args[0] == 2
 
     out, err = capsys.readouterr()
     assert message in err

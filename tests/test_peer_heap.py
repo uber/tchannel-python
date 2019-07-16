@@ -157,8 +157,10 @@ def test_remove_mismatch(peer_heap, peers):
     fake_peer.index = 1
     with pytest.raises(AssertionError) as e:
         peer_heap.remove_peer(fake_peer)
-
-    assert e.value.message == 'peer is not in the heap'
+    if six.PY2:
+        assert e.value.message == 'peer is not in the heap'
+    if six.PY3:
+        assert e.args[0] == 'peer is not in the heap'
 
 
 @pytest.mark.heapfuzz
