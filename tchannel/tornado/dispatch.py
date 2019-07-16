@@ -132,7 +132,7 @@ class RequestDispatcher(object):
                 if isinstance(chunk, str) and isinstance(request.endpoint, bytes):
                     chunk = chunk.encode('utf8')
                 if isinstance(request.endpoint, str) and isinstance(chunk, bytes):
-                    request.endpoint = request.endpoint.encode('utf8')
+                    chunk = chunk.decode('utf8')
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
 
