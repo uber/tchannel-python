@@ -51,6 +51,8 @@ class ThriftSerializer(object):
     def deserialize_header(self, headers):
         headers = headers or {}
         if headers:
+            if six.PY3 and isinstance(headers, str):
+                headers = headers.encode('utf8')
             headers = io.BytesIO(headers)
             headers = self._headers_rw.read(headers)
         result = dict(headers)
