@@ -133,7 +133,7 @@ class RequestDispatcher(object):
                         isinstance(request.endpoint, bytes) or \
                         isinstance(request.endpoint, str) and \
                         isinstance(chunk, bytes):
-                    chunk = chunk.encode('utf8')
+                    chunk = chunk.decode('utf8')
 
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
