@@ -160,7 +160,7 @@ def test_remove_mismatch(peer_heap, peers):
     if six.PY2:
         assert e.value.message == 'peer is not in the heap'
     if six.PY3:
-        assert e.args[0] == 'peer is not in the heap'
+        assert str(e) == 'peer is not in the heap'
 
 
 @pytest.mark.heapfuzz
