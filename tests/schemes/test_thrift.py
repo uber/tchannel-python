@@ -801,7 +801,7 @@ def test_exception(server, service, ThriftTest, server_ttypes, client_ttypes):
     if six.PY2:
         assert e.value.message == 'Xception'
     if six.PY3:
-        assert str(e) == 'Xception'
+        assert e.value.args[0] == 'Xception'
     # case #2
     with pytest.raises(UnexpectedError) as e:
         yield tchannel.thrift(
@@ -856,7 +856,7 @@ def test_multi_exception(
         if six.PY2:
             assert e.value.message == 'This is an Xception'
         if six.PY3:
-            assert e.args[0] == 'This is an Xception'
+            assert e.value.args[0] == 'This is an Xception'
     # case #2
     with pytest.raises(client_ttypes.Xception2) as e:
         yield tchannel.thrift(
