@@ -106,7 +106,7 @@ def test_example(scheme, path):
 
             # TODO the guide test should be the same as others
             if scheme == 'guide':
-                assert body == 'Hello, world!'
+                assert body == b'Hello, world!'
                 return
 
             if scheme == 'raw':
@@ -116,8 +116,8 @@ def test_example(scheme, path):
 
             elif scheme == 'json':
 
-                body = json.loads(body)
-                headers = json.loads(headers)
+                body = json.loads(body.decode('utf8'))
+                headers = json.loads(headers.decode('utf8'))
 
                 assert body == {
                     'resp': 'body'
@@ -132,9 +132,9 @@ def test_example(scheme, path):
 
             elif scheme == 'thrift':
 
-                headers = json.loads(headers)
+                headers = json.loads(headers.decode('utf8'))
 
-                assert body == 'resp'
+                assert body == b'resp'
                 assert headers == {
                     'resp': 'header',
                 }
