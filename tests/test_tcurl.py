@@ -154,7 +154,7 @@ def test_parse_invalid_args(input, message, capsys):
     if six.PY2:
         assert e.value.message == 2
     if six.PY3:
-        print(dir(e))
+        print('FIND_ME', dir(e.value))
         assert int(str(e)) == 2
 
     out, err = capsys.readouterr()
