@@ -45,9 +45,13 @@ class JsonSerializer(object):
     def deserialize_header(self, headers):
         if not headers:
             return {}
+        if six.PY3 and isinstance(headers, bytes):
+            headers = headers.decode('utf8')
         return json.loads(headers)
 
     def deserialize_body(self, obj):
+        if six.PY3 and isinstance(obj, bytes):
+            obj = obj.decode('utf8')
         return json.loads(obj)
 
     def serialize_body(self, obj):
