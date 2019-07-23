@@ -34,6 +34,7 @@ from tchannel.thrift.module import ThriftRequestMaker
 from tests.data.generated.ThriftTest import ThriftTest
 
 
+@pytest.mark.skipif(six.PY3, reason='Deprecated')
 @pytest.mark.call
 def test_from_thrift_class_should_return_request_maker():
 
@@ -42,6 +43,7 @@ def test_from_thrift_class_should_return_request_maker():
     assert isinstance(maker, ThriftRequestMaker)
 
 
+@pytest.mark.skipif(six.PY3, reason='Deprecated')
 @pytest.mark.call
 def test_maker_should_have_thrift_iface_methods():
 
