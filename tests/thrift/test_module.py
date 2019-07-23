@@ -26,6 +26,7 @@ from __future__ import unicode_literals
 import inspect
 
 import pytest
+import six
 
 from tchannel import thrift_request_builder
 from tchannel.thrift.module import ThriftRequest
@@ -62,6 +63,7 @@ def test_maker_should_have_thrift_iface_methods():
     assert set(iface_methods) < set(maker_methods)
 
 
+@pytest.mark.skipif(six.PY3, reason='Deprecated')
 @pytest.mark.call
 def test_request_maker_should_return_request():
 
