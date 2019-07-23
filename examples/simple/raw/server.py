@@ -33,10 +33,10 @@ tchannel = TChannel('raw-server', hostport='localhost:54495')
 @gen.coroutine
 def endpoint(request):
 
-    assert request.headers == 'req headers'
-    assert request.body == 'req body'
+    assert request.headers == b'req headers'
+    assert request.body == b'req body'
 
-    return Response('resp body', headers='resp headers')
+    return Response(b'resp body', headers=b'resp headers')
 
 
 tchannel.listen()
