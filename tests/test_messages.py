@@ -263,13 +263,13 @@ def test_equality_check_against_none(init_request_with_headers):
 # increase the LARGE_AMOUNT to even bigger
 @pytest.mark.gen_test
 @pytest.mark.parametrize('arg2, arg3', [
-    ("", big_arg()),
-    (big_arg(), ""),
-    ("test", big_arg()),
-    (big_arg(),  "test"),
+    (b"", big_arg()),
+    (big_arg(), b""),
+    (b"test", big_arg()),
+    (big_arg(),  b"test"),
     (big_arg(), big_arg()),
-    ("", ""),
-    ("test", "test"),
+    (b"", b""),
+    (b"test", b"test"),
 ],
     ids=lambda arg: str(len(arg))
 )
