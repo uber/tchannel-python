@@ -131,9 +131,9 @@ def test_deprecated_build_handler():
         [
             0x00, 0x01,  # num headers = 1
             0x00, 0x03,  # strlen('foo') = 3
-        ] + list('foo') + [
+        ] + list(b'foo') + [
             0x00, 0x04,  # strlen('baar') = 4
-        ] + list('baar')
+        ] + list(b'baar')
     )
 
     serialized_body = yield response_body.read()
@@ -141,7 +141,7 @@ def test_deprecated_build_handler():
         0x0b,                    # field type = TType.STRING
         0x00, 0x00,              # field ID = 0
         0x00, 0x00, 0x00, 0x05,  # string length = 5
-    ] + list("world") + [
+    ] + list(b"world") + [
         0x00,                    # end struct
     ])
 
@@ -185,7 +185,7 @@ def test_deprecated_build_handler_exception():
             0x0b,                    # field type = TType.STRING
             0x00, 0x01,              # field ID = 1
             0x00, 0x00, 0x00, 0x04,  # string length = 5
-        ] + list("fail") + [
+        ] + list(b"fail") + [
             0x00,                    # end exception struct
             0x00,                    # end response struct
         ])
