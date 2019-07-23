@@ -87,7 +87,7 @@ def test_none_w():
 def test_constant_r(other, bs):
     stream = bio(bs)
     assert rw.constant(other, 42).read(stream) == 42
-    assert stream.read() == ''
+    assert stream.read() == b''
 
     assert rw.constant(other, 42).width() == other.width()
 
