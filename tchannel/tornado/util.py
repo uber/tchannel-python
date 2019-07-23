@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
-import six
 import tornado
 import tornado.gen
 
@@ -30,11 +29,9 @@ from ..errors import TChannelError
 def get_arg(context, index):
     """get value from arg stream in async way"""
     if index < len(context.argstreams):
-        arg = ""
+        arg = b""
         chunk = yield context.argstreams[index].read()
         while chunk:
-            if six.PY3 and isinstance(chunk, bytes):
-                chunk = chunk.decode('utf8', errors='surrogateescape')
             arg += chunk
             chunk = yield context.argstreams[index].read()
 
