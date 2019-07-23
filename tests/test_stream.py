@@ -37,11 +37,11 @@ def test_InMemStream():
     yield stream.write("1")
     yield stream.write("2")
     buf = yield stream.read()
-    assert buf == "12"
+    assert buf == b"12"
 
     yield stream.write("3")
     buf = yield stream.read()
-    assert buf == "3"
+    assert buf == b"3"
 
     # check internal stream buffer.
     assert len(stream._stream) == 0
@@ -55,18 +55,18 @@ def test_InMemStream():
 def test_PipeStream():
     r, w = os.pipe()
     stream = PipeStream(r, w, auto_close=True)
-    yield stream.write("1")
-    yield stream.write("2")
+    yield stream.write(b"1")
+    yield stream.write(b"2")
     buf = yield stream.read()
-    assert buf == "12"
+    assert buf == b"12"
 
-    yield stream.write("3")
+    yield stream.write(b"3")
     buf = yield stream.read()
-    assert buf == "3"
+    assert buf == b"3"
 
     stream.close()
     with pytest.raises(UnexpectedError):
-        yield stream.write("4")
+        yield stream.write(b"4")
 
 
 @pytest.mark.gen_test
