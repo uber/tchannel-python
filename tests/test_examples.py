@@ -111,8 +111,8 @@ def test_example(scheme, path):
 
             if scheme == 'raw':
 
-                assert body == 'resp body'
-                assert headers == 'resp headers'
+                assert body == b'resp body'
+                assert headers == b'resp headers'
 
             elif scheme == 'json':
 
