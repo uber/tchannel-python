@@ -37,8 +37,8 @@ def get_service_methods(iface):
     if six.PY3:
         methods = [func
                    for func in dir(iface)
-                   if callable(getattr(iface, func))
-                   and not func.startswith("__")]
+                   if callable(getattr(iface,
+                                       func)) and not func.startswith("__")]
         return set(methods)
 
     methods = inspect.getmembers(iface, predicate=inspect.ismethod)
