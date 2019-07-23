@@ -298,6 +298,8 @@ class Cassette(object):
             os.makedirs(cassette_dir)
 
         with open(self.path, 'wb') as f:
+            if six.PY3 and isinstance(data, str):
+                data = data.encode('utf8')
             f.write(data)
 
         self._played = deque()
