@@ -155,8 +155,8 @@ def test_advertise(echobahn):
     response = yield hyperbahn.advertise(channel, 'test', [echobahn.hostport])
     result = yield response.get_body()
     assert (
-        result == '{"services": [{"serviceName": "test", "cost": 0}]}' or
-        result == '{"services": [{"cost": 0, "serviceName": "test"}]}'
+        result == b'{"services": [{"serviceName": "test", "cost": 0}]}' or
+        result == b'{"services": [{"cost": 0, "serviceName": "test"}]}'
     )
 
 

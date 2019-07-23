@@ -87,7 +87,7 @@ class PatchedClientOperation(object):
             body=(yield read_full(arg3)),
             argScheme=getattr(proxy.ArgScheme, self.arg_scheme.upper()),
             transportHeaders=[
-                proxy.TransportHeader(bytes(k), bytes(v))
+                proxy.TransportHeader(bytes(k.encode('utf8')), bytes(v.encode('utf8')))
                 for k, v in headers.items()
             ],
         )

@@ -65,7 +65,7 @@ def test_handle_call(dispatcher, req, connection):
 
     response = yield dispatcher.handle_call(req, connection)
     body = yield response.get_body()
-    assert body == 'bar'
+    assert body == b'bar'
 
 
 @pytest.mark.gen_test
@@ -83,7 +83,7 @@ def test_custom_fallback_behavior(dispatcher, req, connection):
     dispatcher.register(dispatcher.FALLBACK, handler)
     response = yield dispatcher.handle_call(req, connection)
     body = yield response.get_body()
-    assert body == 'bar'
+    assert body == b'bar'
 
 
 @pytest.mark.gen_test
