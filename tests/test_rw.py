@@ -76,7 +76,7 @@ def test_none_r(bs):
 def test_none_w():
     stream = BytesIO()
     assert rw.none().write(42, stream) == stream
-    assert stream.getvalue() == ''
+    assert stream.getvalue() == b''
 
 
 @pytest.mark.parametrize('other, bs', [
@@ -120,9 +120,9 @@ def test_number(num, width, bs):
 
 
 @pytest.mark.parametrize('s, len_width, bs', [
-    ('', 1, [0]),
+    (b'', 1, [0]),
     (u"☃", 2, [0, 3, 0xe2, 0x98, 0x83]),
-    ('hello world', 4, [0, 0, 0, 11] + list('hello world')),
+    ('hello world', 4, [0, 0, 0, 11] + list(b'hello world')),
 ])
 def test_len_prefixed_string(s, len_width, bs):
     s_rw = rw.len_prefixed_string(rw.number(len_width), is_binary=False)
@@ -134,7 +134,7 @@ def test_len_prefixed_string(s, len_width, bs):
 
 @pytest.mark.parametrize('s, len_width, bs', [
     (b"\xe2\x98\x83", 2, [0, 3, 0xe2, 0x98, 0x83]),
-    ('hello world', 4, [0, 0, 0, 11] + list('hello world'))
+    (b'hello world', 4, [0, 0, 0, 11] + list(b'hello world'))
 ])
 def test_len_prefixed_string_binary(s, len_width, bs):
     s_rw = rw.len_prefixed_string(rw.number(len_width), is_binary=True)
@@ -250,7 +250,7 @@ def test_instance_ignore():
     (rw.number(1), rw.len_prefixed_string(rw.number(1)), None, [
         ['hello', 'world'],
         ['hello', 'world'],  # with dupe
-    ], [2] + ([5] + list('hello') + [5] + list('world')) * 2),
+    ], [2] + ([5] + list(b'hello') + [5] + list(b'world')) * 2),
 ])
 def test_headers(l_rw, k_rw, v_rw, headers, bs):
     h_rw = rw.headers(l_rw, k_rw, v_rw)

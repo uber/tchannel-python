@@ -424,7 +424,7 @@ class LengthPrefixedBlobReadWriter(ReadWriter):
     def read(self, stream):
         length = self._length.read(stream)
         if length == 0:
-            return ""
+            return b""
         else:
             blob = self.take(stream, length)
             if not self._is_binary:
