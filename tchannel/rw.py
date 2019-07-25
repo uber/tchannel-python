@@ -446,7 +446,7 @@ class LengthPrefixedBlobReadWriter(ReadWriter):
         if not self._is_binary:
             if six.PY2:
                 s = s.encode('utf-8')
-            if six.PY3 and isinstance(s, str):
+            if six.PY3 and isinstance(s, str) or s is None:
                 s = s.encode('utf-8')
 
         return len(s) + self._length.width()
