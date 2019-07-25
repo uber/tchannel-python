@@ -85,7 +85,7 @@ def test_parse_valid_args(input, expectations):
 @pytest.mark.parametrize('input, message', [
     (
         [''],
-        'argument --service/-s is required'
+        '--service/-s'  # Service is a required field
     ),
     (
         ['--service', 'larry', '--thrift'],
