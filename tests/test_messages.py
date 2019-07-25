@@ -149,7 +149,7 @@ def test_valid_ping_request():
         'service': 'with_checksum',
         'headers': {},
         'checksum': (messages.ChecksumType.crc32, 3),
-        'args': [b'hi', b'\x00', ""],
+        'args': [b'hi', b'\x00', b""],
     }),
     (messages.CallResponseMessage, messages.call_res_rw, {
         'flags': 1,

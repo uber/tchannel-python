@@ -48,3 +48,6 @@ class BaseMessage(object):
             str(self.__class__.__name__),
             ", ".join(attrs)
         )
+
+    def __repr__(self):
+        return self.__str__()
