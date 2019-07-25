@@ -40,8 +40,8 @@ def test_call_should_get_response():
     def endpoint(request):
 
         assert isinstance(request, Request)
-        assert request.headers == 'req headers'
-        assert request.body == 'req body'
+        assert request.headers == b'req headers'
+        assert request.body == b'req body'
 
         return Response('resp body', headers='resp headers')
 
@@ -61,8 +61,8 @@ def test_call_should_get_response():
 
     # verify response
     assert isinstance(resp, Response)
-    assert resp.headers == 'resp headers'
-    assert resp.body == 'resp body'
+    assert resp.headers == b'resp headers'
+    assert resp.body == b'resp body'
 
     # verify response transport headers
     assert isinstance(resp.transport, TransportHeaders)
@@ -94,4 +94,4 @@ def test_register_should_work_with_different_endpoint():
         hostport=server.hostport,
     )
 
-    assert resp.body == 'resp body'
+    assert resp.body == b'resp body'

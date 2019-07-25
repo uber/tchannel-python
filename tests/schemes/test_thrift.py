@@ -801,8 +801,7 @@ def test_exception(server, service, ThriftTest, server_ttypes, client_ttypes):
     if six.PY2:
         assert e.value.message == 'Xception'
     if six.PY3:
-        print(dir(e.value))
-        assert e.value.args[0] == 'Xception'
+        assert 'Xception' in str(e.value)
     # case #2
     with pytest.raises(UnexpectedError) as e:
         yield tchannel.thrift(
@@ -1097,7 +1096,7 @@ def test_client_for(ClientTChannel, server, ThriftTest):
 
     @server.thrift.register(ThriftTest)
     def testString(request):
-        return request.body.thing.encode('rot13')
+        return request.body.thing.encode('utf8')
 
     tchannel = ClientTChannel(name='client')
 
@@ -1107,7 +1106,7 @@ def test_client_for(ClientTChannel, server, ThriftTest):
     )
 
     resp = yield client.testString(thing='foo')
-    assert resp == 'sbb'
+    assert resp == 'foo'
 
 
 @pytest.mark.gen_test
@@ -1116,7 +1115,7 @@ def test_client_for_with_sync_tchannel(server, ThriftTest):
 
     @server.thrift.register(ThriftTest)
     def testString(request):
-        return request.body.thing.encode('rot13')
+        return request.body.thing.encode('utf8')
 
     tchannel = SyncTChannel(name='client')
 
@@ -1136,7 +1135,7 @@ def test_client_for_with_sync_tchannel(server, ThriftTest):
 
     resp = future.result()
 
-    assert resp == 'sbb'
+    assert resp == 'foo'
 
 
 @pytest.mark.gen_test
