@@ -112,8 +112,8 @@ def test_replay(cassette, call):
 
     response = yield call('endpoint', 'request body')
     assert response.body.code == 0
-    assert response.body.body == 'response body'
-    assert response.body.headers == '{key: value}'
+    assert response.body.body == b'response body'
+    assert response.body.headers == b'{key: value}'
 
 
 @pytest.mark.gen_test

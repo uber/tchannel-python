@@ -101,8 +101,10 @@ class VCRProxyService(object):
         # readable formats.
 
         # Because Thrift doesn't handle UTF-8 correctly right now
-        request.serviceName = request.serviceName.decode('utf-8')
-        request.endpoint = request.endpoint.decode('utf-8')
+        if isinstance(request.serviceName, bytes):
+            request.serviceName = request.serviceName.decode('utf-8')
+        if isinstance(request.endpoint, bytes):
+            request.endpoint = request.endpoint.decode('utf-8')
 
         # TODO do we care about hostport being the same?
         if cassette.can_replay(request):

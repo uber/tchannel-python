@@ -81,6 +81,11 @@ def filter_headers(hs):
 
 def json_headers_matcher(l, r):
     try:
+        if six.PY3:
+            if isinstance(l, bytes):
+                l = l.decode('utf8')
+            if isinstance(r, bytes):
+                r = r.decode('utf8')
         left = json.loads(l)  # raises ValueError
         right = json.loads(r)
 
