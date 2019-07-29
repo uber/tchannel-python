@@ -432,7 +432,9 @@ class LengthPrefixedBlobReadWriter(ReadWriter):
             return blob
 
     def write(self, s, stream):
-        if not self._is_binary or six.PY3 and isinstance(s, str):
+        if not self._is_binary:
+            s = s.encode('utf-8')
+        if six.PY3 and isinstance(s, str):
             s = s.encode('utf-8')
         length = len(s)
         self._length.write(length, stream)
