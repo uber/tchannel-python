@@ -24,6 +24,7 @@ import sys
 import random
 import threading
 from functools import wraps
+import traceback
 from concurrent.futures import Future as ConcFuture
 
 from tornado import gen
@@ -55,7 +56,7 @@ def wrap_uncaught(func=None, reraise=None):
                     # TODO maybe use traceback.format_exc to also send a
                     # traceback?
                     raise e
-                raise proxy.VCRServiceError(str(e))
+                raise proxy.VCRServiceError(str(e) + ' ' + traceback.format_exc())
             else:
                 raise gen.Return(result)
 
