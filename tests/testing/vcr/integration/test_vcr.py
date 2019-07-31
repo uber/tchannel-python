@@ -159,14 +159,14 @@ def test_record_success(tmpdir, mock_server, call, get_body):
 
     with vcr.use_cassette(str(path)) as cass:
         response = yield call('hello', 'world', service='hello_service')
-        assert 'world' == (yield get_body(response))
+        assert b'world' == (yield get_body(response))
 
     assert cass.play_count == 0
     assert path.check(file=True)
 
     with vcr.use_cassette(str(path)) as cass:
         response = yield call('hello', 'world', service='hello_service')
-        assert 'world' == (yield get_body(response))
+        assert b'world' == (yield get_body(response))
 
     assert cass.play_count == 1
 
@@ -249,10 +249,10 @@ def test_use_cassette_as_decorator(tmpdir, mock_server, call, get_body):
         raise gen.Return(body)
 
     body = yield f()
-    assert body == 'world'
+    assert body == b'world'
 
     body = yield f()
-    assert body == 'world'
+    assert body == b'world'
 
 
 @pytest.mark.gen_test
@@ -280,7 +280,7 @@ def test_use_cassette_with_matchers(tmpdir, mock_server, call, get_body):
 
     with vcr.use_cassette(str(path), matchers=['body']) as cass:
         response = yield call('hello', 'world', service='hello_service')
-        assert 'world' == (yield get_body(response))
+        assert b'world' == (yield get_body(response))
 
     assert cass.play_count == 0
     assert path.check(file=True)
@@ -289,7 +289,7 @@ def test_use_cassette_with_matchers(tmpdir, mock_server, call, get_body):
         response = yield call(
             'not-hello', 'world', service='not_hello_service'
         )
-        assert 'world' == (yield get_body(response))
+        assert b'world' == (yield get_body(response))
 
     assert cass.play_count == 1
 
@@ -303,14 +303,14 @@ def test_record_into_nonexistent_directory(tmpdir, mock_server, call,
 
     with vcr.use_cassette(str(path)) as cass:
         response = yield call('hello', 'world', service='hello_service')
-        assert 'world' == (yield get_body(response))
+        assert b'world' == (yield get_body(response))
 
     assert cass.play_count == 0
     assert path.check(file=True)
 
     with vcr.use_cassette(str(path)) as cass:
         response = yield call('hello', 'world', service='hello_service')
-        assert 'world' == (yield get_body(response))
+        assert b'world' == (yield get_body(response))
 
     assert cass.play_count == 1
 
@@ -324,7 +324,7 @@ def test_record_success_with_ttl(tmpdir, mock_server, call, get_body):
     with vcr.use_cassette(str(path)) as cass:
         response = yield call('hello', 'world', service='hello_service',
                               ttl=0.2)
-        assert 'world' == (yield get_body(response))
+        assert b'world' == (yield get_body(response))
 
     assert cass.play_count == 0
     assert path.check(file=True)
@@ -332,7 +332,7 @@ def test_record_success_with_ttl(tmpdir, mock_server, call, get_body):
     with vcr.use_cassette(str(path)) as cass:
         response = yield call('hello', 'world', service='hello_service',
                               ttl=0.05)  # shouldn't time out
-        assert 'world' == (yield get_body(response))
+        assert b'world' == (yield get_body(response))
 
     assert cass.play_count == 1
 
@@ -348,7 +348,7 @@ def test_record_success_with_ttl_timeout(tmpdir, mock_server, call, get_body):
         with vcr.use_cassette(str(path)) as cass:
             response = yield call('hello', 'world', service='hello_service',
                                   ttl=0.05)
-            assert 'world' == (yield get_body(response))
+            assert b'world' == (yield get_body(response))
 
     assert cass.play_count == 0
 
@@ -381,7 +381,7 @@ def test_vcr_with_tracing(
             endpoint='hello',
             body='world',
         )
-        assert 'world' == response.body
+        assert b'world' == response.body
 
     assert cass.play_count == 0
     assert path.check(file=True)
@@ -398,7 +398,7 @@ def test_vcr_with_tracing(
             endpoint='hello',
             body='world',
         )
-        assert 'world' == response.body
+        assert b'world' == response.body
 
     assert cass.play_count == 1
 
@@ -421,7 +421,7 @@ def test_old_recording_with_tracing(mock_server, tracer):
             endpoint='hello',
             body='world',
         )
-        assert 'world' == response.body
+        assert b'world' == response.body
 
 
 @pytest.mark.gen_test
@@ -442,4 +442,4 @@ def test_old_recording_without_tracing(mock_server, tracer):
             endpoint='hello',
             body='world',
         )
-        assert 'world' == response.body
+        assert b'world' == response.body
