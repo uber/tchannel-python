@@ -56,7 +56,8 @@ def wrap_uncaught(func=None, reraise=None):
                     # TODO maybe use traceback.format_exc to also send a
                     # traceback?
                     raise e
-                raise proxy.VCRServiceError(str(e) + ' ' + traceback.format_exc())
+                raise proxy.VCRServiceError(str(e) +
+                                            ' ' + traceback.format_exc())
             else:
                 raise gen.Return(result)
 
