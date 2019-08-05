@@ -283,7 +283,18 @@ class ReadWriter(object):
         return s
 
 
-class DelegatingReadWriter(ReadWriter):
+class DelegatingReadWriterMeta(type):
+
+    def __new__(mcs, name, bases, dct):
+        if bases != (ReadWriter,):
+            # Children of this class MUST provide __rw__
+            assert dct.get('__rw__'), (
+                "%s.__rw__ must be set" % name
+            )
+        return type.__new__(mcs, name, bases, dct)
+
+
+class DelegatingReadWriter(six.with_metaclass(DelegatingReadWriterMeta, ReadWriter)):
     """Allows mapping ReadWriters onto different types.
 
     A common pattern is to define a base ReadWriter using the primitives from
@@ -316,16 +327,6 @@ class DelegatingReadWriter(ReadWriter):
 
     # The underlying ReadWriter. All calls will be delegated to this.
     __rw__ = None
-
-    class __metaclass__(type):
-
-        def __new__(mcs, name, bases, dct):
-            if bases != (ReadWriter,):
-                # Children of this class MUST provide __rw__
-                assert dct.get('__rw__'), (
-                    "%s.__rw__ must be set" % name
-                )
-            return type.__new__(mcs, name, bases, dct)
 
     def read(self, stream):
         return self.__rw__.read(stream)
