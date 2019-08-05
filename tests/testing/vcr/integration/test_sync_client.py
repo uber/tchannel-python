@@ -135,7 +135,7 @@ def test_record_success_new_channels(tmpdir, mock_server):
             hostport=mock_server.hostport,
         ).result(timeout=1)
 
-        assert b'world' == response.body
+        assert 'world' == response.body
 
     assert cass.play_count == 0
     assert path.check(file=True)
@@ -148,7 +148,7 @@ def test_record_success_new_channels(tmpdir, mock_server):
             'world',
             hostport=mock_server.hostport,
         ).result(timeout=1)
-        assert b'world' == response.body
+        assert 'world' == response.body
 
     assert cass.play_count == 1
 
