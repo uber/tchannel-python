@@ -381,7 +381,7 @@ def test_vcr_with_tracing(
             endpoint='hello',
             body='world',
         )
-        assert b'world' == response.body
+        assert 'world' == response.body
 
     assert cass.play_count == 0
     assert path.check(file=True)
@@ -398,7 +398,7 @@ def test_vcr_with_tracing(
             endpoint='hello',
             body='world',
         )
-        assert b'world' == response.body
+        assert 'world' == response.body
 
     assert cass.play_count == 1
 
