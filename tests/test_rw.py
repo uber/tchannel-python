@@ -53,11 +53,11 @@ def test_number_roundtrip(num, width):
     assert roundtrip(num, rw.number(width)) == num
 
 
-if six.PY2:  # This test is only valid in py2 where strings are binary
-    @given(st.text(), number_width)
-    def test_len_prefixed_string_roundtrip(s, len_width):
-        assume(len(s.encode('utf-8')) <= 2 ** len_width - 1)
-        assert roundtrip(s, rw.len_prefixed_string(rw.number(len_width))) == s
+@pytest.mark.skipif(six.PY3, reason='Not valid for py3')
+@given(st.text(), number_width)
+def test_len_prefixed_string_roundtrip(s, len_width):
+    assume(len(s.encode('utf-8')) <= 2 ** len_width - 1)
+    assert roundtrip(s, rw.len_prefixed_string(rw.number(len_width))) == s
 
 
 @given(st.binary(), number_width)
