@@ -421,7 +421,7 @@ def test_old_recording_with_tracing(mock_server, tracer):
             endpoint='hello',
             body='world',
         )
-        assert b'world' == response.body
+        assert 'world' == response.body
 
 
 @pytest.mark.gen_test
@@ -442,4 +442,4 @@ def test_old_recording_without_tracing(mock_server, tracer):
             endpoint='hello',
             body='world',
         )
-        assert b'world' == response.body
+        assert 'world' == response.body
