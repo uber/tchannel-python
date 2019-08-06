@@ -35,7 +35,7 @@ class HyperbahnBlackhole(object):
         if count is None:
             count = 10
 
-        self.tchannels = [TChannel('hyperbahn') for x in xrange(count)]
+        self.tchannels = [TChannel('hyperbahn') for x in range(count)]
         self.ad_count = 0
 
         for tch in self.tchannels:

@@ -597,7 +597,7 @@ class HeadersReadWriter(ReadWriter):
     def write(self, headers, stream):
         # In case someone does write({..}, stream)
         if isinstance(headers, dict):
-            headers = headers.items()
+            headers = list(headers.items())
 
         self._length.write(len(headers), stream)
         for pair in headers:
@@ -610,7 +610,7 @@ class HeadersReadWriter(ReadWriter):
     def length(self, headers):
         size = 0
         if isinstance(headers, dict):
-            headers = headers.items()
+            headers = list(headers.items())
 
         size += self._length.length(len(headers))
         for pair in headers:

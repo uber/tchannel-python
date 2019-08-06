@@ -22,6 +22,7 @@ from __future__ import absolute_import
 
 import sys
 from collections import namedtuple
+import six
 
 from tornado import gen
 
@@ -245,4 +246,4 @@ class ThriftResponse(object):
                 return
 
         # Re-raise the exception (with the same traceback) if it didn't match.
-        raise exc_info[0], exc_info[1], exc_info[2]
+        six.reraise(exc_info[0], exc_info[1], exc_info[2])

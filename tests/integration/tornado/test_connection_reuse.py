@@ -27,6 +27,7 @@ from tornado import gen
 
 from tchannel.tornado.stream import InMemStream
 from tchannel.tornado.tchannel import TChannel
+from six.moves import range
 
 
 @pytest.mark.gen_test
@@ -52,7 +53,7 @@ def test_reuse():
                 InMemStream('hello'),
                 InMemStream(),
                 InMemStream()
-            ) for i in xrange(n)
+            ) for i in range(n)
         ]
         for resp in results:
             body = yield resp.get_body()
@@ -90,7 +91,7 @@ def test_reuse():
                 InMemStream('reverse'),
                 InMemStream(),
                 InMemStream('foo')
-            ) for i in xrange(n)
+            ) for i in range(n)
         ]
         for resp in results:
             body = yield resp.get_body()

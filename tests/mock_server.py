@@ -27,6 +27,7 @@ from tornado import gen
 
 from tchannel import TChannel
 from tchannel import Response
+import six
 
 
 class UnexpectedCallException(Exception):
@@ -118,9 +119,9 @@ class MockServer(object):
         return self.tchannel.hostport
 
     def expect_call(self, endpoint, scheme='raw', **kwargs):
-        assert isinstance(scheme, basestring)
+        assert isinstance(scheme, six.string_types)
 
-        if not isinstance(endpoint, basestring):
+        if not isinstance(endpoint, six.string_types):
             scheme = 'thrift'
 
         expectation = Expectation()

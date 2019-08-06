@@ -61,7 +61,6 @@ class TChannelError(Exception):
     """
 
     __slots__ = (
-        'code',
         'description',
         'id',
         'tracing',

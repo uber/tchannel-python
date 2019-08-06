@@ -168,7 +168,7 @@ def test_heap_fuzz(int_heap):
     for _ in six.moves.range(random.randint(1, 100000)):
         ops = random.randint(0, 1)
         if ops == 0:  # push
-            heap.push(int_heap, random.randint(0, sys.maxint))
+            heap.push(int_heap, random.randint(0, sys.maxsize))
         elif ops == 1:  # pop
             if int_heap.size():
                 heap.pop(int_heap)
@@ -180,7 +180,7 @@ def test_heap_fuzz(int_heap):
 
 
 def smallest(vs):
-    m = sys.maxint
+    m = sys.maxsize
     for value in vs:
         if value < m:
             m = value

@@ -115,7 +115,7 @@ class Peer(object):
         if rank is not None:
             self.rank = rank
         else:
-            self.rank = sys.maxint
+            self.rank = sys.maxsize
         # index records the position of the peer in the peer heap
         self.index = -1
         # order maintains the push order of the peer in the heap.
@@ -397,7 +397,7 @@ class PeerClientOperation(object):
 
         # set default transport headers
         headers = headers or {}
-        for k, v in self.headers.iteritems():
+        for k, v in self.headers.items():
             headers.setdefault(k, v)
 
         if self.tracing_span is None:
@@ -497,7 +497,7 @@ class PeerClientOperation(object):
                     )
 
                     if not connection:
-                        raise typ, error, tb
+                        six.reraise(typ, error, tb)
                 finally:
                     del tb  # for GC
 
@@ -636,7 +636,7 @@ class PeerGroup(object):
         existing Peer is returned.
         """
         assert hostport, "hostport is required"
-        assert isinstance(hostport, basestring), "hostport must be a string"
+        assert isinstance(hostport, six.string_types), "hostport must be a string"  # noqa
 
         if hostport not in self._peers:
             self._add(hostport)
@@ -687,12 +687,12 @@ class PeerGroup(object):
     @property
     def hosts(self):
         """Get all host-ports managed by this PeerGroup."""
-        return self._peers.keys()
+        return list(self._peers.keys())
 
     @property
     def peers(self):
         """Get all Peers managed by this PeerGroup."""
-        return self._peers.values()
+        return list(self._peers.values())
 
     def request(self, service, hostport=None, **kwargs):
         """Initiate a new request through this PeerGroup.

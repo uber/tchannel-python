@@ -37,6 +37,7 @@ from .record_modes import RecordMode
 from . import proxy
 from tchannel import tracing
 from tchannel.serializer.thrift import ThriftSerializer
+import six
 
 __all__ = ['Cassette', 'DEFAULT_MATCHERS']
 
@@ -73,7 +74,7 @@ def attrmatcher(name):
 
 def filter_headers(hs):
     return {
-        k: v for k, v in hs.iteritems()
+        k: v for k, v in six.iteritems(hs)
         if not k.startswith(tracing.TRACING_KEY_PREFIX)
     }
 
@@ -170,7 +171,7 @@ class Cassette(object):
         """
         # TODO move documentation around
         record_mode = record_mode or RecordMode.ONCE
-        if isinstance(record_mode, basestring):
+        if isinstance(record_mode, six.string_types):
             record_mode = RecordMode.from_name(record_mode)
 
         self.path = path

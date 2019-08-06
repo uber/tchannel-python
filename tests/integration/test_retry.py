@@ -34,6 +34,7 @@ from tchannel.messages import ErrorCode
 from tchannel.tornado import Request
 from tchannel.tornado import TChannel
 from tchannel.tornado.stream import InMemStream
+from six.moves import range
 
 
 @tornado.gen.coroutine

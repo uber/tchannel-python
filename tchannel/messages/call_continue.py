@@ -23,6 +23,7 @@ from __future__ import absolute_import
 from . import common
 from .base import BaseMessage
 from .common import FlagsType
+from six.moves import range
 
 
 class CallContinueMessage(BaseMessage):

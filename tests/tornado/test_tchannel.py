@@ -25,6 +25,7 @@ import socket
 
 from tchannel.errors import AlreadyListeningError
 from tchannel.tornado import TChannel
+from six.moves import range
 
 
 @pytest.fixture

@@ -54,6 +54,7 @@ from ..messages.types import Types
 from .message_factory import build_raw_error_message
 from .message_factory import MessageFactory
 from .tombstone import Cemetery
+import six
 
 log = logging.getLogger('tchannel')
 
@@ -171,7 +172,7 @@ class TornadoConnection(object):
         self.closed = True
         self._request_tombstones.clear()
 
-        for message_id, future in self._outbound_pending_call.iteritems():
+        for message_id, future in six.iteritems(self._outbound_pending_call):
             future.set_exception(
                 NetworkError(
                     "canceling outstanding request %d" % message_id
@@ -335,7 +336,7 @@ class TornadoConnection(object):
                 return answer.set_exc_info(future.exc_info())
 
             try:
-                fragment = fragments.next()
+                fragment = next(fragments)
             except StopIteration:
                 return answer.set_result(None)
 

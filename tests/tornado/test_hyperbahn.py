@@ -28,10 +28,11 @@ from tornado import gen
 from tchannel.errors import NoAvailablePeerError, UnexpectedError
 from tchannel.tornado import TChannel
 from tchannel.tornado import hyperbahn
+from six.moves import range
 
 
 def test_new_client_establishes_peers():
-    routers = ['127.0.0.1:2300' + str(i) for i in xrange(5)]
+    routers = ['127.0.0.1:2300' + str(i) for i in range(5)]
 
     # TChannel knows about one of the peers already.
     channel = TChannel('test', known_peers=['127.0.0.1:23002'])

@@ -33,6 +33,7 @@ from tchannel.tornado.connection import TornadoConnection
 from tchannel.tornado.peer import Peer
 from tchannel.tornado.stream import InMemStream
 from tchannel.tornado.stream import read_full
+from six.moves import range
 
 
 def closed_stream(body):
@@ -174,7 +175,7 @@ def test_peer_connection_failure_exhausted_peers():
     # If we run out of healthy peers while trying to connect, raise
     # NoAvailablePeerError.
 
-    servers = [TChannel('server-%d' % n) for n in xrange(10)]
+    servers = [TChannel('server-%d' % n) for n in range(10)]
     for server in servers:
         server.listen()
 

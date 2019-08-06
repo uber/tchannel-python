@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import absolute_import
 from collections import deque
 
 import tornado
@@ -31,6 +32,7 @@ from tornado.locks import Condition
 from ..errors import UnexpectedError
 from ..messages import common
 from ..messages.common import StreamState
+import six
 
 
 @tornado.gen.coroutine
@@ -266,7 +268,7 @@ def maybe_stream(s):
         stream.close()  # we don't intend to write anything
         return stream
 
-    if isinstance(s, unicode):
+    if isinstance(s, six.text_type):
         s = s.encode('utf-8')
     if isinstance(s, bytearray):
         s = bytes(s)

@@ -28,6 +28,7 @@ from tchannel import TChannel, thrift
 from tchannel.tcurl import _catch_errors
 from tchannel.tcurl import main
 from tchannel.tcurl import parse_args
+import six
 
 service = thrift.load('tests/data/idls/ThriftTest.thrift')
 
@@ -77,7 +78,7 @@ service = thrift.load('tests/data/idls/ThriftTest.thrift')
 def test_parse_valid_args(input, expectations):
     args = parse_args(input)
 
-    for key, expected in expectations.iteritems():
+    for key, expected in six.iteritems(expectations):
         assert expected == getattr(args, key)
 
 
