@@ -53,8 +53,6 @@ def wrap_uncaught(func=None, reraise=None):
                 result = yield gen.maybe_future(f(*args, **kwargs))
             except Exception as e:
                 if any(isinstance(e, cls) for cls in reraise):
-                    # TODO maybe use traceback.format_exc to also send a
-                    # traceback?
                     raise e
                 raise proxy.VCRServiceError(str(e) +
                                             ' ' + traceback.format_exc())
@@ -158,9 +156,11 @@ class VCRProxyService(object):
         try:
             response = yield response_future
         except TChannelError as e:
+            import traceback
             raise proxy.RemoteServiceError(
                 code=e.code,
                 message=str(e),
+                traceback=traceback.format_exc()
             )
         response_headers = yield response.get_header()
         response_body = yield response.get_body()

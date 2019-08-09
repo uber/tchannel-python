@@ -63,6 +63,7 @@ exception CannotRecordInteractionsError {
 exception RemoteServiceError {
     1: required byte code
     2: required string message
+    3: optional string traceback
 }
 
 /**
