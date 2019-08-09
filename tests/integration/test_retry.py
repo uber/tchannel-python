@@ -69,7 +69,7 @@ def chain(number_of_peers, endpoint):
 
 @pytest.mark.gen_test
 def test_retry_timeout():
-    endpoint = b'tchannelretrytest'
+    endpoint = 'tchannelretrytest'
     tchannel = yield chain(3, endpoint)
     with mock.patch(
         'tchannel.tornado.Request.should_retry_on_error',
@@ -91,7 +91,7 @@ def test_retry_timeout():
 
 @pytest.mark.gen_test
 def test_retry_on_error_fail():
-    endpoint = b'tchannelretrytest'
+    endpoint = 'tchannelretrytest'
     tchannel = yield chain(3, endpoint)
 
     with mock.patch(
@@ -135,7 +135,7 @@ class MyTestHook(EventHook):
 def test_retry_on_error_success(mock_should_retry_on_error):
     mock_should_retry_on_error.return_value = True
 
-    endpoint = b'tchannelretrytest'
+    endpoint = 'tchannelretrytest'
     tchannel = yield chain(2, endpoint)
     hook = MyTestHook()
     tchannel.hooks.register(hook)
