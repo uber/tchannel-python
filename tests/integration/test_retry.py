@@ -132,7 +132,7 @@ class MyTestHook(EventHook):
 
 @pytest.mark.gen_test
 def test_retry_on_error_success():
-    mock_should_retry_on_error = mock.patch('tchannel.tornado.Request.should_retry_on_error')
+    mock_should_retry_on_error = mock.patch('tchannel.tornado.Request.should_retry_on_error')  # noqa
     mock_should_retry_on_error.return_value = True
 
     endpoint = 'tchannelretrytest'
