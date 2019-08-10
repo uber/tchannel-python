@@ -131,8 +131,8 @@ class MyTestHook(EventHook):
 
 
 @pytest.mark.gen_test
-@mock.patch('tchannel.tornado.Request.should_retry_on_error')
-def test_retry_on_error_success(mock_should_retry_on_error):
+def test_retry_on_error_success():
+    mock_should_retry_on_error = mock.patch('tchannel.tornado.Request.should_retry_on_error')
     mock_should_retry_on_error.return_value = True
 
     endpoint = 'tchannelretrytest'
@@ -158,8 +158,8 @@ def test_retry_on_error_success(mock_should_retry_on_error):
 
     header = yield response.get_header()
     body = yield response.get_body()
-    assert body == "success"
-    assert header == ""
+    assert body == b"success"
+    assert header == b""
 
     assert hook.received_response == 1
     assert hook.received_error == 2

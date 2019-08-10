@@ -97,8 +97,8 @@ def test_tcurl(mock_server):
         '--raw',
     ])
 
-    assert response.headers == endpoint
-    assert response.body == "hello"
+    assert response.headers == endpoint.encode('utf8')
+    assert response.body == "hello".encode('utf8')
 
 
 @pytest.mark.gen_test
