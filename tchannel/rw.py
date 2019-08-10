@@ -294,7 +294,7 @@ class DelegatingReadWriterMeta(type):
         return type.__new__(mcs, name, bases, dct)
 
 
-class DelegatingReadWriter(six.with_metaclass(DelegatingReadWriterMeta, ReadWriter)):
+class DelegatingReadWriter(six.with_metaclass(DelegatingReadWriterMeta, ReadWriter)):  # noqa
     """Allows mapping ReadWriters onto different types.
 
     A common pattern is to define a base ReadWriter using the primitives from
