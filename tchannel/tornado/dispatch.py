@@ -112,7 +112,7 @@ class RequestDispatcher(object):
                 self.handle_call(req, connection)
 
         except TChannelError as e:
-            log.warn('Received a bad request.', exc_info=True)
+            log.warning('Received a bad request.', exc_info=True)
             if req:
                 e.tracing = req.tracing
             connection.send_error(e)
