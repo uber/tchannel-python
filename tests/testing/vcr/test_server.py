@@ -125,8 +125,10 @@ def test_record(vcr_service, cassette, call, mock_server, use_known_peers):
             endpoint='endpoint',
             headers=b'headers',
             body=b'body',
-            knownPeers=[mock_server.hostport.encode('utf8')] if use_known_peers else [],
-            hostPort=b'' if use_known_peers else mock_server.hostport.encode('utf8'),
+            knownPeers=[
+                mock_server.hostport.encode('utf8')
+            ] if use_known_peers else [],
+            hostPort=b'' if use_known_peers else mock_server.hostport.encode('utf8'),  # noqa
         ),
         proxy.Response(
             code=0,
