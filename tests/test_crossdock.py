@@ -125,7 +125,7 @@ def test_trace_propagation(
 
         span = tracer.start_span('root')
         baggage = 'some baggage %d' % time.time()
-        span.set_baggage_item(api.BAGGAGE_KEY.encode('utf8'), baggage)
+        span.set_baggage_item(api.BAGGAGE_KEY, baggage)
         if not sampled:
             span.set_tag('sampling.priority', 0)
         with span:  # use span as context manager so that it's always finished
