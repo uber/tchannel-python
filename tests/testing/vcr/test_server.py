@@ -123,32 +123,32 @@ def test_record(vcr_service, cassette, call, mock_server, use_known_peers):
         proxy.Request(
             serviceName='service',
             endpoint='endpoint',
-            headers='headers',
-            body='body',
-            knownPeers=[mock_server.hostport] if use_known_peers else [],
-            hostPort='' if use_known_peers else mock_server.hostport,
+            headers=b'headers',
+            body=b'body',
+            knownPeers=[mock_server.hostport.encode('utf8')] if use_known_peers else [],
+            hostPort=b'' if use_known_peers else mock_server.hostport.encode('utf8'),
         ),
         proxy.Response(
             code=0,
-            headers='response headers',
-            body='response body',
+            headers=b'response headers',
+            body=b'response body',
         ),
     )
 
     mock_server.expect_call('endpoint').and_write(
-        headers='response headers',
-        body='response body',
+        headers=b'response headers',
+        body=b'response body',
     ).once()
 
     response = yield call(
         service='service',
         endpoint='endpoint',
-        headers='headers',
-        body='body',
+        headers=b'headers',
+        body=b'body',
     )
 
-    assert response.body.headers == 'response headers'
-    assert response.body.body == 'response body'
+    assert response.body.headers == b'response headers'
+    assert response.body.body == b'response body'
 
 
 @pytest.mark.gen_test
