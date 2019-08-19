@@ -53,7 +53,7 @@ from tchannel import tracing
 import six
 
 
-BAGGAGE_KEY = b'baggage'
+BAGGAGE_KEY = 'baggage'
 
 
 # It seems under Travis the 'localhost' is bound to more then one IP address,
@@ -398,6 +398,8 @@ def test_trace_propagation(
 
     body = response.body
     if expect_baggage:
+        if six.PY3 and isinstance(body, bytes):
+            body = body.decode('utf8')
         assert body == baggage
 
     def get_sampled_spans():
