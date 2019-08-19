@@ -20,6 +20,7 @@
 
 from __future__ import absolute_import
 
+import six
 import sys
 import random
 import threading
@@ -194,8 +195,11 @@ class VCRProxyService(object):
         try:
             self.tchannel.listen()
             self._running.set_result(None)
-        except Exception:
-            self._running.set_exception_info(*sys.exc_info()[1:])
+        except Exception as e:
+            if six.PY2:
+                self._running.set_exception_info(*sys.exc_info()[1:])
+            if six.PY3:
+                self._running.set_exception(e)
         else:
             self.io_loop.start()
 
