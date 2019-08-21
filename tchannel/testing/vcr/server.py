@@ -157,7 +157,6 @@ class VCRProxyService(object):
         try:
             response = yield response_future
         except TChannelError as e:
-            import traceback
             raise proxy.RemoteServiceError(
                 code=e.code,
                 message=str(e),
