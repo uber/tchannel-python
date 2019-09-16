@@ -4,7 +4,7 @@ Changes by Version
 1.3.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Python 3.4 support
 
 
 1.3.1 (2018-06-11)
