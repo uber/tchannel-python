@@ -95,6 +95,8 @@ class Peer(object):
             there are connection changes in the peer.
         """
         assert hostport, "hostport is required"
+        if six.PY3 and isinstance(hostport, bytes):
+            hostport = hostport.decode('utf8')
 
         self.tchannel = tchannel
         self.host, port = hostport.rsplit(':', 1)
@@ -673,6 +675,8 @@ class PeerGroup(object):
         **NOTE** new peers will not be added to the peer heap.
         """
         assert hostport, "hostport is required"
+        if six.PY3 and isinstance(hostport, bytes):
+            hostport = hostport.decode('utf8')
         if hostport not in self._peers:
             # Add a peer directly from a hostport, do NOT add it to the peer
             # heap

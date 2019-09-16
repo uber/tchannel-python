@@ -82,10 +82,10 @@ def test_call_should_get_response():
     def endpoint(request):
 
         assert isinstance(request, Request)
-        assert request.headers == 'req headers'
-        assert request.body == 'req body'
+        assert request.headers == b'req headers'
+        assert request.body == b'req body'
 
-        return Response('resp body', 'resp headers')
+        return Response(b'resp body', b'resp headers')
 
     server.listen()
 
@@ -104,8 +104,8 @@ def test_call_should_get_response():
 
     # verify response
     assert isinstance(resp, Response)
-    assert resp.headers == 'resp headers'
-    assert resp.body == 'resp body'
+    assert resp.headers == b'resp headers'
+    assert resp.body == b'resp body'
 
     # verify response transport headers
     assert isinstance(resp.transport, TransportHeaders)
@@ -210,8 +210,8 @@ def test_headers_and_body_should_be_optional():
 
     # verify response
     assert isinstance(resp, Response)
-    assert resp.headers == ''  # TODO should be None to match server
-    assert resp.body == ''  # TODO should be None to match server
+    assert resp.headers == b''  # TODO should be None to match server
+    assert resp.body == b''  # TODO should be None to match server
 
 
 @pytest.mark.gen_test
@@ -241,8 +241,8 @@ def test_endpoint_can_return_just_body():
 
     # verify response
     assert isinstance(resp, Response)
-    assert resp.headers == ''  # TODO should be is None to match server
-    assert resp.body == 'resp body'
+    assert resp.headers == b''  # TODO should be is None to match server
+    assert resp.body == b'resp body'
 
 
 # TODO - verify register programmatic use cases
@@ -259,10 +259,10 @@ def test_endpoint_can_be_called_as_a_pure_func():
     def endpoint(request):
 
         assert isinstance(request, Request)
-        assert request.body == 'req body'
-        assert request.headers == 'req headers'
+        assert request.body == b'req body'
+        assert request.headers == b'req headers'
 
-        return Response('resp body', headers='resp headers')
+        return Response(b'resp body', headers=b'resp headers')
 
     server.listen()
 
@@ -280,16 +280,16 @@ def test_endpoint_can_be_called_as_a_pure_func():
     )
 
     assert isinstance(resp, Response)
-    assert resp.headers == 'resp headers'
-    assert resp.body == 'resp body'
+    assert resp.headers == b'resp headers'
+    assert resp.body == b'resp body'
 
     # Able to call as function
 
-    resp = endpoint(Request('req body', headers='req headers'))
+    resp = endpoint(Request(b'req body', headers=b'req headers'))
 
     assert isinstance(resp, Response)
-    assert resp.headers == 'resp headers'
-    assert resp.body == 'resp body'
+    assert resp.headers == b'resp headers'
+    assert resp.body == b'resp body'
 
 
 @pytest.mark.gen_test
@@ -307,7 +307,7 @@ def test_endpoint_not_found_with_raw_request():
             endpoint='foo',
         )
 
-    assert "Endpoint 'foo' is not defined" in e.value
+    assert "Endpoint 'foo' is not defined" in e.value.args[0]
 
 
 @pytest.mark.gen_test
@@ -325,7 +325,7 @@ def test_endpoint_not_found_with_json_request():
             endpoint='foo',
         )
 
-    assert "Endpoint 'foo' is not defined" in e.value
+    assert "Endpoint 'foo' is not defined" in e.value.args[0]
 
 
 def test_event_hook_register():

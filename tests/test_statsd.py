@@ -33,7 +33,7 @@ from tchannel.tornado.response import StatusCode
 
 
 @pytest.fixture
-def request():
+def req():
     return Request(
         endpoint="endpoint1",
         service="test",
@@ -48,57 +48,57 @@ def statsd_hook():
     )
 
 
-def test_before_send_request(statsd_hook, request):
-    statsd_hook.before_send_request(request)
+def test_before_send_request(statsd_hook, req):
+    statsd_hook.before_send_request(req)
     statsd_hook._statsd.count.assert_called_with(
         "tchannel.outbound.calls.sent.no-service.test.endpoint1", 1
     )
 
 
-def test_after_receive_response(statsd_hook, request):
+def test_after_receive_response(statsd_hook, req):
     response = Response(code=StatusCode.ok)
-    statsd_hook.after_receive_response(request, response)
+    statsd_hook.after_receive_response(req, response)
     statsd_hook._statsd.count.assert_called_with(
         "tchannel.outbound.calls.success.no-service.test.endpoint1", 1
     )
 
     response = Response(code=StatusCode.error)
-    statsd_hook.after_receive_response(request, response)
+    statsd_hook.after_receive_response(req, response)
     statsd_hook._statsd.count.assert_called_with(
         "tchannel.outbound.calls.app-errors.no-service.test.endpoint1", 1
     )
 
 
-def test_after_receive_system_error(statsd_hook, request):
+def test_after_receive_system_error(statsd_hook, req):
     error = TChannelError.from_code(ErrorCode.bad_request)
-    statsd_hook.after_receive_system_error(request, error)
+    statsd_hook.after_receive_system_error(req, error)
     statsd_hook._statsd.count.assert_called_with(
         "tchannel.outbound.calls.system-errors.no-service." +
         "test.endpoint1.bad-request", 1
     )
 
 
-def test_after_receive_system_error_per_attempt(statsd_hook, request):
+def test_after_receive_system_error_per_attempt(statsd_hook, req):
     error = TChannelError.from_code(code=ErrorCode.bad_request)
-    statsd_hook.after_receive_system_error_per_attempt(request, error)
+    statsd_hook.after_receive_system_error_per_attempt(req, error)
     statsd_hook._statsd.count.assert_called_with(
         "tchannel.outbound.calls.per-attempt.system-errors.no-service." +
         "test.endpoint1.bad-request", 1
     )
 
 
-def test_on_operational_error(statsd_hook, request):
+def test_on_operational_error(statsd_hook, req):
     error = TimeoutError()
-    statsd_hook.on_operational_error(request, error)
+    statsd_hook.on_operational_error(req, error)
     statsd_hook._statsd.count.assert_called_with(
         "tchannel.outbound.calls.operational-errors.no-service." +
         "test.endpoint1.timeout", 1
     )
 
 
-def test_on_operational_error_per_attempt(statsd_hook, request):
+def test_on_operational_error_per_attempt(statsd_hook, req):
     error = TimeoutError()
-    statsd_hook.on_operational_error_per_attempt(request, error)
+    statsd_hook.on_operational_error_per_attempt(req, error)
     statsd_hook._statsd.count.assert_called_with(
         "tchannel.outbound.calls.per-attempt.operational-errors.no-service." +
         "test.endpoint1.timeout", 1

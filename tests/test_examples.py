@@ -23,6 +23,7 @@ import json
 import os
 import subprocess
 import sys
+import six
 
 import psutil
 import pytest
@@ -60,10 +61,16 @@ def popen(path, wait_for_listen=False):
 
 def dump_std_streams(name, process):
     sys.stdout.write('----- %s stdout ----\n' % name)
-    sys.stdout.writelines(process.stdout.readlines())
+    for this_line in process.stdout.readlines():
+        if six.PY3:
+            this_line = this_line.decode('utf8')
+        sys.stdout.writelines(this_line)
 
     sys.stderr.write('----- %s stderr ----\n' % name)
-    sys.stderr.writelines(process.stderr.readlines())
+    for this_line in process.stderr.readlines():
+        if six.PY3:
+            this_line = this_line.decode('utf8')
+        sys.stderr.writelines(this_line)
 
 
 @pytest.mark.parametrize(
@@ -99,18 +106,18 @@ def test_example(scheme, path):
 
             # TODO the guide test should be the same as others
             if scheme == 'guide':
-                assert body == 'Hello, world!'
+                assert body == b'Hello, world!'
                 return
 
             if scheme == 'raw':
 
-                assert body == 'resp body'
-                assert headers == 'resp headers'
+                assert body == b'resp body'
+                assert headers == b'resp headers'
 
             elif scheme == 'json':
 
-                body = json.loads(body)
-                headers = json.loads(headers)
+                body = json.loads(body.decode('utf8'))
+                headers = json.loads(headers.decode('utf8'))
 
                 assert body == {
                     'resp': 'body'
@@ -125,9 +132,9 @@ def test_example(scheme, path):
 
             elif scheme == 'thrift':
 
-                headers = json.loads(headers)
+                headers = json.loads(headers.decode('utf8'))
 
-                assert body == 'resp'
+                assert body == b'resp'
                 assert headers == {
                     'resp': 'header',
                 }

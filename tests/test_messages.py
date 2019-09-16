@@ -149,7 +149,7 @@ def test_valid_ping_request():
         'service': 'with_checksum',
         'headers': {},
         'checksum': (messages.ChecksumType.crc32, 3),
-        'args': [b'hi', b'\x00', ""],
+        'args': [b'hi', b'\x00', b""],
     }),
     (messages.CallResponseMessage, messages.call_res_rw, {
         'flags': 1,
@@ -263,13 +263,13 @@ def test_equality_check_against_none(init_request_with_headers):
 # increase the LARGE_AMOUNT to even bigger
 @pytest.mark.gen_test
 @pytest.mark.parametrize('arg2, arg3', [
-    ("", big_arg()),
-    (big_arg(), ""),
-    ("test", big_arg()),
-    (big_arg(),  "test"),
+    (b"", big_arg()),
+    (big_arg(), b""),
+    (b"test", big_arg()),
+    (big_arg(),  b"test"),
     (big_arg(), big_arg()),
-    ("", ""),
-    ("test", "test"),
+    (b"", b""),
+    (b"test", b"test"),
 ],
     ids=lambda arg: str(len(arg))
 )

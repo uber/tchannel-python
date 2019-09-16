@@ -69,7 +69,7 @@ def chain(number_of_peers, endpoint):
 
 @pytest.mark.gen_test
 def test_retry_timeout():
-    endpoint = b'tchannelretrytest'
+    endpoint = 'tchannelretrytest'
     tchannel = yield chain(3, endpoint)
     with mock.patch(
         'tchannel.tornado.Request.should_retry_on_error',
@@ -91,7 +91,7 @@ def test_retry_timeout():
 
 @pytest.mark.gen_test
 def test_retry_on_error_fail():
-    endpoint = b'tchannelretrytest'
+    endpoint = 'tchannelretrytest'
     tchannel = yield chain(3, endpoint)
 
     with mock.patch(
@@ -131,11 +131,11 @@ class MyTestHook(EventHook):
 
 
 @pytest.mark.gen_test
-@mock.patch('tchannel.tornado.Request.should_retry_on_error')
-def test_retry_on_error_success(mock_should_retry_on_error):
+def test_retry_on_error_success():
+    mock_should_retry_on_error = mock.patch('tchannel.tornado.Request.should_retry_on_error')  # noqa
     mock_should_retry_on_error.return_value = True
 
-    endpoint = b'tchannelretrytest'
+    endpoint = 'tchannelretrytest'
     tchannel = yield chain(2, endpoint)
     hook = MyTestHook()
     tchannel.hooks.register(hook)
@@ -158,8 +158,8 @@ def test_retry_on_error_success(mock_should_retry_on_error):
 
     header = yield response.get_header()
     body = yield response.get_body()
-    assert body == "success"
-    assert header == ""
+    assert body == b"success"
+    assert header == b""
 
     assert hook.received_response == 1
     assert hook.received_error == 2

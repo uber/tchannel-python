@@ -18,6 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import absolute_import
+from __future__ import print_function
 from tornado import gen, ioloop
 
 from tchannel import TChannel
@@ -42,8 +44,8 @@ def make_request():
 
 resp = ioloop.IOLoop.current().run_sync(make_request)
 
-assert resp.headers == 'resp headers'
-assert resp.body == 'resp body'
+assert resp.headers == b'resp headers'
+assert resp.body == b'resp body'
 
-print resp.body
-print resp.headers
+print(resp.body.decode('utf8'))
+print(resp.headers.decode('utf8'))

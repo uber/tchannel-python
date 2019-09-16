@@ -21,6 +21,7 @@
 from __future__ import absolute_import
 
 import struct
+import six
 
 from .errors import ReadError
 
@@ -282,7 +283,18 @@ class ReadWriter(object):
         return s
 
 
-class DelegatingReadWriter(ReadWriter):
+class DelegatingReadWriterMeta(type):
+
+    def __new__(mcs, name, bases, dct):
+        if bases != (ReadWriter,):
+            # Children of this class MUST provide __rw__
+            assert dct.get('__rw__'), (
+                "%s.__rw__ must be set" % name
+            )
+        return type.__new__(mcs, name, bases, dct)
+
+
+class DelegatingReadWriter(six.with_metaclass(DelegatingReadWriterMeta, ReadWriter)):  # noqa
     """Allows mapping ReadWriters onto different types.
 
     A common pattern is to define a base ReadWriter using the primitives from
@@ -315,16 +327,6 @@ class DelegatingReadWriter(ReadWriter):
 
     # The underlying ReadWriter. All calls will be delegated to this.
     __rw__ = None
-
-    class __metaclass__(type):
-
-        def __new__(mcs, name, bases, dct):
-            if bases != (ReadWriter,):
-                # Children of this class MUST provide __rw__
-                assert dct.get('__rw__'), (
-                    "%s.__rw__ must be set" % name
-                )
-            return type.__new__(mcs, name, bases, dct)
 
     def read(self, stream):
         return self.__rw__.read(stream)
@@ -423,7 +425,7 @@ class LengthPrefixedBlobReadWriter(ReadWriter):
     def read(self, stream):
         length = self._length.read(stream)
         if length == 0:
-            return ""
+            return b""
         else:
             blob = self.take(stream, length)
             if not self._is_binary:
@@ -431,7 +433,9 @@ class LengthPrefixedBlobReadWriter(ReadWriter):
             return blob
 
     def write(self, s, stream):
-        if not self._is_binary:
+        if six.PY2 and not self._is_binary:
+            s = s.encode('utf-8')
+        if six.PY3 and isinstance(s, str):
             s = s.encode('utf-8')
         length = len(s)
         self._length.write(length, stream)
@@ -443,7 +447,10 @@ class LengthPrefixedBlobReadWriter(ReadWriter):
 
     def length(self, s):
         if not self._is_binary:
-            s = s.encode('utf-8')
+            if six.PY2:
+                s = s.encode('utf-8')
+            if six.PY3 and isinstance(s, str) or s is None:
+                s = s.encode('utf-8')
 
         return len(s) + self._length.width()
 

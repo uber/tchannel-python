@@ -46,7 +46,7 @@ class CallResponseMessage(CallResponseContinueMessage):
         args=None,
         id=0,
     ):
-        args = args or ["", "", ""]
+        args = args or [b"", b"", b""]
         super(CallResponseMessage, self).__init__(flags, checksum, args, id)
         self.code = code
         self.tracing = tracing or common.Tracing(0, 0, 0, 0)

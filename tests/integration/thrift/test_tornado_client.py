@@ -104,4 +104,4 @@ def test_false_result(thrift_service):
     ).send('Service::healthy', '\x00\x00', '\x00')
 
     body = yield response.get_body()
-    assert body == '\x02\x00\x00\x00\x00'
+    assert body == b'\x02\x00\x00\x00\x00'

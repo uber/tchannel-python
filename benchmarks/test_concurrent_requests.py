@@ -31,7 +31,7 @@ from tchannel import TChannel
 def setup_servers(num):
     servers = []
 
-    for i in xrange(num):
+    for i in range(num):
         server = TChannel('server' + str(i))
 
         @server.raw.register
@@ -47,7 +47,7 @@ def setup_servers(num):
 @gen.coroutine
 def setup_client(servers):
     known_peers = []
-    for i in xrange(1000):
+    for i in range(1000):
         known_peers.append('1.1.1.1:'+str(i))
     client = TChannel('client', known_peers=known_peers)
     # Add a bunch of unconnected peers
@@ -72,7 +72,7 @@ def setup_client(servers):
 @gen.coroutine
 def peer_test(client):
     fs = []
-    for _ in xrange(100):
+    for _ in range(100):
         fs.append(client.raw(
             service='server',
             endpoint='hello',

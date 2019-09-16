@@ -20,7 +20,7 @@
 
 from __future__ import absolute_import
 
-
+import six
 import inspect
 
 
@@ -33,6 +33,14 @@ def get_service_methods(iface):
     :returns:
         A set containing names of the methods defined for the service.
     """
+
+    if six.PY3:
+        methods = [func
+                   for func in dir(iface)
+                   if callable(getattr(iface,
+                                       func)) and not func.startswith("__")]
+        return set(methods)
+
     methods = inspect.getmembers(iface, predicate=inspect.ismethod)
 
     return set(

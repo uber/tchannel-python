@@ -18,6 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from __future__ import print_function
+
+from __future__ import absolute_import
 from tornado import gen, ioloop
 
 from tchannel import TChannel, Response
@@ -30,14 +33,14 @@ tchannel = TChannel('raw-server', hostport='localhost:54495')
 @gen.coroutine
 def endpoint(request):
 
-    assert request.headers == 'req headers'
-    assert request.body == 'req body'
+    assert request.headers == b'req headers'
+    assert request.body == b'req body'
 
-    return Response('resp body', headers='resp headers')
+    return Response(b'resp body', headers=b'resp headers')
 
 
 tchannel.listen()
 
-print tchannel.hostport
+print(tchannel.hostport)
 
 ioloop.IOLoop.current().start()

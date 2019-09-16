@@ -99,7 +99,10 @@ def thrift_request_builder(service, thrift_module, hostport=None,
 
     # then attach to instane
     for name, method in six.iteritems(methods):
-        method = types.MethodType(method, maker, ThriftRequestMaker)
+        if six.PY2:
+            method = types.MethodType(method, maker, ThriftRequestMaker)
+        if six.PY3:
+            method = types.MethodType(method, maker)
         setattr(maker, name, method)
 
     return maker

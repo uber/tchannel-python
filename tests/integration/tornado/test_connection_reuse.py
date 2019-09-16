@@ -57,7 +57,7 @@ def test_reuse():
         ]
         for resp in results:
             body = yield resp.get_body()
-            assert body == 'hello to you too'
+            assert body == b'hello to you too'
 
     yield loop1(2)
 
@@ -81,7 +81,7 @@ def test_reuse():
     @gen.coroutine
     def reverse(request, response):
         body = yield request.get_body()
-        assert body == 'foo'
+        assert body == b'foo'
         yield response.write_body('bar')
 
     @gen.coroutine
@@ -95,7 +95,7 @@ def test_reuse():
         ]
         for resp in results:
             body = yield resp.get_body()
-            assert body == 'bar'
+            assert body == b'bar'
 
     loop1_run = loop1(1)
     yield loop2(1)

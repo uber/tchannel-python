@@ -27,6 +27,7 @@ from tornado import gen
 
 from tchannel import TChannel
 from tchannel import Response
+import inspect
 import six
 
 
@@ -121,7 +122,7 @@ class MockServer(object):
     def expect_call(self, endpoint, scheme='raw', **kwargs):
         assert isinstance(scheme, six.string_types)
 
-        if not isinstance(endpoint, six.string_types):
+        if inspect.ismodule(endpoint):
             scheme = 'thrift'
 
         expectation = Expectation()

@@ -148,7 +148,7 @@ class ServerTracer(object):
         parent_context = None
         # noinspection PyBroadException
         try:
-            if headers and hasattr(headers, 'iteritems'):
+            if headers and hasattr(headers, 'items'):
                 tracing_headers = {
                     k[len(TRACING_KEY_PREFIX):]: v
                     for k, v in headers.items()

@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
-
 import tornado
 import tornado.gen
 
@@ -30,7 +29,7 @@ from ..errors import TChannelError
 def get_arg(context, index):
     """get value from arg stream in async way"""
     if index < len(context.argstreams):
-        arg = ""
+        arg = b""
         chunk = yield context.argstreams[index].read()
         while chunk:
             arg += chunk

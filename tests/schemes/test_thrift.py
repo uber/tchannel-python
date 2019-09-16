@@ -23,6 +23,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import six
 import mock
 import pytest
 from tornado import gen
@@ -797,8 +798,10 @@ def test_exception(server, service, ThriftTest, server_ttypes, client_ttypes):
             service.testException(arg='Xception')
         )
     assert e.value.errorCode == 1001
-    assert e.value.message == 'Xception'
-
+    if six.PY2:
+        assert e.value.message == 'Xception'
+    if six.PY3:
+        assert 'Xception' in str(e.value)
     # case #2
     with pytest.raises(UnexpectedError) as e:
         yield tchannel.thrift(
@@ -850,8 +853,10 @@ def test_multi_exception(
             service.testMultiException(arg0='Xception', arg1='thingy')
         )
         assert e.value.errorCode == 1001
-        assert e.value.message == 'This is an Xception'
-
+        if six.PY2:
+            assert e.value.message == 'This is an Xception'
+        if six.PY3:
+            assert e.value.args[0] == 'This is an Xception'
     # case #2
     with pytest.raises(client_ttypes.Xception2) as e:
         yield tchannel.thrift(
@@ -1091,7 +1096,7 @@ def test_client_for(ClientTChannel, server, ThriftTest):
 
     @server.thrift.register(ThriftTest)
     def testString(request):
-        return request.body.thing.encode('rot13')
+        return request.body.thing.encode('utf8')
 
     tchannel = ClientTChannel(name='client')
 
@@ -1101,7 +1106,7 @@ def test_client_for(ClientTChannel, server, ThriftTest):
     )
 
     resp = yield client.testString(thing='foo')
-    assert resp == 'sbb'
+    assert resp == 'foo'
 
 
 @pytest.mark.gen_test
@@ -1110,7 +1115,7 @@ def test_client_for_with_sync_tchannel(server, ThriftTest):
 
     @server.thrift.register(ThriftTest)
     def testString(request):
-        return request.body.thing.encode('rot13')
+        return request.body.thing.encode('utf8')
 
     tchannel = SyncTChannel(name='client')
 
@@ -1130,7 +1135,7 @@ def test_client_for_with_sync_tchannel(server, ThriftTest):
 
     resp = future.result()
 
-    assert resp == 'sbb'
+    assert resp == 'foo'
 
 
 @pytest.mark.gen_test

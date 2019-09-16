@@ -56,7 +56,7 @@ def test_tornado_client_with_server_not_there():
 )
 def test_tchannel_call_request_fragment(mock_server,
                                         arg2, arg3):
-    endpoint = b'tchannelpeertest'
+    endpoint = 'tchannelpeertest'
 
     mock_server.expect_call(endpoint).and_write(
         headers=endpoint,
@@ -73,14 +73,16 @@ def test_tchannel_call_request_fragment(mock_server,
         body=arg3,
     )
 
-    assert response.headers == endpoint
+    assert response.headers == endpoint.encode('utf8')
+    if isinstance(arg3, str):
+        arg3 = arg3.encode('utf8')
     assert response.body == arg3
     assert response.transport.scheme == 'raw'
 
 
 @pytest.mark.gen_test
 def test_tcurl(mock_server):
-    endpoint = b'tcurltest'
+    endpoint = 'tcurltest'
 
     mock_server.expect_call(endpoint).and_write(
         headers=endpoint,
@@ -95,8 +97,8 @@ def test_tcurl(mock_server):
         '--raw',
     ])
 
-    assert response.headers == endpoint
-    assert response.body == "hello"
+    assert response.headers == endpoint.encode('utf8')
+    assert response.body == "hello".encode('utf8')
 
 
 @pytest.mark.gen_test

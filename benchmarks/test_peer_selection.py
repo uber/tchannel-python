@@ -73,7 +73,7 @@ class PeerGroup(_PeerGroup):
 
 
 def hostport():
-    host = b'.'.join(bytes(random.randint(0, 255)) for i in xrange(4))
+    host = b'.'.join(bytes(random.randint(0, 255)) for i in range(4))
     port = random.randint(1000, 30000)
     return b'%s:%d' % (host, port)
 

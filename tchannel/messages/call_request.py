@@ -49,7 +49,7 @@ class CallRequestMessage(CallRequestContinueMessage):
         args=None,
         id=0,
     ):
-        args = args or ["", "", ""]
+        args = args or [b"", b"", b""]
         super(CallRequestMessage, self).__init__(flags, checksum, args, id)
         self.ttl = ttl
         self.tracing = tracing or common.Tracing(0, 0, 0, 0)

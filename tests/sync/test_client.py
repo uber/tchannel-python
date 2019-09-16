@@ -46,8 +46,8 @@ def test_sync_client_should_get_raw_response(mock_server):
 
     response = future.result()
 
-    assert response.headers == ""
-    assert response.body == "OK"
+    assert response.headers == b""
+    assert response.body == b"OK"
 
 
 @pytest.mark.integration
@@ -69,8 +69,8 @@ def test_sync_client_with_injected_threadloop(mock_server, loop):
 
     response = future.result()
 
-    assert response.headers == ""
-    assert response.body == "OK"
+    assert response.headers == b""
+    assert response.body == b"OK"
 
 
 @pytest.mark.integration

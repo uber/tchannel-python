@@ -464,7 +464,7 @@ class TChannel(object):
             else:
                 scheme = "raw"
         scheme = scheme.lower()
-        if scheme == 'thrift':
+        if scheme in ('thrift', b'thrift'):
             decorator = partial(self._register_thrift, endpoint, **kwargs)
         else:
             decorator = partial(

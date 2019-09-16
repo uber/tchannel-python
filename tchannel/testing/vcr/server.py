@@ -20,10 +20,12 @@
 
 from __future__ import absolute_import
 
+import six
 import sys
 import random
 import threading
 from functools import wraps
+import traceback
 from concurrent.futures import Future as ConcFuture
 
 from tornado import gen
@@ -52,10 +54,9 @@ def wrap_uncaught(func=None, reraise=None):
                 result = yield gen.maybe_future(f(*args, **kwargs))
             except Exception as e:
                 if any(isinstance(e, cls) for cls in reraise):
-                    # TODO maybe use traceback.format_exc to also send a
-                    # traceback?
                     raise e
-                raise proxy.VCRServiceError(str(e))
+                raise proxy.VCRServiceError(str(e) +
+                                            ' ' + traceback.format_exc())
             else:
                 raise gen.Return(result)
 
@@ -101,8 +102,10 @@ class VCRProxyService(object):
         # readable formats.
 
         # Because Thrift doesn't handle UTF-8 correctly right now
-        request.serviceName = request.serviceName.decode('utf-8')
-        request.endpoint = request.endpoint.decode('utf-8')
+        if isinstance(request.serviceName, bytes):
+            request.serviceName = request.serviceName.decode('utf-8')
+        if isinstance(request.endpoint, bytes):
+            request.endpoint = request.endpoint.decode('utf-8')
 
         # TODO do we care about hostport being the same?
         if cassette.can_replay(request):
@@ -157,6 +160,7 @@ class VCRProxyService(object):
             raise proxy.RemoteServiceError(
                 code=e.code,
                 message=str(e),
+                traceback=traceback.format_exc()
             )
         response_headers = yield response.get_header()
         response_body = yield response.get_body()
@@ -190,8 +194,11 @@ class VCRProxyService(object):
         try:
             self.tchannel.listen()
             self._running.set_result(None)
-        except Exception:
-            self._running.set_exception_info(*sys.exc_info()[1:])
+        except Exception as e:
+            if six.PY2:
+                self._running.set_exception_info(*sys.exc_info()[1:])
+            if six.PY3:
+                self._running.set_exception(e)
         else:
             self.io_loop.start()
 

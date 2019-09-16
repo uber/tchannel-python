@@ -167,7 +167,7 @@ def test_peer_connection_network_failure():
         unhealthy._dep_tchannel._server.stop()
 
         resp = yield client.raw('server', 'hello', 'foo')
-        assert resp.body == 'world'
+        assert resp.body == b'world'
 
 
 @pytest.mark.gen_test

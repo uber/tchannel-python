@@ -81,6 +81,11 @@ def filter_headers(hs):
 
 def json_headers_matcher(l, r):
     try:
+        if six.PY3:
+            if isinstance(l, bytes):
+                l = l.decode('utf8')
+            if isinstance(r, bytes):
+                r = r.decode('utf8')
         left = json.loads(l)  # raises ValueError
         right = json.loads(r)
 
@@ -298,6 +303,8 @@ class Cassette(object):
             os.makedirs(cassette_dir)
 
         with open(self.path, 'wb') as f:
+            if six.PY3 and isinstance(data, str):
+                data = data.encode('utf8')
             f.write(data)
 
         self._played = deque()

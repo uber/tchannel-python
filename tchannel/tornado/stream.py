@@ -48,6 +48,8 @@ def read_full(stream):
     chunk = yield stream.read()
 
     while chunk:
+        if six.PY3 and isinstance(chunk, str):
+            chunk = chunk.encode('utf8')
         chunks.append(chunk)
         chunk = yield stream.read()
 
@@ -129,10 +131,13 @@ class InMemStream(Stream):
                     future.set_exception(self.exception)
                 return future
 
-            chunk = ""
+            chunk = b""
 
             while len(self._stream) and len(chunk) < common.MAX_PAYLOAD_SIZE:
-                chunk += self._stream.popleft()
+                new_chunk = self._stream.popleft()
+                if six.PY3 and isinstance(new_chunk, str):
+                    new_chunk = new_chunk.encode('utf8')
+                chunk += new_chunk
 
             future.set_result(chunk)
             return future
@@ -211,11 +216,11 @@ class PipeStream(Stream):
             raise self.exception
 
         if self.state == StreamState.completed or self._rpipe is None:
-            raise tornado.gen.Return("")
+            raise tornado.gen.Return(b"")
         elif self.state == StreamState.init:
             self.state = StreamState.streaming
 
-        chunk = ""
+        chunk = b""
         try:
             chunk = yield self._rs.read_bytes(
                 common.MAX_PAYLOAD_SIZE, partial=True)

@@ -23,6 +23,7 @@ from __future__ import absolute_import
 import logging
 import sys
 from collections import namedtuple
+import six
 
 import tornado
 import tornado.gen
@@ -111,7 +112,7 @@ class RequestDispatcher(object):
                 self.handle_call(req, connection)
 
         except TChannelError as e:
-            log.warn('Received a bad request.', exc_info=True)
+            log.warning('Received a bad request.', exc_info=True)
             if req:
                 e.tracing = req.tracing
             connection.send_error(e)
@@ -127,6 +128,11 @@ class RequestDispatcher(object):
         # user still tries read from it, it will return empty.
         chunk = yield request.argstreams[0].read()
         while chunk:
+            if six.PY3:
+                if isinstance(request.endpoint, str) and \
+                        isinstance(chunk, bytes):
+                    chunk = chunk.decode('utf8')
+
             request.endpoint += chunk
             chunk = yield request.argstreams[0].read()
 

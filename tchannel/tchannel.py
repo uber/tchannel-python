@@ -363,7 +363,7 @@ class TChannel(object):
             )
             body = yield result.get_body()
             headers = yield result.get_header()
-            response = Response(json.loads(body), headers or {})
+            response = Response(json.loads(body.decode('utf8')), headers or {})
             raise gen.Return(response)
 
         def _on_advertise(future):

@@ -85,7 +85,7 @@ def test_parse_valid_args(input, expectations):
 @pytest.mark.parametrize('input, message', [
     (
         [''],
-        'argument --service/-s is required'
+        '--service/-s'  # Service is a required field
     ),
     (
         ['--service', 'larry', '--thrift'],
@@ -151,7 +151,10 @@ def test_parse_invalid_args(input, message, capsys):
         parse_args(input)
 
     # Arg parse always dies with an error code of 2.
-    assert e.value.message == 2
+    if six.PY2:
+        assert e.value.message == 2
+    if six.PY3:
+        assert e.value.args[0] == 2
 
     out, err = capsys.readouterr()
     assert message in err

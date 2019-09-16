@@ -23,6 +23,7 @@ from __future__ import absolute_import
 from contextlib import contextmanager
 from os import urandom
 from textwrap import dedent
+from base64 import b64encode
 
 import pytest
 
@@ -33,7 +34,9 @@ except ImportError:
 
 
 def big_arg(kilobytes=64 * 5):
-    return urandom(1024 * kilobytes)
+    random_bytes = urandom(1024 * kilobytes)
+    token = b64encode(random_bytes).decode('utf-8')
+    return token.encode('utf8')
 
 
 def get_thrift_file(root):
