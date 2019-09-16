@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-1.3.2 (unreleased)
+2.0.0 (2019-09-16)
 ------------------
 
 - Python 3.4 support
