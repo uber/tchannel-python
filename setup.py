@@ -57,8 +57,8 @@ setup(
         'threadloop>=1,<2',
 
         # tracing deps
-        'opentracing>=1.1,<2',
-        'opentracing_instrumentation>=2.3,<3',
+        'opentracing',
+        'opentracing_instrumentation',
 
         # python 3 compat
         'six',

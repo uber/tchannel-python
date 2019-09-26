@@ -97,7 +97,10 @@ class TracingContextProvider(object):
         :param span: an OpenTracing Span
         :return: ``StackContext``-based context manager
         """
-        return opentracing_instrumentation.span_in_stack_context(span)
+        if isinstance(opentracing.tracer.scope_manager, opentracing_instrumentation.request_context.TornadoScopeManager):
+            return opentracing_instrumentation.span_in_stack_context(span)
+
+        return opentracing_instrumentation.span_in_context(span)
 
 
 class ServerTracer(object):

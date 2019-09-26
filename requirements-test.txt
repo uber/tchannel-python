@@ -39,7 +39,7 @@ thrift==0.11.0
 wrapt>=1.10,<1.11
 
 # OpenTracing reference implementation
-jaeger_client>=3.0.1,<4
+jaeger_client
 
 # Mocks
 mock==1.0.1

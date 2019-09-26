@@ -42,7 +42,8 @@ from opentracing_instrumentation.client_hooks.tornado_http import (
 )
 from opentracing_instrumentation.request_context import (
     span_in_stack_context,
-    get_current_span
+    get_current_span,
+    TornadoScopeManager
 )
 from tchannel import Response, thrift, TChannel, schemes
 from tchannel.errors import BadRequestError
@@ -77,6 +78,7 @@ def tracer():
 
     def log_and_report(span):
         print(('Reporting span %s' % span))
+        print(('Span type %s' % type(span)))
         report_func(span)
 
     reporter.report_span = log_and_report
@@ -85,6 +87,7 @@ def tracer():
         service_name='test-tracer',
         sampler=ConstSampler(True),
         reporter=reporter,
+        scope_manager=TornadoScopeManager()
     )
     try:
         yield tracer
