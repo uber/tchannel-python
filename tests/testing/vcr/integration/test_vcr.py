@@ -32,6 +32,8 @@ from tchannel.errors import UnexpectedError, TimeoutError
 from tchannel.thrift import client_for
 from tchannel.testing import vcr
 
+from opentracing_instrumentation.request_context import TornadoScopeManager
+
 
 @pytest.yield_fixture
 def tracer():
@@ -40,6 +42,7 @@ def tracer():
         service_name='test-tracer',
         sampler=ConstSampler(True),
         reporter=reporter,
+        scope_manager=TornadoScopeManager(),
     )
     try:
         yield tracer
