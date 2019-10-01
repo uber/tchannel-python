@@ -79,6 +79,8 @@ def tracer():
     def log_and_report(span):
         print(('Reporting span %s' % span))
         print(('Span type %s' % type(span)))
+        print(('SpanContext type %s' % type(span.context)))
+        print(('SpanScopeManager type %s' % type(opentracing.tracer.scope_manager)))
         report_func(span)
 
     reporter.report_span = log_and_report
@@ -448,8 +450,8 @@ def test_span_tags(encoding, operation, tracer, thrift_service):
     @server.thrift.register(thrift_service.X, method='thrift2')
     def thrift2(_):
         return json.dumps(get_span_baggage())
-
     client = TChannel('client', tracer=tracer, trace=True)
+    opentracing.set_global_tracer(tracer)
 
     span = tracer.start_span('root')
     span.set_baggage_item('bender', 'is great')
