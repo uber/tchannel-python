@@ -80,7 +80,6 @@ def tracer():
         print(('Reporting span %s' % span))
         print(('Span type %s' % type(span)))
         print(('SpanContext type %s' % type(span.context)))
-        print(('SpanScopeManager type %s' % type(opentracing.tracer.scope_manager)))
         report_func(span)
 
     reporter.report_span = log_and_report
