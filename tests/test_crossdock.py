@@ -33,6 +33,7 @@ from jaeger_client import Tracer, ConstSampler
 from jaeger_client.reporter import InMemoryReporter
 from tchannel import TChannel
 from tornado.httpclient import HTTPRequest
+from opentracing_instrumentation.request_context import TornadoScopeManager
 
 
 def test_api_to_json():
@@ -64,6 +65,7 @@ def tracer():
         service_name='test-tracer',
         sampler=ConstSampler(True),
         reporter=InMemoryReporter(),
+        scope_manager=TornadoScopeManager()
     )
     opentracing.set_global_tracer(tracer)
     try:
