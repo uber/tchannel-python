@@ -65,9 +65,11 @@ def tracer():
         sampler=ConstSampler(True),
         reporter=InMemoryReporter(),
     )
+    opentracing.set_global_tracer(tracer)
     try:
         yield tracer
     finally:
+        opentracing._reset_global_tracer()
         tracer.close()
 
 

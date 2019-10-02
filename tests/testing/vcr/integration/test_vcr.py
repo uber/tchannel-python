@@ -33,6 +33,7 @@ from tchannel.thrift import client_for
 from tchannel.testing import vcr
 
 from opentracing_instrumentation.request_context import TornadoScopeManager
+import opentracing
 
 
 @pytest.yield_fixture
@@ -45,8 +46,10 @@ def tracer():
         scope_manager=TornadoScopeManager(),
     )
     try:
+        opentracing.set_global_tracer(tracer)
         yield tracer
     finally:
+        opentracing._reset_global_tracer()
         tracer.close()
 
 

@@ -90,9 +90,11 @@ def tracer():
         reporter=reporter,
         scope_manager=TornadoScopeManager()
     )
+    opentracing.set_global_tracer(tracer)
     try:
         yield tracer
     finally:
+        opentracing._reset_global_tracer()
         tracer.close()
 
 
