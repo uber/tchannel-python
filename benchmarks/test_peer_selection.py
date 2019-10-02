@@ -87,7 +87,7 @@ def test_choose(benchmark):
     group = PeerGroup(tchannel)
 
     # Register 1000 random peers
-    for i in xrange(NUM_PEERS):
+    for i in range(NUM_PEERS):
         peer = group.get(hostport())
 
     connected_peers = set()

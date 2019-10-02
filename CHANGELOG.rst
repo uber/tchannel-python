@@ -4,7 +4,7 @@ Changes by Version
 2.0.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Support opentracing 2
 
 
 2.0.0 (2019-09-16)

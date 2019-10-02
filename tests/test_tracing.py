@@ -42,7 +42,8 @@ from opentracing_instrumentation.client_hooks.tornado_http import (
 )
 from opentracing_instrumentation.request_context import (
     span_in_stack_context,
-    get_current_span
+    get_current_span,
+    TornadoScopeManager
 )
 from tchannel import Response, thrift, TChannel, schemes
 from tchannel.errors import BadRequestError
@@ -77,6 +78,8 @@ def tracer():
 
     def log_and_report(span):
         print(('Reporting span %s' % span))
+        print(('Span type %s' % type(span)))
+        print(('SpanContext type %s' % type(span.context)))
         report_func(span)
 
     reporter.report_span = log_and_report
@@ -85,10 +88,13 @@ def tracer():
         service_name='test-tracer',
         sampler=ConstSampler(True),
         reporter=reporter,
+        scope_manager=TornadoScopeManager()
     )
+    opentracing.set_global_tracer(tracer)
     try:
         yield tracer
     finally:
+        opentracing._reset_global_tracer()
         tracer.close()
 
 
@@ -445,8 +451,8 @@ def test_span_tags(encoding, operation, tracer, thrift_service):
     @server.thrift.register(thrift_service.X, method='thrift2')
     def thrift2(_):
         return json.dumps(get_span_baggage())
-
     client = TChannel('client', tracer=tracer, trace=True)
+    opentracing.set_global_tracer(tracer)
 
     span = tracer.start_span('root')
     span.set_baggage_item('bender', 'is great')

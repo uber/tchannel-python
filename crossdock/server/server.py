@@ -11,6 +11,7 @@ import tornado.web
 from jaeger_client import Tracer, ConstSampler
 from jaeger_client.reporter import NullReporter
 from opentracing_instrumentation import get_current_span
+from opentracing_instrumentation.request_context import TornadoScopeManager
 from tchannel import thrift, Response, TChannel
 
 DEFAULT_CLIENT_PORT = 8080
@@ -28,7 +29,9 @@ def serve():
     tracer = Tracer(
         service_name='python',
         reporter=NullReporter(),
-        sampler=ConstSampler(decision=True))
+        sampler=ConstSampler(decision=True),
+        scope_manager=TornadoScopeManager()
+    )
     opentracing.tracer = tracer
 
     tchannel = TChannel(name='python', hostport=':%d' % DEFAULT_SERVER_PORT,
