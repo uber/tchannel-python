@@ -79,12 +79,12 @@ def test_pings(tornado_pair):
     server, client = tornado_pair
     client.ping()
 
-    ping = yield server.await()
+    ping = yield server._await()
     assert ping.message_type == messages.Types.PING_REQ
 
     server.pong()
 
-    pong = yield client.await()
+    pong = yield client._await()
     assert pong.message_type == messages.Types.PING_RES
 
 
@@ -161,7 +161,7 @@ def test_local_timeout_unconsumed_message():
 def test_stream_closed_error_on_read(tornado_pair):
     # Test that we don't log an error for StreamClosedErrors while reading.
     server, client = tornado_pair
-    future = server.await()
+    future = server._await()
     client.close()
 
     with mock.patch.object(connection, 'log') as mock_log:  # :(
@@ -178,7 +178,7 @@ def test_other_error_on_read(tornado_pair):
     # reading.
     server, client = tornado_pair
 
-    future = server.await()
+    future = server._await()
     yield client.connection.write(b'\x00\x02\x00\x00')  # bad payload
 
     with mock.patch.object(connection, 'log') as mock_log:  # :(
@@ -406,7 +406,7 @@ def test_loop_failure(tornado_pair):
         headers={'cn': 'client'},
     ))
 
-    call_req = yield server.await()
+    call_req = yield server._await()
     assert call_req.message_type == messages.Types.CALL_REQ
 
     response = Response(id=id)
@@ -453,7 +453,7 @@ def test_timeout_not_pending(tornado_pair):
     ))
     assert id in client._outbound_pending_call
 
-    call_req = yield server.await()
+    call_req = yield server._await()
     assert call_req.message_type == messages.Types.CALL_REQ
 
     yield gen.sleep(0.1)  # make the request time out

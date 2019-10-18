@@ -193,7 +193,7 @@ class TornadoConnection(object):
         if self._close_cb:
             self._close_cb()
 
-    def await(self):
+    def _await(self):
         """Get the next call to this TChannel."""
         if self._handshake_performed:
             return self._messages.get()
@@ -514,7 +514,7 @@ class TornadoConnection(object):
         assert handler, "handler is required"
 
         while not self.closed:
-            message = yield self.await()
+            message = yield self._await()
 
             try:
                 handler(message, self)
