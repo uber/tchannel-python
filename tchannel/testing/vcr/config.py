@@ -38,6 +38,8 @@ class _CassetteContext(object):
         self.record_mode = record_mode
         self.inject = inject
         self.matchers = matchers
+        if self.inject:
+            raise DeprecationWarning('Use of inject is no longer supported')
 
         self._exit_stack = contextlib2.ExitStack()
 

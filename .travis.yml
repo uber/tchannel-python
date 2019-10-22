@@ -9,7 +9,11 @@ services:
 # @see https://www.dominicrodger.com/tox-and-travis.html
 #
 language: python
-python: 2.7
+python:
+  - "2.7"
+  - "3.4"
+  - "3.6"
+  - "3.7"
 env:
   global:
     - DOCKER_COMPOSE_VERSION=1.8.0
@@ -19,7 +23,6 @@ env:
     # DOCKER_USER
     - secure: zTYWdKexitzOizfPCxZ/O7LwSy0B8P0iwwzHueXnVC/Z/8tR0lPorqfy8pY1Ctc5yRuFMDMrmk+HHcb1ox+QoBcWrSZwmR5GAe5Uf7Hy/qzngqGb4qg6cAtUEIzPQN8PGNI0sun50WiiZV4/M05pCL5IKYgilsfKE8ecBXmEu9iMyH7f1U9h7KVQoxe1VaOZHhSz549xUnug5H4Xq+ou62MxDhkLHMkBf9BsFyHWNbw06YIbbArho8V8Hmz28y3ejsjtRzPGS+BHhsX9lCek7MI9NNM5MWar1ZRhmU6qShmoRl9H0eG3bgs5/8iUQWLQQeEgEr8DgFcVYfHAavJqBenyir7Qok+9PBuP5lc/SvNgLmG5pHsUX+Py0luJzyTqDoFn+2TV+zfFYVdWpMnXrYKyE+NGL7QSvhfPby4EzAMA1KeS3QkK9F+1LPU7U6+Q92+cQ69GZGaVG8tAdy/XpJw+q+PSjflNxRVXkJp1mqGkyU07h5bGwCj6GE1FvE160QiFVg0Tz7rNGLRmYPRLAxk8gCc6E+rMljF+/LoLWdYohFfRoPe2K0l8rsi/wqsX4xLp22oWr29woKF40lyIokTLcv1sDo8xwMSeNA0ledUTREGb33fWoWoB/ZJDAnKZMY1SWUEi+owGtW3aRJlN5auOoPoe7LxMf3HlzyojEaQ=
   matrix:
-    - TOX_ENV=py34
     - TOX_ENV=crossdock
     - TOX_ENV=cover
     - TOX_ENV=flake8

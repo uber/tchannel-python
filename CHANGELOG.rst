@@ -4,7 +4,8 @@ Changes by Version
 2.0.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Support py37
+- Remove inject feature of cassette 
 
 
 2.0.1 (2019-10-01)
