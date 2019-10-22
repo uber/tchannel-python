@@ -1,7 +1,7 @@
 Changes by Version
 ==================
 
-2.0.2 (unreleased)
+2.1.0 (2019-10-22)
 ------------------
 
 - Support py37
