@@ -50,11 +50,11 @@ setup(
 
         # external deps
         'crcmod>=1,<2',
-        'tornado>=4.3',
+        'tornado>=5',
 
         # tchannel deps
-        'thriftrw>=0.4,<2',
-        'threadloop>=1,<2',
+        'thriftrw>=0.4',
+        'threadloop>=1',
 
         # tracing deps
         'opentracing>2',
