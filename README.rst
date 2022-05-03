@@ -1,3 +1,5 @@
+This project is no longer active. See https://github.com/uber/tchannel-python/issues/497
+
 TChannel for Python
 ===================
 
