@@ -4,16 +4,41 @@
 #
 #    pip-compile requirements.in
 #
-backports-abc==0.4        # via tornado
-contextlib2==0.5.1        # via opentracing-instrumentation
+-e file:///home/dependabot/dependabot-updater/tmp/dependabot_20230209-7-ea5yrq
+    # via -r requirements.in
+contextlib2==0.5.1
+    # via
+    #   opentracing-instrumentation
+    #   sanitized-package
 crcmod==1.7
-future==0.17.1            # via opentracing-instrumentation
+    # via sanitized-package
+future==0.18.3
+    # via
+    #   opentracing-instrumentation
+    #   sanitized-package
 futures==3.0.5
+    # via sanitized-package
+opentracing==2.2.0
+    # via
+    #   opentracing-instrumentation
+    #   sanitized-package
 opentracing-instrumentation==3.2.0
-opentracing==2.2.0        # via opentracing-instrumentation
-ply==3.8                  # via thriftrw
-six==1.10.0               # via opentracing-instrumentation, thriftrw
+    # via sanitized-package
+ply==3.8
+    # via thriftrw
+six==1.10.0
+    # via
+    #   opentracing-instrumentation
+    #   sanitized-package
+    #   thriftrw
 threadloop==1.0.1
+    # via sanitized-package
 thriftrw==1.2.3
-tornado==4.3              # via opentracing-instrumentation, threadloop
-wrapt==1.10.8             # via opentracing-instrumentation
+    # via sanitized-package
+tornado==4.3
+    # via
+    #   opentracing-instrumentation
+    #   sanitized-package
+    #   threadloop
+wrapt==1.10.8
+    # via opentracing-instrumentation
