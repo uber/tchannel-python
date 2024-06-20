@@ -45,8 +45,8 @@ setup(
     },
     install_requires=[
         # stdlib backports, no constraints needed
-        'contextlib2',
-        'futures',
+        'contextlib2;python_version == "2.7"',
+        'futures;python_version == "2.7"',
 
         # external deps
         'crcmod>=1,<2',
